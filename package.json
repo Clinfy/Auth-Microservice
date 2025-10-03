@@ -1,8 +1,8 @@
 {
-  "name": "users-microservice",
+  "name": "clinify-users-microservice",
   "version": "0.0.1",
-  "description": "",
-  "author": "",
+  "description": "Microservice for users, permissions, roles and authentication.",
+  "author": "Agustín Liendo Ortiz",
   "private": true,
   "license": "UNLICENSED",
   "scripts": {
@@ -26,6 +26,7 @@
     "@nestjs/platform-express": "^11.0.1",
     "@nestjs/swagger": "^11.2.0",
     "@nestjs/typeorm": "^11.0.0",
+    "axios": "^1.12.2",
     "bcrypt": "^6.0.0",
     "class-validator": "^0.14.2",
     "jsonwebtoken": "^9.0.2",
