@@ -1,15 +1,15 @@
-import {Injectable, NotFoundException, UnauthorizedException} from '@nestjs/common';
-import {InjectDataSource, InjectRepository} from "@nestjs/typeorm";
-import {UserEntity} from "src/entities/user.entity";
-import {DataSource, Repository} from "typeorm";
-import {JwtService} from "src/services/JWT/jwt.service";
-import {RegisterUserDTO} from "src/interfaces/DTO/register.dto";
-import {UserI} from "src/interfaces/user.interface";
-import { compareSync } from 'bcrypt';
-import {LoginDTO} from "src/interfaces/DTO/login.dto";
-import {AuthInterface} from "src/interfaces/auth.interface";
-import {AssignRoleDTO} from "src/interfaces/DTO/assign.dto";
-import {RolesService} from "src/services/roles/roles.service";
+import { Injectable, InternalServerErrorException, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
+import { UserEntity } from 'src/entities/user.entity';
+import { DataSource, Repository } from 'typeorm';
+import { JwtService } from 'src/services/JWT/jwt.service';
+import { RegisterUserDTO } from 'src/interfaces/DTO/register.dto';
+import { UserI } from 'src/interfaces/user.interface';
+import { compare } from 'bcrypt';
+import { LoginDTO } from 'src/interfaces/DTO/login.dto';
+import { AuthInterface } from 'src/interfaces/auth.interface';
+import { AssignRoleDTO } from 'src/interfaces/DTO/assign.dto';
+import { RolesService } from 'src/services/roles/roles.service';
 
 @Injectable()
 export class UsersService {
@@ -37,46 +37,61 @@ export class UsersService {
     }
 
     async register(dto: RegisterUserDTO): Promise<UserEntity> {
-        try {
-            return await this.dataSource.transaction(async manager => {
-                const user = this.userRepository.create(dto);
-                return await manager.save(user);
-            })
-        }catch (error) {
-            throw new Error(error);
-        }
+        return this.dataSource.transaction(async manager => {
+            const transactionalRepository = manager.getRepository(UserEntity);
+            const user = transactionalRepository.create(dto);
+            return transactionalRepository.save(user);
+        });
     }
 
     async logIn(body: LoginDTO): Promise<AuthInterface> {
         const user = await this.findByEmail(body.email);
-        if(!user) throw new UnauthorizedException('Wrong email or password');
+        if (!user) {
+            throw new UnauthorizedException('Wrong email or password');
+        }
 
-        if(!user.active) throw new UnauthorizedException('This user is not active')
+        if (!user.active) {
+            throw new UnauthorizedException('This user is not active');
+        }
 
-        const compare = compareSync(body.password, user.password);
-        if(!compare) throw new UnauthorizedException('Wrong email or password');
+        const isPasswordValid = await compare(body.password, user.password);
+        if (!isPasswordValid) {
+            throw new UnauthorizedException('Wrong email or password');
+        }
 
-        return {
-            accessToken: this.jwtService.generateToken({email: user.email}, 'auth'),
-            refreshToken: this.jwtService.generateToken({email: user.email}, 'refresh')
+        try {
+            const [accessToken, refreshToken] = await Promise.all([
+                this.jwtService.generateToken({ email: user.email }, 'auth'),
+                this.jwtService.generateToken({ email: user.email }, 'refresh'),
+            ]);
+
+            return {
+                accessToken,
+                refreshToken,
+            };
+        } catch (error) {
+            throw new InternalServerErrorException('Unable to issue authentication tokens');
         }
     }
 
-    async findByEmail(email: string): Promise<UserEntity> {
-            const user = await this.userRepository.findOne({where: {email}});
-            if(!user) throw new NotFoundException(`El email ${email} no se encuentra registrado`);
-            return user;
+    async findByEmail(email: string): Promise<UserEntity | null> {
+        return this.userRepository.findOne({ where: { email } });
     }
 
     async assignRole(id: number, dto: AssignRoleDTO): Promise<UserEntity> {
         const user = await this.findOne(id);
-        user.roles = await Promise.all(dto.rolesIds.map(id => this.roleService.findOne(id)));
-        return await this.userRepository.save(user);
+        const uniqueRoleIds = [...new Set(dto.rolesIds)];
+        if (uniqueRoleIds.length === 0) {
+            user.roles = [];
+            return this.userRepository.save(user);
+        }
+        user.roles = await Promise.all(uniqueRoleIds.map(roleId => this.roleService.findOne(roleId)));
+        return this.userRepository.save(user);
     }
 
     private async findOne(id: number): Promise<UserEntity> {
-        const user = await this.userRepository.findOneBy({id});
-        if(!user) throw new NotFoundException('User not found');
+        const user = await this.userRepository.findOneBy({ id });
+        if (!user) throw new NotFoundException('User not found');
         return user;
     }
 }
