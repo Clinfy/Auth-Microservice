@@ -25,7 +25,7 @@ export class IsUniqueEmailConstraint implements ValidatorConstraintInterface {
     }
 
     defaultMessage() {
-        return 'Ya existe un usuario con ese email.';
+        return 'This email is already in use. Please choose another one.';
     }
 }
 
