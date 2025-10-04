@@ -23,7 +23,7 @@ export class AuthGuard implements CanActivate {
             // @ts-ignore
             const token = request.headers.authorization.replace('Bearer ','');
             if (token == null) {
-                throw new UnauthorizedException('El token no existe');
+                throw new UnauthorizedException('Token does not exist');
             }
             const payload = this.jwtService.getPayload(token);
             const user = await this.usersService.findByEmail(payload.email);
@@ -41,7 +41,7 @@ export class AuthGuard implements CanActivate {
             const hasAllPermissions = permissions.every((permission) => userPermissions.includes(permission));
 
             if (!hasAllPermissions){
-                throw new ForbiddenException("Insufficent permissions");
+                throw new ForbiddenException("Insufficient permissions");
             }
 
             return true;
