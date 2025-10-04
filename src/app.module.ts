@@ -4,6 +4,15 @@ import { AppService } from './app.service';
 import {ConfigModule, ConfigService} from "@nestjs/config";
 import {TypeOrmModule} from "@nestjs/typeorm";
 import {entities} from "./entities";
+import { UsersController } from './services/users/users.controller';
+import { UsersService } from './services/users/users.service';
+import { PermissionsService } from './services/permissions/permissions.service';
+import { PermissionsController } from './services/permissions/permissions.controller';
+import { RolesController } from './services/roles/roles.controller';
+import { RolesService } from './services/roles/roles.service';
+import {JwtService} from "src/services/JWT/jwt.service";
+import {AuthGuard} from "src/middlewares/auth.middleware";
+import {IsUniqueEmailConstraint} from "src/common/validators/unique-email.validator";
 
 @Module({
 imports: [ConfigModule.forRoot({
@@ -22,7 +31,7 @@ imports: [ConfigModule.forRoot({
     }),
     TypeOrmModule.forFeature(entities),
 ],
-controllers: [AppController],
-providers: [AppService],
+controllers: [AppController, UsersController, PermissionsController, RolesController],
+providers: [JwtService, AuthGuard, AppService, IsUniqueEmailConstraint, UsersService, PermissionsService, RolesService],
 })
 export class AppModule {}
