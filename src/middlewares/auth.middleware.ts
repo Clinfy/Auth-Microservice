@@ -1,8 +1,9 @@
 import {
     CanActivate,
-    ExecutionContext, ForbiddenException,
+    ExecutionContext,
+    ForbiddenException,
     Injectable,
-    UnauthorizedException
+    UnauthorizedException,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { RequestWithUser } from 'src/interfaces/request-user';
@@ -13,50 +14,52 @@ import { Permissions } from './decorators/permissions.decorator';
 @Injectable()
 export class AuthGuard implements CanActivate {
     constructor(
-        private jwtService: JwtService,
-        private usersService: UsersService,
-        private reflector:Reflector
+        private readonly jwtService: JwtService,
+        private readonly usersService: UsersService,
+        private readonly reflector: Reflector,
     ) {}
+
     async canActivate(context: ExecutionContext): Promise<boolean> {
-        try {
-            const request: RequestWithUser = context.switchToHttp().getRequest();
+        const request: RequestWithUser = context.switchToHttp().getRequest();
 
-            // @ts-ignore
-            const token = request.headers.authorization.replace('Bearer ','');
-            if (token == null) {
-                throw new UnauthorizedException('Token does not exist');
-            }
-            const payload = this.jwtService.getPayload(token);
-            const user = await this.usersService.findByEmail(payload.email);
-            request.user = user;
-
-            if(!user.active) throw new UnauthorizedException('This user is not active')
-
-            //AGREGAR LOGICA PARA USAR LOS PERMISOS QUE VIENEN EN EL DECORADOR
-            const permissions = this.reflector.get(Permissions, context.getHandler());
-
-            if (!permissions || permissions.length === 0) {
-                return true;
-            }
-
-            const userPermissions = user.permissionCodes;
-            //console.log(userPermissions)
-            const hasAllPermissions = permissions.every((permission) => userPermissions.includes(permission));
-
-            if (!hasAllPermissions){
-                throw new ForbiddenException("Insufficient permissions");
-            }
-
-            return true;
-
-        } catch (error) {
-            if (error instanceof ForbiddenException) {
-                throw new ForbiddenException(error.message);
-            } else if (error instanceof UnauthorizedException) {
-                throw new UnauthorizedException(error.message);
-            } else {
-                throw new UnauthorizedException('An unexpected error occurred.');
-            }
+        const authorizationHeader = request.headers?.authorization;
+        if (typeof authorizationHeader !== 'string' || authorizationHeader.trim().length === 0) {
+            throw new UnauthorizedException('Authorization header missing');
         }
+
+        const [scheme, token] = authorizationHeader.trim().split(/\s+/);
+        if (!/^Bearer$/i.test(scheme) || !token) {
+            throw new UnauthorizedException('Invalid authorization header format');
+        }
+
+        const payload = await this.jwtService.getPayload(token.trim());
+        const user = await this.usersService.findByEmail(payload.email);
+        if (!user) {
+            throw new UnauthorizedException('Wrong email or password');
+        }
+
+        if (!user.active) {
+            throw new UnauthorizedException('This user is not active');
+        }
+
+        request.user = user;
+
+        const permissions = this.reflector.getAllAndOverride<string[]>(Permissions, [
+            context.getHandler(),
+            context.getClass(),
+        ]);
+
+        if (!permissions || permissions.length === 0) {
+            return true;
+        }
+
+        const userPermissions = user.permissionCodes;
+        const hasAllPermissions = permissions.every(permission => userPermissions.includes(permission));
+
+        if (!hasAllPermissions) {
+            throw new ForbiddenException('Insufficient permissions');
+        }
+
+        return true;
     }
 }
