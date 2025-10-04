@@ -19,11 +19,14 @@ export class UserEntity extends BaseEntity implements UserI {
     @PrimaryGeneratedColumn()
     id: number;
 
-    @Column()
+    @Column({nullable: false})
     email: string;
 
-    @Column()
+    @Column({nullable: false})
     password: string;
+
+    @Column({ default: true, nullable: false})
+    active: boolean;
 
     @ManyToMany(()=> RoleEntity, role => role.users,
         {nullable: true, eager: true, onDelete: "RESTRICT", onUpdate: "CASCADE"})
