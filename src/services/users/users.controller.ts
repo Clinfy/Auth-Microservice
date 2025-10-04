@@ -14,8 +14,8 @@ import {AuthInterface} from "src/interfaces/auth.interface";
 export class UsersController {
     constructor(private readonly userService: UsersService) {}
 
-    //@UseGuards(AuthGuard)
-    //@Permissions(['USERS_CREATE'])
+    @UseGuards(AuthGuard)
+    @Permissions(['USERS_CREATE'])
     @ApiOperation({summary: 'Create a new user'})
     @ApiBearerAuth()
     @ApiCreatedResponse({schema: {type: 'object', properties: { message: { type: 'string' }}}})
