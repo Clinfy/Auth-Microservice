@@ -14,13 +14,13 @@ import {AuthInterface} from "src/interfaces/auth.interface";
 export class UsersController {
     constructor(private readonly userService: UsersService) {}
 
-    @UseGuards(AuthGuard)
-    @Permissions(['USERS_CREATE'])
+    //@UseGuards(AuthGuard)
+    //@Permissions(['USERS_CREATE'])
     @ApiOperation({summary: 'Create a new user'})
     @ApiBearerAuth()
-    @ApiCreatedResponse({type: UserEntity})
+    @ApiCreatedResponse({schema: {type: 'object', properties: { message: { type: 'string' }}}})
     @Post('register')
-    register(@Body() dto: RegisterUserDTO): Promise<UserEntity> {
+    register(@Body() dto: RegisterUserDTO): Promise<{ message: string }> {
         return this.userService.register(dto);
     }
 

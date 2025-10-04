@@ -36,11 +36,11 @@ export class UsersService {
         return result;
     }
 
-    async register(dto: RegisterUserDTO): Promise<UserEntity> {
+    async register(dto: RegisterUserDTO): Promise<{ message: string }> {
         return this.dataSource.transaction(async manager => {
             const transactionalRepository = manager.getRepository(UserEntity);
-            const user = transactionalRepository.create(dto);
-            return transactionalRepository.save(user);
+            const user = await transactionalRepository.save(transactionalRepository.create(dto));
+            return {message: `User ${user.email} created`};
         });
     }
 
