@@ -20,6 +20,7 @@ export class AuthGuard implements CanActivate {
     async canActivate(context: ExecutionContext): Promise<boolean> {
         try {
             const request: RequestWithUser = context.switchToHttp().getRequest();
+
             // @ts-ignore
             const token = request.headers.authorization.replace('Bearer ','');
             if (token == null) {
@@ -28,6 +29,8 @@ export class AuthGuard implements CanActivate {
             const payload = this.jwtService.getPayload(token);
             const user = await this.usersService.findByEmail(payload.email);
             request.user = user;
+
+            if(!user.active) throw new UnauthorizedException('This user is not active')
 
             //AGREGAR LOGICA PARA USAR LOS PERMISOS QUE VIENEN EN EL DECORADOR
             const permissions = this.reflector.get(Permissions, context.getHandler());
