@@ -6,3 +6,10 @@ export class AssignPermissionDTO {
     @IsArray({ message: 'This field must be an array'})
     permissionIds: number[];
 }
+
+export class AssignRoleDTO {
+    @IsNotEmpty({ message: 'This field is required'})
+    @IsNumber({}, { each: true, message: 'Each value must be a number'})
+    @IsArray({ message: 'This field must be an array'})
+    rolesIds: number[];
+}
