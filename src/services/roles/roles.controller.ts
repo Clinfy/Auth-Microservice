@@ -37,7 +37,7 @@ export class RolesController {
     @ApiOkResponse({type: RoleEntity})
     @ApiNotFoundResponse({description: 'Role not found'})
     @ApiNotFoundResponse({description: 'Permission not found'})
-    @Patch('edit/:id')
+    @Patch('assign-permissions/:id')
     assignPermissions(@Param('id') id: number, @Body() dto: AssignPermissionDTO): Promise<RoleEntity> {
         return this.rolesService.assignPermissions(id, dto);
     }
