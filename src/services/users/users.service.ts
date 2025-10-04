@@ -31,7 +31,7 @@ export class UsersService {
     async canDo(user: UserI, permissionCode: string): Promise<boolean> {
         const result = user.permissionCodes.includes(permissionCode);
         if (!result) {
-            throw new UnauthorizedException('No cuenta con permisos suficientes para realizar esa acción');
+            throw new UnauthorizedException('You do not have permission to perform this action');
         }
         return result;
     }
