@@ -1,9 +1,22 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import {DocumentBuilder, SwaggerModule} from "@nestjs/swagger";
+import {useContainer} from "class-validator";
+import {ValidationPipe} from "@nestjs/common";
 
 async function bootstrap() {
-    const app = await NestFactory.create(AppModule);
+    const app = await NestFactory.create(AppModule, {bufferLogs: true});
+
+    //Logs
+    useContainer(app.select(AppModule), { fallbackOnErrors: true }); // <—
+    app.useGlobalPipes(new ValidationPipe({
+        whitelist: true,
+        forbidNonWhitelisted: true,
+        transform: true,
+        transformOptions:
+            { enableImplicitConversion: true
+            },
+    }));
 
   //Swagger
     const config = new DocumentBuilder()
