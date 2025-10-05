@@ -3,6 +3,7 @@ import { AppModule } from './app.module';
 import {DocumentBuilder, SwaggerModule} from "@nestjs/swagger";
 import {useContainer} from "class-validator";
 import {ValidationPipe} from "@nestjs/common";
+import {writeFileSync} from "node:fs";
 
 async function bootstrap() {
     const app = await NestFactory.create(AppModule, {bufferLogs: true});
@@ -27,6 +28,7 @@ async function bootstrap() {
         .build();
 
     const document = SwaggerModule.createDocument(app, config);
+    writeFileSync('./openapi.json', JSON.stringify(document, null, 2));
     SwaggerModule.setup('docs', app, document);
 
     await app.listen(process.env.PORT ?? 3000);
