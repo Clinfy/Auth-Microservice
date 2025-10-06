@@ -1,7 +1,7 @@
 import {Body, Controller, Get, Param, Post, Req, UseGuards} from '@nestjs/common';
 import {AuthGuard} from "src/middlewares/auth.middleware";
 import {Permissions} from "src/middlewares/decorators/permissions.decorator";
-import {ApiBearerAuth, ApiCreatedResponse, ApiNotFoundResponse, ApiOkResponse, ApiOperation} from "@nestjs/swagger";
+import {ApiBearerAuth, ApiCreatedResponse, ApiHeader, ApiNotFoundResponse, ApiOkResponse, ApiOperation} from "@nestjs/swagger";
 import * as requestUser from "src/interfaces/request-user";
 import {UsersService} from "src/services/users/users.service";
 import {UserEntity} from "src/entities/user.entity";
@@ -9,15 +9,16 @@ import {RegisterUserDTO} from "src/interfaces/DTO/register.dto";
 import {LoginDTO} from "src/interfaces/DTO/login.dto";
 import {AssignRoleDTO} from "src/interfaces/DTO/assign.dto";
 import {AuthInterface} from "src/interfaces/auth.interface";
+import {ApiKeyGuard} from "src/middlewares/api-key.middleware";
 
 @Controller('users')
 export class UsersController {
     constructor(private readonly userService: UsersService) {}
 
-    @UseGuards(AuthGuard)
+    @UseGuards(ApiKeyGuard)
     @Permissions(['USERS_CREATE'])
+    @ApiHeader({ name: 'x-api-key', required: true })
     @ApiOperation({summary: 'Create a new user'})
-    @ApiBearerAuth()
     @ApiCreatedResponse({schema: {type: 'object', properties: { message: { type: 'string' }}}})
     @Post('register')
     register(@Body() dto: RegisterUserDTO): Promise<{ message: string }> {

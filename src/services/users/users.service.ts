@@ -80,12 +80,7 @@ export class UsersService {
 
     async assignRole(id: number, dto: AssignRoleDTO): Promise<UserEntity> {
         const user = await this.findOne(id);
-        const uniqueRoleIds = [...new Set(dto.rolesIds)];
-        if (uniqueRoleIds.length === 0) {
-            user.roles = [];
-            return this.userRepository.save(user);
-        }
-        user.roles = await Promise.all(uniqueRoleIds.map(roleId => this.roleService.findOne(roleId)));
+        user.roles = await Promise.all(dto.rolesIds.map(roleId => this.roleService.findOne(roleId)));
         return this.userRepository.save(user);
     }
 
