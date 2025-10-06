@@ -1,7 +1,7 @@
 {
-  "name": "clinify-users-microservice",
-  "version": "0.0.1",
-  "description": "Microservice for users, permissions, roles and authentication.",
+  "name": "clinfy-auth-microservice",
+  "version": "1.0.0",
+  "description": "Microservice for users, API, permissions, roles and authentication.",
   "author": "Agustín Liendo Ortiz",
   "private": true,
   "license": "UNLICENSED",
