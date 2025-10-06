@@ -2,9 +2,8 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { compare, hash } from 'bcrypt';
 import { randomBytes } from 'crypto';
-import { In, Repository } from 'typeorm';
+import { Repository } from 'typeorm';
 import { ApiKeyEntity } from 'src/entities/api-key.entity';
-import { PermissionEntity } from 'src/entities/permission.entity';
 import { CreateApiKeyDTO } from 'src/interfaces/DTO/api-key.dto';
 import {PermissionsService} from "src/services/permissions/permissions.service";
 
