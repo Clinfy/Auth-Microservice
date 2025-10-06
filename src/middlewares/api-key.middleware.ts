@@ -20,7 +20,7 @@ export class ApiKeyGuard implements CanActivate {
 
     async canActivate(context: ExecutionContext): Promise<boolean> {
         const request: RequestWithApiKey = context.switchToHttp().getRequest();
-        const rawApiKey = this.extractApiKey(request);
+        const rawApiKey = extractApiKey(request);
 
         const apiKey = await this.apiKeysService.findActiveByPlainKey(rawApiKey);
         if (!apiKey) {
@@ -49,17 +49,19 @@ export class ApiKeyGuard implements CanActivate {
         return true;
     }
 
-    private extractApiKey(request: Request): string {
-        const headerValue = request.headers['x-api-key'];
 
-        if (Array.isArray(headerValue)) {
-            throw new UnauthorizedException('API key header must be a single value');
-        }
+}
 
-        if (typeof headerValue !== 'string' || headerValue.trim().length === 0) {
-            throw new UnauthorizedException('API key header missing');
-        }
+export function extractApiKey(request: Request): string {
+    const headerValue = request.headers['x-api-key'];
 
-        return headerValue.trim();
+    if (Array.isArray(headerValue)) {
+        throw new UnauthorizedException('API key header must be a single value');
     }
+
+    if (typeof headerValue !== 'string' || headerValue.trim().length === 0) {
+        throw new UnauthorizedException('API key header missing');
+    }
+
+    return headerValue.trim();
 }
