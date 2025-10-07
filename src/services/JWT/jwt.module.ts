@@ -4,7 +4,6 @@ import { JwtService } from 'src/services/JWT/jwt.service';
 import { AuthGuard } from 'src/middlewares/auth.middleware';
 import { ApiKeyGuard } from 'src/middlewares/api-key.middleware';
 import { ApiKeysModule } from 'src/services/api-keys/api-keys.module';
-import { UsersService } from 'src/services/users/users.service';
 
 @Module({
   imports: [
