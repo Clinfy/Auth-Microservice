@@ -5,18 +5,17 @@ import {
     Injectable,
     UnauthorizedException,
 } from '@nestjs/common';
-import { Reflector } from '@nestjs/core';
+import { ModuleRef, Reflector } from '@nestjs/core';
 import { RequestWithUser } from 'src/interfaces/request-user';
 import { JwtService } from 'src/services/JWT/jwt.service';
-import { UsersService } from 'src/services/users/users.service';
 import { Permissions } from './decorators/permissions.decorator';
 
 @Injectable()
 export class AuthGuard implements CanActivate {
     constructor(
         private readonly jwtService: JwtService,
-        private readonly usersService: UsersService,
         private readonly reflector: Reflector,
+        private readonly moduleRef: ModuleRef,
     ) {}
 
     async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -33,7 +32,9 @@ export class AuthGuard implements CanActivate {
         }
 
         const payload = await this.jwtService.getPayload(token.trim(), 'auth');
-        const user = await this.usersService.findByEmail(payload.email);
+        // Resolve UsersService lazily to avoid static module import dependencies
+        const usersService = this.moduleRef.get<any>('UsersService', { strict: false });
+        const user = await usersService.findByEmail(payload.email);
         if (!user) {
             throw new UnauthorizedException('Wrong email or password');
         }
