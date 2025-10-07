@@ -32,7 +32,7 @@ export class AuthGuard implements CanActivate {
             throw new UnauthorizedException('Invalid authorization header format');
         }
 
-        const payload = await this.jwtService.getPayload(token.trim());
+        const payload = await this.jwtService.getPayload(token.trim(), 'auth');
         const user = await this.usersService.findByEmail(payload.email);
         if (!user) {
             throw new UnauthorizedException('Wrong email or password');

@@ -70,7 +70,7 @@ export class JwtService {
         }
     }
 
-    async getPayload(token: string, type: TokenType = 'auth'): Promise<Payload> {
+    async getPayload(token: string, type: TokenType): Promise<Payload> {
         const { secret } = this.configByType[type];
 
         try {
