@@ -1,10 +1,10 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { compare, hash } from 'bcrypt';
-import { randomBytes } from 'crypto';
-import { Repository } from 'typeorm';
-import { ApiKeyEntity } from 'src/entities/api-key.entity';
-import { CreateApiKeyDTO } from 'src/interfaces/DTO/api-key.dto';
+import {Injectable, NotFoundException} from '@nestjs/common';
+import {InjectRepository} from '@nestjs/typeorm';
+import {compare, hash} from 'bcrypt';
+import {randomBytes} from 'crypto';
+import {Repository} from 'typeorm';
+import {ApiKeyEntity} from 'src/entities/api-key.entity';
+import {CreateApiKeyDTO} from 'src/interfaces/DTO/api-key.dto';
 import {PermissionsService} from "src/services/permissions/permissions.service";
 
 @Injectable()
@@ -20,7 +20,7 @@ export class ApiKeysService {
         const permissions = await Promise.all(dto.permissionIds.map(id => this.permissionService.findOne(id)));
 
         const plainApiKey = this.generatePlainKey();
-        const hashedApiKey = await hash(this.generatePlainKey(), 10);
+        const hashedApiKey = await hash(plainApiKey, 10);
 
         const apiKeyEntity = this.apiKeyRepository.create({
             client: dto.client,
@@ -66,7 +66,7 @@ export class ApiKeysService {
         return apiKey.permissionCodes.includes(permissionCode)
     }
 
-    async findActiveByPlainKey(rawApiKey: string): Promise<ApiKeyEntity | null> {
+    async findActiveByPlainKey(rawApiKey: string): Promise<ApiKeyEntity> {
         const activeKeys = await this.apiKeyRepository.find({
             where: { active: true },
             relations: ['permissions'],
@@ -79,10 +79,10 @@ export class ApiKeysService {
             }
         }
 
-        return null;
+        throw new NotFoundException('API key not found or inactive');
     }
 
     private generatePlainKey(): string {
-        return randomBytes(32).toString('hex');
+        return randomBytes(32).toString('hex')
     }
 }
