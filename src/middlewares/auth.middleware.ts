@@ -54,7 +54,7 @@ export class AuthGuard implements CanActivate {
         }
 
         const userPermissions = user.permissionCodes;
-        const hasAllPermissions = permissions.every(permission => userPermissions.includes(permission));
+        const hasAllPermissions = permissions.some(permission => userPermissions.includes(permission));
 
         if (!hasAllPermissions) {
             throw new ForbiddenException('Insufficient permissions');
