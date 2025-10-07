@@ -1,7 +1,8 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import axios from 'axios';
 import { EmailBody } from 'src/interfaces/clients/email-body.interface';
+import { propagateAxiosError } from 'src/common/tools/propagate-axios-error';
 
 @Injectable()
 export class EmailService {
@@ -40,7 +41,7 @@ export class EmailService {
       },
     }).catch(error => {
       console.error('Error sending email:', error);
-      throw new BadRequestException('Failed to send email');
+      propagateAxiosError(error);
     })
   }
 }
