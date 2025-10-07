@@ -3,7 +3,6 @@ import { ConfigService } from '@nestjs/config';
 import axios from 'axios';
 import { EmailBody } from 'src/interfaces/clients/email-body.interface';
 import { propagateAxiosError } from 'src/common/tools/propagate-axios-error';
-import { htmlTemplateString } from '@nestjs/swagger/dist/swagger-ui/constants';
 import { TemplateService } from 'src/clients/email/template.service';
 
 @Injectable()
