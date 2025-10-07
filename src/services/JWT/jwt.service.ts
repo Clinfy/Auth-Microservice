@@ -28,7 +28,7 @@ export class JwtService {
             },
           resetPassword: {
               secret: this.configService.get<string>('JWT_RESET_PASSWORD_SECRET', 'refreshSecret'),
-              expiresIn: this.configService.get<string>('JWT_RESET_PASSWORD_EXPIRES_IN', '15m'),
+              expiresIn: this.configService.get<string>('JWT_RESET_PASSWORD_EXPIRES_IN', '5m'),
           }
         };
 
