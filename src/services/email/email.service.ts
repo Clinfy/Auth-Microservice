@@ -16,7 +16,7 @@ export class EmailService {
 
     const recipient = [email];
     const subject = 'Reset Password of your Clinfy Account';
-    const html = `Click the link below to reset your Clinfy password: ${resetPasswordUrl} \nthis link will expire in 15 minutes`;
+    const html = `Click the link below to reset your Clinfy password: ${resetPasswordUrl} \nthis link will expire in 5 minutes`;
 
     await this.sendMail({recipient,subject,html});
   }
