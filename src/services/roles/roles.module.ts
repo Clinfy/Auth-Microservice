@@ -1,8 +1,7 @@
-import { forwardRef, Module } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { RolesService } from 'src/services/roles/roles.service';
 import { RolesController } from 'src/services/roles/roles.controller';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { UsersModule } from 'src/services/users/users.module';
 import { PermissionsModule } from 'src/services/permissions/permissions.module';
 import { RoleEntity } from 'src/entities/role.entity';
 import { JwtModule } from 'src/services/JWT/jwt.module';
@@ -10,8 +9,7 @@ import { JwtModule } from 'src/services/JWT/jwt.module';
 @Module({
   imports: [
     TypeOrmModule.forFeature([RoleEntity]),
-    forwardRef(()=>PermissionsModule),
-    forwardRef(()=>UsersModule),
+    PermissionsModule,
     JwtModule
   ],
   controllers: [RolesController],
