@@ -3,7 +3,6 @@ import { ApiBearerAuth, ApiCreatedResponse, ApiOkResponse, ApiOperation } from '
 import { ApiKeyEntity } from 'src/entities/api-key.entity';
 import { Permissions } from 'src/middlewares/decorators/permissions.decorator';
 import { AuthGuard } from 'src/middlewares/auth.middleware';
-import { extractApiKey } from "src/middlewares/api-key.middleware";
 import { CreateApiKeyDTO } from 'src/interfaces/DTO/api-key.dto';
 import { ApiKeysService } from './api-keys.service';
 import * as requestWithApi from "src/interfaces/request-api-key";
@@ -17,7 +16,7 @@ export class ApiKeysController {
     @ApiOkResponse({ type: Boolean })
     @Get('can-do/:permission')
     canDo(@Req()request: requestWithApi.RequestWithApiKey ,@Param('permission') permission: string): Promise<boolean> {
-        return this.apiKeysService.canDo(extractApiKey(request), permission);
+        return this.apiKeysService.canDo(request, permission);
     }
 
     @UseGuards(AuthGuard)
