@@ -1,4 +1,10 @@
-import { Injectable, InternalServerErrorException, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  InternalServerErrorException,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
 import { UserEntity } from 'src/entities/user.entity';
 import { DataSource, Repository } from 'typeorm';
@@ -93,7 +99,10 @@ export class UsersService {
     async forgotPassword(dto: ForgotPasswordDTO): Promise<{ message: string }> {
       const user = await this.findByEmail(dto.email);
       if (user) {
-        await this.emailService.sendResetPasswordMail(dto.email);
+        const token = await this.jwtService.generateToken({email: dto.email},'resetPassword')
+        user.passResetToken = token
+        await this.userRepository.save(user)
+        await this.emailService.sendResetPasswordMail(dto.email, token);
       }
       
       return {message: 'If the email exists, a reset password link will be sent to it.'}
@@ -106,7 +115,12 @@ export class UsersService {
         throw new UnauthorizedException('Invalid or expired token');
       }
 
+      if (user.passResetToken!=token) {
+        throw new ForbiddenException('Password already changed')
+      }
+
       user.password = dto.password;
+      user.passResetToken = null;
       await this.userRepository.save(user);
       return {message: 'Password reset successfully'}
     }

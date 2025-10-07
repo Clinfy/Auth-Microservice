@@ -28,6 +28,9 @@ export class UserEntity extends BaseEntity implements UserI {
     @Column({ default: true, nullable: false})
     active: boolean;
 
+    @Column({type: "varchar", default: null, nullable: true})
+    passResetToken:string|null = null
+
     @ManyToMany(()=> RoleEntity, role => role.users,
         {nullable: true, eager: true, onDelete: "RESTRICT", onUpdate: "CASCADE"})
     @JoinTable()

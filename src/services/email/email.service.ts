@@ -1,5 +1,4 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { JwtService } from 'src/services/JWT/jwt.service';
 import { ConfigService } from '@nestjs/config';
 import axios from 'axios';
 import { EmailBody } from 'src/interfaces/clients/email-body.interface';
@@ -7,13 +6,10 @@ import { EmailBody } from 'src/interfaces/clients/email-body.interface';
 @Injectable()
 export class EmailService {
   constructor(
-    private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
   ) {}
 
-  async sendResetPasswordMail(email: string) {
-    const payload = { email };
-    const token = await this.jwtService.generateToken(payload,'resetPassword')
+  async sendResetPasswordMail(email: string, token: string) {
 
     const resetPasswordUrl = `${this.configService.get('FRONTEND_URL')}/reset-password?token=${token}`;
 
