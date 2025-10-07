@@ -20,7 +20,7 @@ import {
   ForgotPasswordDTO,
   ResetPasswordDTO,
 } from 'src/interfaces/DTO/reset-password.dto';
-import { EmailService } from 'src/services/email/email.service';
+import { EmailService } from 'src/clients/email/email.service';
 
 @Injectable()
 export class UsersService {
