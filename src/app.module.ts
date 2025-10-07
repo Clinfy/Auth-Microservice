@@ -16,6 +16,7 @@ import { IsUniqueEmailConstraint } from "src/common/validators/unique-email.vali
 import { ApiKeyGuard } from "src/middlewares/api-key.middleware";
 import { ApiKeysController } from './services/api-keys/api-keys.controller';
 import { ApiKeysService } from './services/api-keys/api-keys.service';
+import { EmailService } from 'src/services/email/email.service';
 
 @Module({
 imports: [ConfigModule.forRoot({
@@ -35,6 +36,6 @@ imports: [ConfigModule.forRoot({
     TypeOrmModule.forFeature(entities),
 ],
 controllers: [AppController, UsersController, PermissionsController, RolesController, ApiKeysController],
-providers: [JwtService, AuthGuard, ApiKeyGuard, AppService, IsUniqueEmailConstraint, UsersService, PermissionsService, RolesService, ApiKeysService],
+providers: [JwtService, AuthGuard, ApiKeyGuard, AppService, IsUniqueEmailConstraint, UsersService, PermissionsService, RolesService, ApiKeysService, EmailService],
 })
 export class AppModule {}

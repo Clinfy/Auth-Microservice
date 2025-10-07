@@ -13,7 +13,7 @@ export class EmailService {
 
   async sendResetPasswordMail(email: string) {
     const payload = { email };
-    const token = this.jwtService.generateToken(payload,'resetPassword')
+    const token = await this.jwtService.generateToken(payload,'resetPassword')
 
     const resetPasswordUrl = `${this.configService.get('FRONTEND_URL')}/reset-password?token=${token}`;
 
@@ -24,7 +24,9 @@ export class EmailService {
     const body = {recipient,subject,html} as EmailBody;
 
     await axios.post(`${this.configService.get('EMAIL_API_URL')}/email/send`, {
-      body
+      recipient: body.recipient,
+      subject: body.subject,
+      html: body.html,
     }, {
       headers: {
         'Content-Type': 'application/json',
