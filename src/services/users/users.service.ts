@@ -10,6 +10,11 @@ import { LoginDTO } from 'src/interfaces/DTO/login.dto';
 import { AuthInterface } from 'src/interfaces/auth.interface';
 import { AssignRoleDTO } from 'src/interfaces/DTO/assign.dto';
 import { RolesService } from 'src/services/roles/roles.service';
+import {
+  ForgotPasswordDTO,
+  ResetPasswordDTO,
+} from 'src/interfaces/DTO/reset-password.dto';
+import { EmailService } from 'src/services/email/email.service';
 
 @Injectable()
 export class UsersService {
@@ -22,6 +27,7 @@ export class UsersService {
 
         private readonly jwtService: JwtService,
         private readonly roleService: RolesService,
+        private readonly emailService: EmailService,
     ) {}
 
     async refreshToken(refreshToken: string): Promise<AuthInterface> {
@@ -82,6 +88,27 @@ export class UsersService {
         const user = await this.findOne(id);
         user.roles = await Promise.all(dto.rolesIds.map(roleId => this.roleService.findOne(roleId)));
         return this.userRepository.save(user);
+    }
+    
+    async forgotPassword(dto: ForgotPasswordDTO): Promise<{ message: string }> {
+      const user = await this.findByEmail(dto.email);
+      if (user) {
+        await this.emailService.sendResetPasswordMail(dto.email);
+      }
+      
+      return {message: 'If the email exists, a reset password link will be sent to it.'}
+    }
+    
+    async resetPassword(token: string, dto: ResetPasswordDTO): Promise<{ message: string }> {
+      const payload = await this.jwtService.getPayload(token, 'resetPassword');
+      const user = await this.findByEmail(payload.email);
+      if (!user) {
+        throw new UnauthorizedException('Invalid or expired token');
+      }
+
+      user.password = dto.password;
+      await this.userRepository.save(user);
+      return {message: 'Password reset successfully'}
     }
 
     private async findOne(id: number): Promise<UserEntity> {
