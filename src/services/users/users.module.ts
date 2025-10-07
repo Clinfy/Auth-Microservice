@@ -7,15 +7,17 @@ import { UserEntity } from 'src/entities/user.entity';
 import { JwtModule } from 'src/services/JWT/jwt.module';
 import { IsUniqueEmailConstraint } from 'src/common/validators/unique-email.validator';
 import { RolesModule } from 'src/services/roles/roles.module';
+import { EmailModule } from 'src/clients/email/email.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([UserEntity]),
     RolesModule,
     JwtModule,
+    EmailModule,
   ],
   controllers: [UsersController],
-  providers: [UsersService, EmailService, IsUniqueEmailConstraint],
+  providers: [UsersService, IsUniqueEmailConstraint],
   exports: [UsersService]
 })
 
