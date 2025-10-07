@@ -24,7 +24,7 @@ export class EmailService {
 
     const recipient = [email];
 
-    const subject = `Reset Password of your ${data.APP_URL} Account`;
+    const subject = `Reset Password of your ${data.APP_NAME} Account`;
     const text = `Click the link below to reset your ${data.APP_NAME} password: \n ${data.RESET_URL} \n this link will expire in 5 minutes`;
 
     const template = await this.templateService.loadTemplate("send-reset.template.html")
