@@ -4,18 +4,12 @@ import { AppService } from './app.service';
 import { ConfigModule, ConfigService } from "@nestjs/config";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { entities } from "./entities";
-import { UsersController } from './services/users/users.controller';
-import { UsersService } from './services/users/users.service';
-import { PermissionsService } from './services/permissions/permissions.service';
-import { PermissionsController } from './services/permissions/permissions.controller';
-import { RolesController } from './services/roles/roles.controller';
-import { RolesService } from './services/roles/roles.service';
-import { JwtService } from "src/services/JWT/jwt.service";
-import { AuthGuard } from "src/middlewares/auth.middleware";
-import { IsUniqueEmailConstraint } from "src/common/validators/unique-email.validator";
-import { ApiKeyGuard } from "src/middlewares/api-key.middleware";
-import { ApiKeysController } from './services/api-keys/api-keys.controller';
-import { ApiKeysService } from './services/api-keys/api-keys.service';
+import { PermissionsModule } from './services/permissions/permissions.module';
+import { ApiKeysModule } from 'src/services/api-keys/api-keys.module';
+import { UsersModule } from 'src/services/users/users.module';
+import { RolesModule } from 'src/services/roles/roles.module';
+import { JwtModule } from 'src/services/JWT/jwt.module';
+import { EmailModule } from 'src/clients/email/email.module';
 
 @Module({
 imports: [ConfigModule.forRoot({
@@ -33,8 +27,14 @@ imports: [ConfigModule.forRoot({
         }),
     }),
     TypeOrmModule.forFeature(entities),
+    PermissionsModule,
+    ApiKeysModule,
+    UsersModule,
+    RolesModule,
+    JwtModule,
+    EmailModule
 ],
-controllers: [AppController, UsersController, PermissionsController, RolesController, ApiKeysController],
-providers: [JwtService, AuthGuard, ApiKeyGuard, AppService, IsUniqueEmailConstraint, UsersService, PermissionsService, RolesService, ApiKeysService],
+controllers: [AppController],
+providers: [AppService],
 })
 export class AppModule {}

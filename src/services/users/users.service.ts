@@ -1,4 +1,10 @@
-import { Injectable, InternalServerErrorException, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  InternalServerErrorException,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
 import { UserEntity } from 'src/entities/user.entity';
 import { DataSource, Repository } from 'typeorm';
@@ -10,6 +16,11 @@ import { LoginDTO } from 'src/interfaces/DTO/login.dto';
 import { AuthInterface } from 'src/interfaces/auth.interface';
 import { AssignRoleDTO } from 'src/interfaces/DTO/assign.dto';
 import { RolesService } from 'src/services/roles/roles.service';
+import {
+  ForgotPasswordDTO,
+  ResetPasswordDTO,
+} from 'src/interfaces/DTO/reset-password.dto';
+import { EmailService } from 'src/clients/email/email.service';
 
 @Injectable()
 export class UsersService {
@@ -22,6 +33,7 @@ export class UsersService {
 
         private readonly jwtService: JwtService,
         private readonly roleService: RolesService,
+        private readonly emailService: EmailService,
     ) {}
 
     async refreshToken(refreshToken: string): Promise<AuthInterface> {
@@ -82,6 +94,36 @@ export class UsersService {
         const user = await this.findOne(id);
         user.roles = await Promise.all(dto.rolesIds.map(roleId => this.roleService.findOne(roleId)));
         return this.userRepository.save(user);
+    }
+    
+    async forgotPassword(dto: ForgotPasswordDTO): Promise<{ message: string }> {
+      const user = await this.findByEmail(dto.email);
+      if (user) {
+        const token = await this.jwtService.generateToken({email: dto.email},'resetPassword')
+        user.passResetToken = token
+        await this.userRepository.save(user)
+        await this.emailService.sendResetPasswordMail(dto.email, token);
+      }
+      
+      return {message: 'If the email exists, a reset password link will be sent to it.'}
+    }
+    
+    async resetPassword(token: string, dto: ResetPasswordDTO): Promise<{ message: string }> {
+      const payload = await this.jwtService.getPayload(token, 'resetPassword');
+      const user = await this.findByEmail(payload.email);
+      if (!user) {
+        throw new UnauthorizedException('Invalid or expired token');
+      }
+
+      if (user.passResetToken!=token) {
+        throw new ForbiddenException('Password already changed')
+      }
+
+      user.password = dto.password;
+      user.passResetToken = null;
+      await this.userRepository.save(user);
+      await this.emailService.confirmPasswordChange(user.email)
+      return {message: 'Password reset successfully'}
     }
 
     private async findOne(id: number): Promise<UserEntity> {

@@ -1,7 +1,25 @@
-import {Body, Controller, Get, Param, Post, Req, UseGuards} from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Post,
+  Query,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import {AuthGuard} from "src/middlewares/auth.middleware";
 import {Permissions} from "src/middlewares/decorators/permissions.decorator";
-import {ApiBearerAuth, ApiCreatedResponse, ApiHeader, ApiNotFoundResponse, ApiOkResponse, ApiOperation} from "@nestjs/swagger";
+import {
+  ApiBearerAuth,
+  ApiCreatedResponse,
+  ApiHeader,
+  ApiNotFoundResponse,
+  ApiOkResponse,
+  ApiOperation,
+  ApiQuery,
+  ApiUnauthorizedResponse,
+} from '@nestjs/swagger';
 import * as requestUser from "src/interfaces/request-user";
 import {UsersService} from "src/services/users/users.service";
 import {UserEntity} from "src/entities/user.entity";
@@ -9,7 +27,11 @@ import {RegisterUserDTO} from "src/interfaces/DTO/register.dto";
 import {LoginDTO} from "src/interfaces/DTO/login.dto";
 import {AssignRoleDTO} from "src/interfaces/DTO/assign.dto";
 import {AuthInterface} from "src/interfaces/auth.interface";
-import {ApiKeyGuard} from "src/middlewares/api-key.middleware";
+import { ApiKeyGuard } from 'src/middlewares/api-key.middleware';
+import {
+  ForgotPasswordDTO,
+  ResetPasswordDTO,
+} from 'src/interfaces/DTO/reset-password.dto';
 
 @Controller('users')
 export class UsersController {
@@ -67,5 +89,22 @@ export class UsersController {
     @Post('assign-role/:id')
     assignRole(@Param('id') id: number, @Body() dto: AssignRoleDTO): Promise<UserEntity> {
         return this.userService.assignRole(id, dto);
+    }
+
+    @ApiOperation({summary: 'Send an email to reset the password of a user'})
+    @ApiHeader({ name: 'x-api-key', required: true })
+    @ApiOkResponse({schema: {type: 'object', properties: {message: { type: 'string' }}}})
+    @Post('forgot-password')
+    forgotPassword(@Body() dto: ForgotPasswordDTO): Promise<{message: string}> {
+        return this.userService.forgotPassword(dto);
+    }
+
+    @ApiOperation({summary: 'Reset the password of a user'})
+    @ApiQuery({name: 'token', description: 'The token sent to the user\'s email'})
+    @ApiOkResponse({schema: {type: 'object', properties: {message: { type: 'string' }}}})
+    @ApiUnauthorizedResponse({description: 'Invalid or expired token'})
+    @Post('reset-password')
+    resetPassword(@Query('token') token:string, @Body() dto: ResetPasswordDTO): Promise<{message: string}> {
+        return this.userService.resetPassword(token, dto);
     }
 }
