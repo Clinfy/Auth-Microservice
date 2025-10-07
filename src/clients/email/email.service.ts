@@ -3,11 +3,14 @@ import { ConfigService } from '@nestjs/config';
 import axios from 'axios';
 import { EmailBody } from 'src/interfaces/clients/email-body.interface';
 import { propagateAxiosError } from 'src/common/tools/propagate-axios-error';
+import { htmlTemplateString } from '@nestjs/swagger/dist/swagger-ui/constants';
+import { TemplateService } from 'src/clients/email/template.service';
 
 @Injectable()
 export class EmailService {
   constructor(
     private readonly configService: ConfigService,
+    private readonly templateService: TemplateService
   ) {}
 
   async sendResetPasswordMail(email: string, token: string) {
@@ -16,9 +19,22 @@ export class EmailService {
 
     const recipient = [email];
     const subject = 'Reset Password of your Clinfy Account';
-    const html = `Click the link below to reset your Clinfy password: ${resetPasswordUrl} \nthis link will expire in 5 minutes`;
+    const text = `Click the link below to reset your Clinfy password: ${resetPasswordUrl} \nthis link will expire in 5 minutes`;
 
-    await this.sendMail({recipient,subject,html});
+    const template = await this.templateService.loadTemplate("send-reset.template.html")
+
+    const data = {
+      APP_NAME: this.configService.get('APP_NAME'),
+      APP_URL: this.configService.get('FRONTEND_URL'),
+      RESET_URL: resetPasswordUrl,
+      EXPIRES_MINUTES: 5,
+      YEAR: String(new Date().getFullYear()),
+      USER_NAME_PREFIX: email
+    }
+
+    const html = this.templateService.render(template,data)
+
+    await this.sendMail({recipient,subject,html,text});
   }
 
   async confirmPasswordChange(email:string) {
@@ -34,6 +50,7 @@ export class EmailService {
       recipient: body.recipient,
       subject: body.subject,
       html: body.html,
+      text: body.text
     }, {
       headers: {
         'Content-Type': 'application/json',
