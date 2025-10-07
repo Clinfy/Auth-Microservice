@@ -17,7 +17,7 @@ export class EmailService {
       APP_NAME: this.configService.get('APP_NAME'),
       APP_URL: this.configService.get('FRONTEND_URL'),
       RESET_URL: `${this.configService.get('FRONTEND_URL')}/reset-password?token=${token}`,
-      EXPIRES_MINUTES: 5,
+      EXPIRES_MINUTES: this.configService.get('JWT_RESET_PASSWORD_EXPIRES_IN') ?? 5,
       YEAR: String(new Date().getFullYear()),
       USER_NAME_PREFIX: email.split("@")[0]
     }
