@@ -13,24 +13,21 @@ export class EmailService {
   ) {}
 
   async sendResetPasswordMail(email: string, token: string) {
-
-    const resetPasswordUrl = `${this.configService.get('FRONTEND_URL')}/reset-password?token=${token}`;
-
-    const recipient = [email];
-    const subject = 'Reset Password of your Clinfy Account';
-    const text = `Click the link below to reset your Clinfy password: ${resetPasswordUrl} \nthis link will expire in 5 minutes`;
-
-    const template = await this.templateService.loadTemplate("send-reset.template.html")
-
     const data = {
       APP_NAME: this.configService.get('APP_NAME'),
       APP_URL: this.configService.get('FRONTEND_URL'),
-      RESET_URL: resetPasswordUrl,
+      RESET_URL: `${this.configService.get('FRONTEND_URL')}/reset-password?token=${token}`,
       EXPIRES_MINUTES: 5,
       YEAR: String(new Date().getFullYear()),
-      USER_NAME_PREFIX: email
+      USER_NAME_PREFIX: email.split("@")[0]
     }
 
+    const recipient = [email];
+
+    const subject = `Reset Password of your ${data.APP_URL} Account`;
+    const text = `Click the link below to reset your ${data.APP_NAME} password: \n ${data.RESET_URL} \n this link will expire in 5 minutes`;
+
+    const template = await this.templateService.loadTemplate("send-reset.template.html")
     const html = this.templateService.render(template,data)
 
     await this.sendMail({recipient,subject,html,text});
