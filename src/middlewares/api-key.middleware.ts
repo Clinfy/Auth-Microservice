@@ -1,15 +1,9 @@
-import {
-    CanActivate,
-    ExecutionContext,
-    ForbiddenException,
-    Injectable,
-    UnauthorizedException,
-} from '@nestjs/common';
-import { Request } from 'express';
+import {CanActivate, ExecutionContext, ForbiddenException, Injectable, UnauthorizedException} from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { ApiKeysService } from 'src/services/api-keys/api-keys.service';
 import { RequestWithApiKey } from 'src/interfaces/request-api-key';
 import {Permissions} from "src/middlewares/decorators/permissions.decorator";
+import {extractApiKey} from "src/common/tools/extract-api-key";
 
 @Injectable()
 export class ApiKeyGuard implements CanActivate {
@@ -48,20 +42,4 @@ export class ApiKeyGuard implements CanActivate {
 
         return true;
     }
-
-
-}
-
-export function extractApiKey(request: Request): string {
-    const headerValue = request.headers['x-api-key'];
-
-    if (Array.isArray(headerValue)) {
-        throw new UnauthorizedException('API key header must be a single value');
-    }
-
-    if (typeof headerValue !== 'string' || headerValue.trim().length === 0) {
-        throw new UnauthorizedException('API key header missing');
-    }
-
-    return headerValue.trim();
 }
