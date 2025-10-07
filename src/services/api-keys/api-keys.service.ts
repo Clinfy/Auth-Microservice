@@ -1,4 +1,4 @@
-import {Injectable, NotFoundException} from '@nestjs/common';
+import {ForbiddenException, Injectable, NotFoundException} from '@nestjs/common';
 import {InjectRepository} from '@nestjs/typeorm';
 import {compare, hash} from 'bcrypt';
 import {randomBytes} from 'crypto';
@@ -6,6 +6,8 @@ import {Repository} from 'typeorm';
 import {ApiKeyEntity} from 'src/entities/api-key.entity';
 import {CreateApiKeyDTO} from 'src/interfaces/DTO/api-key.dto';
 import {PermissionsService} from "src/services/permissions/permissions.service";
+import {RequestWithApiKey} from "src/interfaces/request-api-key";
+import {extractApiKey} from "src/common/tools/extract-api-key";
 
 @Injectable()
 export class ApiKeysService {
@@ -58,8 +60,8 @@ export class ApiKeysService {
         return { message: `API key ${id} ${apiKey.client} deactivated` };
     }
 
-    async canDo(rawApiKey: string, permissionCode: string): Promise<boolean> {
-        const apiKey = await this.findActiveByPlainKey(rawApiKey);
+    async canDo(rawApiKey: RequestWithApiKey, permissionCode: string): Promise<boolean> {
+        const apiKey = await this.findActiveByPlainKey(extractApiKey(rawApiKey));
         if (!apiKey) {
             return false;
         }
@@ -67,19 +69,17 @@ export class ApiKeysService {
     }
 
     async findActiveByPlainKey(rawApiKey: string): Promise<ApiKeyEntity> {
-        const activeKeys = await this.apiKeyRepository.find({
-            where: { active: true },
-            relations: ['permissions'],
-        });
+        const activeKeys = await this.apiKeyRepository.find({where: { active: true },relations: ['permissions']});
 
         for (const apiKey of activeKeys) {
+
             const isMatch = await compare(rawApiKey, apiKey.key_hash);
-            if (isMatch) {
-                return apiKey;
-            }
+
+            if (isMatch) return apiKey;
+
         }
 
-        throw new NotFoundException('API key not found or inactive');
+        throw new ForbiddenException('Invalid or inactive API key');
     }
 
     private generatePlainKey(): string {
