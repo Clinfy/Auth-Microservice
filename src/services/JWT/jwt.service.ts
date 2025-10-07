@@ -4,7 +4,7 @@ import { sign, verify, SignOptions, JsonWebTokenError, TokenExpiredError, NotBef
 import dayjs from 'dayjs';
 import { Payload } from 'src/interfaces/payload';
 
-type TokenType = 'refresh' | 'auth';
+type TokenType = 'refresh' | 'auth' | 'resetPassword';
 
 type TokenConfig = {
     secret: string;
@@ -26,6 +26,10 @@ export class JwtService {
                 secret: this.configService.get<string>('JWT_REFRESH_SECRET', 'refreshSecret'),
                 expiresIn: this.configService.get<string>('JWT_REFRESH_EXPIRES_IN', '1d'),
             },
+          resetPassword: {
+              secret: this.configService.get<string>('JWT_RESET_PASSWORD_SECRET', 'refreshSecret'),
+              expiresIn: this.configService.get<string>('JWT_RESET_PASSWORD_EXPIRES_IN', '15m'),
+          }
         };
 
         const threshold = Number(this.configService.get<string>('JWT_REFRESH_RENEW_THRESHOLD_MINUTES', '20'));
