@@ -122,6 +122,7 @@ export class UsersService {
       user.password = dto.password;
       user.passResetToken = null;
       await this.userRepository.save(user);
+      await this.emailService.confirmPasswordChange(user.email)
       return {message: 'Password reset successfully'}
     }
 
