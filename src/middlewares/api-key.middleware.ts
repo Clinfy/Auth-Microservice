@@ -3,6 +3,7 @@ import { ModuleRef, Reflector } from '@nestjs/core';
 import { RequestWithApiKey } from 'src/interfaces/request-api-key';
 import {Permissions} from "src/middlewares/decorators/permissions.decorator";
 import {extractApiKey} from "src/common/tools/extract-api-key";
+import { ApiKeysService } from 'src/services/api-keys/api-keys.service';
 
 @Injectable()
 export class ApiKeyGuard implements CanActivate {
@@ -16,7 +17,7 @@ export class ApiKeyGuard implements CanActivate {
         const rawApiKey = extractApiKey(request);
 
         // Resolve ApiKeysService lazily to avoid static module import dependencies
-        const apiKeysService = this.moduleRef.get<any>('ApiKeysService', { strict: false });
+        const apiKeysService = this.moduleRef.get(ApiKeysService, { strict: false });
         const apiKey = await apiKeysService.findActiveByPlainKey(rawApiKey);
         if (!apiKey) {
             throw new UnauthorizedException('Invalid API key');

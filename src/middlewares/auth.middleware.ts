@@ -9,6 +9,7 @@ import { ModuleRef, Reflector } from '@nestjs/core';
 import { RequestWithUser } from 'src/interfaces/request-user';
 import { JwtService } from 'src/services/JWT/jwt.service';
 import { Permissions } from './decorators/permissions.decorator';
+import { UsersService } from 'src/services/users/users.service';
 
 @Injectable()
 export class AuthGuard implements CanActivate {
@@ -33,7 +34,7 @@ export class AuthGuard implements CanActivate {
 
         const payload = await this.jwtService.getPayload(token.trim(), 'auth');
         // Resolve UsersService lazily to avoid static module import dependencies
-        const usersService = this.moduleRef.get<any>('UsersService', { strict: false });
+        const usersService = this.moduleRef.get(UsersService, { strict: false });
         const user = await usersService.findByEmail(payload.email);
         if (!user) {
             throw new UnauthorizedException('Wrong email or password');
