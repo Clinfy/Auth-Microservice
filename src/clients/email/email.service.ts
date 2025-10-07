@@ -34,10 +34,20 @@ export class EmailService {
   }
 
   async confirmPasswordChange(email:string) {
+    const data = {
+      APP_NAME: this.configService.get('APP_NAME'),
+      YEAR: String(new Date().getFullYear()),
+      USER_NAME_PREFIX: email.split("@")[0]
+    }
+
     const recipient = [email];
-    const subject = 'Your password has been changed';
-    const html = `The password of your Clinfy account has been changed, if was you, ignore this message, if is not the case contact us`;
-    await this.sendMail({recipient,subject,html});
+    const subject = `Your password of ${data.APP_NAME} has been changed`;
+    const text  = "Your account password has been changed. If this was you, you can ignore this message; otherwise, please contact us.";
+
+    const template = await this.templateService.loadTemplate("confirm-reset.template.html");
+    const html = this.templateService.render(template,data);
+
+    await this.sendMail({recipient,subject,html,text});
   }
 
   private async sendMail(body: EmailBody) {
