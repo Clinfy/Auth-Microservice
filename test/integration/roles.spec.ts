@@ -27,7 +27,7 @@ describe('RolesService (integration)', () => {
 
     db.public.registerFunction({
       name: 'version',
-      implementation: () => 'PostgreSQL 16.0'
+      implementation: () => 'PostgreSQL 17.6'
     })
 
     dataSource = await db.adapters.createTypeormDataSource({
