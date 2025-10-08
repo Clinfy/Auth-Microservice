@@ -36,7 +36,7 @@ describe('EmailService', () => {
 
     template = {
       loadTemplate: jest.fn().mockResolvedValue('<tpl/>'),
-      render: jest.fn().mockReturnValue('<html/>'),
+      render: jest.fn().mockReturnValue('<html lang="en"/>'),
     } as any;
 
     consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => undefined);
@@ -66,7 +66,7 @@ describe('EmailService', () => {
       expect.objectContaining({
         recipient: ['user@example.com'],
         subject: expect.stringContaining('AuthApp'),
-        html: '<html/>',
+        html: '<html lang="en"/>',
       }),
       expect.objectContaining({
         headers: expect.objectContaining({ 'x-api-key': 'secret' }),

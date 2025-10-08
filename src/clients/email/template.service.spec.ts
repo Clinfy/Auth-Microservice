@@ -17,10 +17,10 @@ describe('TemplateService', () => {
   });
 
   it('loads template from disk and caches it', async () => {
-    readFileMock.mockResolvedValueOnce('<html>');
+    readFileMock.mockResolvedValueOnce('<html lang="en">');
 
-    await expect(service.loadTemplate('file.html')).resolves.toBe('<html>');
-    await expect(service.loadTemplate('file.html')).resolves.toBe('<html>');
+    await expect(service.loadTemplate('file.html')).resolves.toBe('<html lang="en">');
+    await expect(service.loadTemplate('file.html')).resolves.toBe('<html lang="en">');
 
     expect(readFileMock).toHaveBeenCalledTimes(1);
     expect(readFileMock.mock.calls[0][0]).toContain('templates');
