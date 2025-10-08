@@ -1,12 +1,12 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { TypeOrmModule, getRepositoryToken } from '@nestjs/typeorm';
+import { getRepositoryToken } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
 import { RolesService } from 'src/services/roles/roles.service';
 import { PermissionsService } from 'src/services/permissions/permissions.service';
 import { RoleEntity } from 'src/entities/role.entity';
 import { PermissionEntity } from 'src/entities/permission.entity';
-import { UserEntity } from 'src/entities/user.entity';
-import { ApiKeyEntity } from 'src/entities/api-key.entity';
+import { IBackup, IMemoryDb, newDb } from 'pg-mem';
+import { entities } from 'src/entities';
 
 describe('RolesService (integration)', () => {
   let moduleRef: TestingModule;
@@ -14,26 +14,53 @@ describe('RolesService (integration)', () => {
   let permissionsService: PermissionsService;
   let roleRepository: Repository<RoleEntity>;
   let dataSource: DataSource;
+  let db: IMemoryDb;
+  let backup: IBackup;
 
   beforeAll(async () => {
+    db = newDb();
+
+    db.public.registerFunction({
+      name: 'current_database',
+      implementation: () => 'roles_test'
+    })
+
+    db.public.registerFunction({
+      name: 'version',
+      implementation: () => 'PostgreSQL 16.0'
+    })
+
+    dataSource = await db.adapters.createTypeormDataSource({
+      type: 'postgres',
+      entities: [...entities],
+      synchronize: true
+    })
+
+    await dataSource.initialize()
+
     moduleRef = await Test.createTestingModule({
-      imports: [
-        TypeOrmModule.forRoot({
-          type: 'sqlite',
-          database: ':memory:',
-          dropSchema: true,
-          entities: [RoleEntity, PermissionEntity, UserEntity, ApiKeyEntity],
-          synchronize: true,
-        }),
-        TypeOrmModule.forFeature([RoleEntity, PermissionEntity]),
+      imports: [],
+      providers: [
+        RolesService, PermissionsService,
+        {
+          provide: getRepositoryToken(RoleEntity),
+          useValue: dataSource.getRepository(RoleEntity),
+        },
+        {
+          provide: getRepositoryToken(PermissionEntity),
+          useValue: dataSource.getRepository(PermissionEntity),
+        },
+        {
+          provide: DataSource,
+          useValue: dataSource,
+        }
       ],
-      providers: [RolesService, PermissionsService],
     }).compile();
 
     service = moduleRef.get(RolesService);
     permissionsService = moduleRef.get(PermissionsService);
     roleRepository = moduleRef.get(getRepositoryToken(RoleEntity));
-    dataSource = moduleRef.get(DataSource);
+    backup = db.backup();
   });
 
   afterAll(async () => {
@@ -41,7 +68,7 @@ describe('RolesService (integration)', () => {
   });
 
   beforeEach(async () => {
-    await dataSource.synchronize(true);
+    backup.restore();
   });
 
   it('creates a role with the given name', async () => {

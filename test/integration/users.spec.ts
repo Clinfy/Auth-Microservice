@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { TypeOrmModule, getRepositoryToken } from '@nestjs/typeorm';
+import { getRepositoryToken } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
 import { UsersService } from 'src/services/users/users.service';
 import { RolesService } from 'src/services/roles/roles.service';
@@ -7,9 +7,10 @@ import { PermissionsService } from 'src/services/permissions/permissions.service
 import { UserEntity } from 'src/entities/user.entity';
 import { RoleEntity } from 'src/entities/role.entity';
 import { PermissionEntity } from 'src/entities/permission.entity';
-import { ApiKeyEntity } from 'src/entities/api-key.entity';
 import { JwtService } from 'src/services/JWT/jwt.service';
 import { EmailService } from 'src/clients/email/email.service';
+import { IBackup, IMemoryDb, newDb } from 'pg-mem';
+import { entities } from 'src/entities';
 
 describe('UsersService (integration)', () => {
   let moduleRef: TestingModule;
@@ -18,6 +19,8 @@ describe('UsersService (integration)', () => {
   let permissionsService: PermissionsService;
   let userRepository: Repository<UserEntity>;
   let dataSource: DataSource;
+  let db: IMemoryDb;
+  let backup: IBackup;
 
   const jwtServiceMock = {
     refreshToken: jest.fn(),
@@ -31,17 +34,29 @@ describe('UsersService (integration)', () => {
   };
 
   beforeAll(async () => {
+
+    db = newDb();
+
+    db.public.registerFunction({
+      name: 'current_database',
+      implementation: () => 'users_test'
+    })
+
+    db.public.registerFunction({
+      name: 'version',
+      implementation: () => 'PostgreSQL 16.0'
+    })
+
+    dataSource = await db.adapters.createTypeormDataSource({
+      type: 'postgres',
+      entities: [...entities],
+      synchronize: true
+    })
+
+    await dataSource.initialize()
+
     moduleRef = await Test.createTestingModule({
-      imports: [
-        TypeOrmModule.forRoot({
-          type: 'sqlite',
-          database: ':memory:',
-          dropSchema: true,
-          entities: [UserEntity, RoleEntity, PermissionEntity, ApiKeyEntity],
-          synchronize: true,
-        }),
-        TypeOrmModule.forFeature([UserEntity, RoleEntity, PermissionEntity]),
-      ],
+      imports: [],
       providers: [
         UsersService,
         RolesService,
@@ -54,6 +69,22 @@ describe('UsersService (integration)', () => {
           provide: EmailService,
           useValue: emailServiceMock,
         },
+        {
+          provide: getRepositoryToken(UserEntity),
+          useValue: dataSource.getRepository(UserEntity),
+        },
+        {
+          provide: getRepositoryToken(RoleEntity),
+          useValue: dataSource.getRepository(RoleEntity),
+        },
+        {
+          provide: getRepositoryToken(PermissionEntity),
+          useValue: dataSource.getRepository(PermissionEntity),
+        },
+        {
+          provide: DataSource,
+          useValue: dataSource,
+        }
       ],
     }).compile();
 
@@ -61,7 +92,7 @@ describe('UsersService (integration)', () => {
     rolesService = moduleRef.get(RolesService);
     permissionsService = moduleRef.get(PermissionsService);
     userRepository = moduleRef.get(getRepositoryToken(UserEntity));
-    dataSource = moduleRef.get(DataSource);
+    backup = db.backup();
   });
 
   afterAll(async () => {
@@ -70,7 +101,7 @@ describe('UsersService (integration)', () => {
 
   beforeEach(async () => {
     jest.clearAllMocks();
-    await dataSource.synchronize(true);
+    backup.restore();
   });
 
   it('registers a user and stores a hashed password', async () => {

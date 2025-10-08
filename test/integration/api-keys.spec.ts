@@ -1,14 +1,14 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { TypeOrmModule, getRepositoryToken } from '@nestjs/typeorm';
+import { getRepositoryToken } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
 import { ApiKeysService } from 'src/services/api-keys/api-keys.service';
 import { PermissionsService } from 'src/services/permissions/permissions.service';
 import { ApiKeyEntity } from 'src/entities/api-key.entity';
 import { PermissionEntity } from 'src/entities/permission.entity';
-import { RoleEntity } from 'src/entities/role.entity';
-import { UserEntity } from 'src/entities/user.entity';
 import { CreateApiKeyDTO } from 'src/interfaces/DTO/api-key.dto';
 import { compare } from 'bcrypt';
+import {IMemoryDb, newDb, IBackup} from 'pg-mem'
+import { entities } from 'src/entities';
 
 describe('ApiKeysService (integration)', () => {
   let moduleRef: TestingModule;
@@ -17,27 +17,56 @@ describe('ApiKeysService (integration)', () => {
   let apiKeyRepository: Repository<ApiKeyEntity>;
   let permissionRepository: Repository<PermissionEntity>;
   let dataSource: DataSource;
-
+  let db: IMemoryDb;
+  let backup: IBackup;
   beforeAll(async () => {
+    db = newDb();
+
+    db.public.registerFunction({
+      name: 'current_database',
+      implementation: () => 'api_keys_test'
+    });
+
+    db.public.registerFunction({
+      name: 'version',
+      implementation: () => 'PostgreSQL 16.0'
+    })
+
+    dataSource = await db.adapters.createTypeormDataSource({
+      type: 'postgres',
+      entities: [...entities],
+      synchronize: true
+    })
+
+    await dataSource.initialize();
+
     moduleRef = await Test.createTestingModule({
-      imports: [
-        TypeOrmModule.forRoot({
-          type: 'sqlite',
-          database: ':memory:',
-          dropSchema: true,
-          entities: [ApiKeyEntity, PermissionEntity, RoleEntity, UserEntity],
-          synchronize: true,
-        }),
-        TypeOrmModule.forFeature([ApiKeyEntity, PermissionEntity]),
+      imports: [],
+      providers: [
+        ApiKeysService,
+        PermissionsService,
+        {
+          provide: DataSource,
+          useValue: dataSource,
+        },
+        {
+          provide: getRepositoryToken(ApiKeyEntity),
+          useValue: dataSource.getRepository(ApiKeyEntity),
+        },
+        {
+          provide: getRepositoryToken(PermissionEntity),
+          useValue: dataSource.getRepository(PermissionEntity),
+        }
       ],
-      providers: [ApiKeysService, PermissionsService],
     }).compile();
+
+    backup = db.backup();
 
     service = moduleRef.get(ApiKeysService);
     permissionsService = moduleRef.get(PermissionsService);
+
     apiKeyRepository = moduleRef.get(getRepositoryToken(ApiKeyEntity));
     permissionRepository = moduleRef.get(getRepositoryToken(PermissionEntity));
-    dataSource = moduleRef.get(DataSource);
   });
 
   afterAll(async () => {
@@ -45,7 +74,7 @@ describe('ApiKeysService (integration)', () => {
   });
 
   beforeEach(async () => {
-    await dataSource.synchronize(true);
+    backup.restore();
   });
 
   it('creates an API key with the requested permissions', async () => {

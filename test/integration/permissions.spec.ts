@@ -1,36 +1,59 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { TypeOrmModule, getRepositoryToken } from '@nestjs/typeorm';
+import { getRepositoryToken } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
 import { PermissionsService } from 'src/services/permissions/permissions.service';
 import { PermissionEntity } from 'src/entities/permission.entity';
-import { RoleEntity } from 'src/entities/role.entity';
-import { ApiKeyEntity } from 'src/entities/api-key.entity';
-import { UserEntity } from 'src/entities/user.entity';
+import { IBackup, IMemoryDb, newDb } from 'pg-mem';
+import { entities } from 'src/entities';
 
 describe('PermissionsService (integration)', () => {
   let moduleRef: TestingModule;
   let service: PermissionsService;
   let repository: Repository<PermissionEntity>;
   let dataSource: DataSource;
+  let db: IMemoryDb;
+  let backup: IBackup;
 
   beforeAll(async () => {
+
+    db = newDb();
+
+    db.public.registerFunction({
+      name: 'current_database',
+      implementation: () => 'permissions_test'
+    })
+
+    db.public.registerFunction({
+      name: 'version',
+      implementation: () => 'PostgreSQL 16.0'
+    })
+
+    dataSource = await db.adapters.createTypeormDataSource({
+      type: 'postgres',
+      entities: [...entities],
+      synchronize: true
+    })
+
+    await dataSource.initialize();
+
     moduleRef = await Test.createTestingModule({
-      imports: [
-        TypeOrmModule.forRoot({
-          type: 'sqlite',
-          database: ':memory:',
-          dropSchema: true,
-          entities: [PermissionEntity, RoleEntity, ApiKeyEntity, UserEntity],
-          synchronize: true,
-        }),
-        TypeOrmModule.forFeature([PermissionEntity]),
+      imports: [],
+      providers: [
+        PermissionsService,
+        {
+          provide: getRepositoryToken(PermissionEntity),
+          useValue: dataSource.getRepository(PermissionEntity),
+        },
+        {
+          provide: DataSource,
+          useValue: dataSource,
+        }
       ],
-      providers: [PermissionsService],
     }).compile();
 
     service = moduleRef.get(PermissionsService);
     repository = moduleRef.get(getRepositoryToken(PermissionEntity));
-    dataSource = moduleRef.get(DataSource);
+    backup = db.backup();
   });
 
   afterAll(async () => {
@@ -38,7 +61,7 @@ describe('PermissionsService (integration)', () => {
   });
 
   beforeEach(async () => {
-    await dataSource.synchronize(true);
+    backup.restore();
   });
 
   it('persists a new permission with the provided code', async () => {
