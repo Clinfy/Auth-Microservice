@@ -1,18 +1,99 @@
-import { Test, TestingModule } from '@nestjs/testing';
 import { UsersController } from './users.controller';
+import { UsersService } from './users.service';
+import { RegisterUserDTO } from 'src/interfaces/DTO/register.dto';
+import { LoginDTO } from 'src/interfaces/DTO/login.dto';
+import { AuthInterface } from 'src/interfaces/auth.interface';
+import { AssignRoleDTO } from 'src/interfaces/DTO/assign.dto';
+import { ForgotPasswordDTO, ResetPasswordDTO } from 'src/interfaces/DTO/reset-password.dto';
 
 describe('UsersController', () => {
   let controller: UsersController;
+  let service: jest.Mocked<UsersService>;
 
-  beforeEach(async () => {
-    const module: TestingModule = await Test.createTestingModule({
-      controllers: [UsersController],
-    }).compile();
+  beforeEach(() => {
+    service = {
+      register: jest.fn(),
+      logIn: jest.fn(),
+      refreshToken: jest.fn(),
+      canDo: jest.fn(),
+      assignRole: jest.fn(),
+      forgotPassword: jest.fn(),
+      resetPassword: jest.fn(),
+    } as unknown as jest.Mocked<UsersService>;
 
-    controller = module.get<UsersController>(UsersController);
+    controller = new UsersController(service);
   });
 
   it('should be defined', () => {
     expect(controller).toBeDefined();
+  });
+
+  it('should register a user', async () => {
+    const dto: RegisterUserDTO = { email: 'user@example.com', password: 'secret' };
+    const response = { message: 'User user@example.com created' };
+    service.register.mockResolvedValue(response);
+
+    await expect(controller.register(dto)).resolves.toEqual(response);
+    expect(service.register).toHaveBeenCalledWith(dto);
+  });
+
+  it('should log in a user', async () => {
+    const dto: LoginDTO = { email: 'user@example.com', password: 'secret' };
+    const tokens: AuthInterface = { accessToken: 'access', refreshToken: 'refresh' };
+    service.logIn.mockResolvedValue(tokens);
+
+    await expect(controller.logIn(dto)).resolves.toEqual(tokens);
+    expect(service.logIn).toHaveBeenCalledWith(dto);
+  });
+
+  it('should refresh a token using the header', async () => {
+    const auth: AuthInterface = { accessToken: 'newAccess', refreshToken: 'newRefresh' };
+    service.refreshToken.mockResolvedValue(auth);
+    const request = { headers: { 'refresh-token': 'refresh-token-value' } } as any;
+
+    await expect(controller.refreshToken(request)).resolves.toEqual(auth);
+    expect(service.refreshToken).toHaveBeenCalledWith('refresh-token-value');
+  });
+
+  it('should check if the user can perform an action', async () => {
+    const user = { email: 'user@example.com' } as any;
+    const request = { user } as any;
+    service.canDo.mockResolvedValue(true);
+
+    await expect(controller.canDo(request, 'PERMISSION_CODE')).resolves.toBe(true);
+    expect(service.canDo).toHaveBeenCalledWith(user, 'PERMISSION_CODE');
+  });
+
+  it('should return the logged user email', async () => {
+    const request = { user: { email: 'user@example.com' } } as any;
+
+    await expect(controller.me(request)).resolves.toBe('user@example.com');
+  });
+
+  it('should assign roles to the user', async () => {
+    const dto: AssignRoleDTO = { rolesIds: [1, 2] };
+    const updatedUser = { id: 1 } as any;
+    service.assignRole.mockResolvedValue(updatedUser);
+
+    await expect(controller.assignRole(1 as any, dto)).resolves.toEqual(updatedUser);
+    expect(service.assignRole).toHaveBeenCalledWith(1, dto);
+  });
+
+  it('should trigger forgot password flow', async () => {
+    const dto: ForgotPasswordDTO = { email: 'user@example.com' };
+    const response = { message: 'If the email exists, a reset password link will be sent to it.' };
+    service.forgotPassword.mockResolvedValue(response);
+
+    await expect(controller.forgotPassword(dto)).resolves.toEqual(response);
+    expect(service.forgotPassword).toHaveBeenCalledWith(dto);
+  });
+
+  it('should reset the user password', async () => {
+    const dto: ResetPasswordDTO = { password: 'newPassword' };
+    const response = { message: 'Password reset successfully' };
+    service.resetPassword.mockResolvedValue(response);
+
+    await expect(controller.resetPassword('token-123', dto)).resolves.toEqual(response);
+    expect(service.resetPassword).toHaveBeenCalledWith('token-123', dto);
   });
 });
