@@ -65,7 +65,7 @@ export class UsersController {
     @ApiBearerAuth()
     @ApiOperation({summary: 'Return if a user have permissions to do something'})
     @ApiOkResponse({type: Boolean})
-    @Get('can-do')
+    @Get('can-do/:permission')
     canDo(@Req() request: requestUser.RequestWithUser, @Param('permission') permission: string ): Promise<Boolean> {
         return this.userService.canDo(request.user, permission);
     }
