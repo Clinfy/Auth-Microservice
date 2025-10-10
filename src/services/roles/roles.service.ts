@@ -20,17 +20,17 @@ export class RolesService {
         return await this.roleRepository.save(this.roleRepository.create(dto));
     }
 
-    async update(id: number, dto: PatchRoleDTO): Promise<RoleEntity> {
+    async update(id: string, dto: PatchRoleDTO): Promise<RoleEntity> {
         return await this.roleRepository.save(this.roleRepository.merge(await this.findOne(id),dto));
     }
 
-    async delete(id: number): Promise<{ message: string }> {
+    async delete(id: string): Promise<{ message: string }> {
         const role = await this.findOne(id);
         await this.roleRepository.remove(role);
         return {message: `Role ${role.name} deleted`};
     }
 
-    async findOne(id: number): Promise<RoleEntity> {
+    async findOne(id: string): Promise<RoleEntity> {
         const role = await this.roleRepository.findOneBy({id});
         if(!role) throw new NotFoundException('Role not found');
         return role;
@@ -40,7 +40,7 @@ export class RolesService {
         return await this.roleRepository.find();
     }
 
-    async assignPermissions(roleId: number, dto: AssignPermissionDTO): Promise<RoleEntity> {
+    async assignPermissions(roleId: string, dto: AssignPermissionDTO): Promise<RoleEntity> {
         const role = await this.findOne(roleId);
         role.permissions = await Promise.all(dto.permissionIds.map(id => this.permissionService.findOne(id)));
         return await this.roleRepository.save(role);
