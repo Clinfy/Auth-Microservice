@@ -16,17 +16,17 @@ export class PermissionsService {
         return await this.permissionRepository.save(this.permissionRepository.create(dto));
     }
 
-    async update(id: number, dto: PatchPermissionDTO): Promise<PermissionEntity> {
+    async update(id: string, dto: PatchPermissionDTO): Promise<PermissionEntity> {
         return await this.permissionRepository.save(this.permissionRepository.merge(await this.findOne(id),dto));
     }
 
-    async delete(id: number): Promise<{ message: string }> {
+    async delete(id: string): Promise<{ message: string }> {
         const permission = await this.findOne(id);
         await this.permissionRepository.remove(permission);
         return {message: `Permission ${permission.code} deleted`};
     }
 
-    async findOne(id: number): Promise<PermissionEntity> {
+    async findOne(id: string): Promise<PermissionEntity> {
         const permission = await this.permissionRepository.findOneBy({id});
         if(!permission) throw new NotFoundException('Permission not found');
         return permission;

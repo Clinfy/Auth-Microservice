@@ -26,7 +26,7 @@ export class PermissionsController {
     @ApiOkResponse({type: PermissionEntity})
     @ApiNotFoundResponse({description: 'Permission not found'})
     @Patch('edit/:id')
-    edit(@Body() dto: CreatePermissionDTO, @Param('id') id: number): Promise<PermissionEntity> {
+    edit(@Body() dto: CreatePermissionDTO, @Param('id') id: string): Promise<PermissionEntity> {
         return this.permissionService.update(id, dto);
     }
 
@@ -36,7 +36,7 @@ export class PermissionsController {
     @ApiOkResponse({description: 'Permission deleted'})
     @ApiNotFoundResponse({description: 'Permission not found'})
     @Delete('delete/:id')
-    delete(@Param('id') id: number): Promise<{message: string}> {
+    delete(@Param('id') id: string): Promise<{message: string}> {
         return this.permissionService.delete(id);
     }
 
@@ -46,7 +46,7 @@ export class PermissionsController {
     @ApiOkResponse({type: PermissionEntity})
     @ApiNotFoundResponse({description: 'Permission not found'})
     @Get('find/:id')
-    findOne(@Param('id') id: number): Promise<PermissionEntity> {
+    findOne(@Param('id') id: string): Promise<PermissionEntity> {
         return this.permissionService.findOne(id);
     }
 
