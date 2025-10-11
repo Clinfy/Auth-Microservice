@@ -8,6 +8,10 @@ describe('RolesService', () => {
   let roleRepository: jest.Mocked<Partial<Repository<RoleEntity>>>;
   let permissionsService: jest.Mocked<Partial<PermissionsService>>;
   let service: RolesService;
+  const roleId = '11111111-1111-1111-1111-111111111111';
+  const otherRoleId = '22222222-2222-2222-2222-222222222222';
+  const permissionIdA = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa';
+  const permissionIdB = 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb';
 
   beforeEach(() => {
     roleRepository = {
@@ -27,58 +31,58 @@ describe('RolesService', () => {
   });
 
   it('creates a role', async () => {
-    (roleRepository.save as jest.Mock).mockResolvedValue({ id: 1, name: 'ADMIN' });
+    (roleRepository.save as jest.Mock).mockResolvedValue({ id: roleId, name: 'ADMIN' });
 
-    await expect(service.create({ name: 'ADMIN' })).resolves.toEqual({ id: 1, name: 'ADMIN' });
+    await expect(service.create({ name: 'ADMIN' })).resolves.toEqual({ id: roleId, name: 'ADMIN' });
     expect(roleRepository.create).toHaveBeenCalledWith({ name: 'ADMIN' });
   });
 
   it('updates a role with merged data', async () => {
-    (roleRepository.findOneBy as jest.Mock).mockResolvedValue({ id: 1, name: 'OLD' });
-    (roleRepository.save as jest.Mock).mockResolvedValue({ id: 1, name: 'NEW' });
+    (roleRepository.findOneBy as jest.Mock).mockResolvedValue({ id: roleId, name: 'OLD' });
+    (roleRepository.save as jest.Mock).mockResolvedValue({ id: roleId, name: 'NEW' });
 
-    await expect(service.update(1, { name: 'NEW' })).resolves.toEqual({ id: 1, name: 'NEW' });
-    expect(roleRepository.merge).toHaveBeenCalledWith({ id: 1, name: 'OLD' }, { name: 'NEW' });
+    await expect(service.update(roleId, { name: 'NEW' })).resolves.toEqual({ id: roleId, name: 'NEW' });
+    expect(roleRepository.merge).toHaveBeenCalledWith({ id: roleId, name: 'OLD' }, { name: 'NEW' });
   });
 
   it('deletes a role and returns message', async () => {
-    (roleRepository.findOneBy as jest.Mock).mockResolvedValue({ id: 2, name: 'TO_DELETE' });
+    (roleRepository.findOneBy as jest.Mock).mockResolvedValue({ id: otherRoleId, name: 'TO_DELETE' });
     (roleRepository.remove as jest.Mock).mockResolvedValue(undefined);
 
-    await expect(service.delete(2)).resolves.toEqual({ message: 'Role TO_DELETE deleted' });
-    expect(roleRepository.remove).toHaveBeenCalledWith({ id: 2, name: 'TO_DELETE' });
+    await expect(service.delete(otherRoleId)).resolves.toEqual({ message: 'Role TO_DELETE deleted' });
+    expect(roleRepository.remove).toHaveBeenCalledWith({ id: otherRoleId, name: 'TO_DELETE' });
   });
 
   it('findOne throws NotFoundException when role missing', async () => {
     (roleRepository.findOneBy as jest.Mock).mockResolvedValue(null);
 
-    await expect(service.findOne(999)).rejects.toBeInstanceOf(NotFoundException);
+    await expect(service.findOne(otherRoleId)).rejects.toBeInstanceOf(NotFoundException);
   });
 
   it('findAll returns all roles', async () => {
-    (roleRepository.find as jest.Mock).mockResolvedValue([{ id: 1, name: 'ADMIN' }]);
+    (roleRepository.find as jest.Mock).mockResolvedValue([{ id: roleId, name: 'ADMIN' }]);
 
-    await expect(service.findAll()).resolves.toEqual([{ id: 1, name: 'ADMIN' }]);
+    await expect(service.findAll()).resolves.toEqual([{ id: roleId, name: 'ADMIN' }]);
   });
 
   it('assignPermissions loads permissions and saves role', async () => {
-    (roleRepository.findOneBy as jest.Mock).mockResolvedValue({ id: 1, name: 'ADMIN', permissions: [] });
+    (roleRepository.findOneBy as jest.Mock).mockResolvedValue({ id: roleId, name: 'ADMIN', permissions: [] });
     (permissionsService.findOne as jest.Mock)
-      .mockResolvedValueOnce({ id: 10, code: 'PERM_A' })
-      .mockResolvedValueOnce({ id: 20, code: 'PERM_B' });
+      .mockResolvedValueOnce({ id: permissionIdA, code: 'PERM_A' })
+      .mockResolvedValueOnce({ id: permissionIdB, code: 'PERM_B' });
     (roleRepository.save as jest.Mock).mockResolvedValue({
-      id: 1,
+      id: roleId,
       name: 'ADMIN',
-      permissions: [{ id: 10 }, { id: 20 }],
+      permissions: [{ id: permissionIdA }, { id: permissionIdB }],
     });
 
-    await expect(service.assignPermissions(1, { permissionIds: [10, 20] })).resolves.toEqual({
-      id: 1,
+    await expect(service.assignPermissions(roleId, { permissionIds: [permissionIdA, permissionIdB] })).resolves.toEqual({
+      id: roleId,
       name: 'ADMIN',
-      permissions: [{ id: 10 }, { id: 20 }],
+      permissions: [{ id: permissionIdA }, { id: permissionIdB }],
     });
 
-    expect(permissionsService.findOne).toHaveBeenNthCalledWith(1, 10);
-    expect(permissionsService.findOne).toHaveBeenNthCalledWith(2, 20);
+    expect(permissionsService.findOne).toHaveBeenNthCalledWith(1, permissionIdA);
+    expect(permissionsService.findOne).toHaveBeenNthCalledWith(2, permissionIdB);
   });
 });
