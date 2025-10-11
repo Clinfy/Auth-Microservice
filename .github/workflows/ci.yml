@@ -22,7 +22,7 @@ jobs:
       # pueda levantar la base de datos PostgreSQL para las pruebas de integración.
       docker:
         image: docker:23-dind # Usar una versión específica es una mejor práctica que 'latest'.
-        # (CORRECCIÓN CLAVE) Se mueven los parámetros del healthcheck a la clave 'options',
+        # Se pasan los parámetros del healthcheck a la clave 'options',
         # que los pasa directamente al comando 'docker create'. Esta es la sintaxis correcta
         # para healthchecks de servicios en GitHub Actions.
         options: >-
@@ -58,18 +58,15 @@ jobs:
         run: npm run test
         env:
           # --- Configuración para Testcontainers y Docker CLI ---
-          # Apuntamos explícitamente a la IP 127.0.0.1 (IPv4) para la conexión.
           DOCKER_HOST: tcp://127.0.0.1:2375
-          # Se deshabilita la verificación TLS, necesaria para la configuración por defecto de dind.
           DOCKER_TLS_CERTDIR: ""
-          # Deshabilita Ryuk, el 'recolector de basura' de Testcontainers.
-          # Es una buena práctica en entornos de CI efímeros.
+          # (SOLUCIÓN) Esta variable le indica explícitamente a la librería Testcontainers
+          # dónde encontrar el daemon de Docker, resolviendo el error "Could not find a working container runtime strategy".
+          TESTCONTAINERS_HOST_OVERRIDE: 127.0.0.1
           TESTCONTAINERS_RYUK_DISABLED: true
 
           # --- Configuración de la aplicación (Ejemplos para Clinfy) ---
-          # Es una buena práctica pasar la configuración explícitamente a tu aplicación
-          # durante las pruebas, simulando un entorno real.
           NODE_ENV: test
-          AUTH_MICROSERVICE_URL: http://localhost:3001 # URL de un mock o servicio de prueba
-          EMAIL_MICROSERVICE_URL: http://localhost:3002 # URL de un mock o servicio de prueba
+          AUTH_MICROSERVICE_URL: http://localhost:3001
+          EMAIL_MICROSERVICE_URL: http://localhost:3002
 
