@@ -22,9 +22,9 @@ export class ApiKeysController {
     @UseGuards(AuthGuard)
     @Permissions(['API_KEYS_CREATE'])
     @ApiOperation({ summary: 'Create a new API key' })
-    @ApiCreatedResponse({schema: {type: 'object', properties: {id: { type: 'number' }, apiKey: { type: 'string' },},},})
+    @ApiCreatedResponse({schema: {type: 'object', properties: {id: { type: 'string' }, apiKey: { type: 'string' },},},})
     @Post('generate')
-    generate(@Body() dto: CreateApiKeyDTO): Promise<{ apiKey: string; id: number; client: string }> {
+    generate(@Body() dto: CreateApiKeyDTO): Promise<{ apiKey: string; id: string; client: string }> {
         return this.apiKeysService.create(dto);
     }
 
@@ -42,7 +42,7 @@ export class ApiKeysController {
     @ApiOperation({ summary: 'Deactivate an API key' })
     @ApiOkResponse({schema: {type: 'object', properties: {message: { type: 'string' },},},})
     @Patch('deactivate/:id')
-    deactivate(@Param('id') id: number): Promise<{ message: string }> {
-        return this.apiKeysService.deactivate(Number(id));
+    deactivate(@Param('id') id: string): Promise<{ message: string }> {
+        return this.apiKeysService.deactivate(id);
     }
 }

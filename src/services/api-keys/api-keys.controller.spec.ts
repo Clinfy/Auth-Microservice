@@ -6,6 +6,9 @@ import { ApiKeyEntity } from 'src/entities/api-key.entity';
 describe('ApiKeysController', () => {
   let controller: ApiKeysController;
   let service: jest.Mocked<ApiKeysService>;
+  const permissionIdOne = '11111111-1111-1111-1111-111111111111';
+  const permissionIdTwo = '22222222-2222-2222-2222-222222222222';
+  const apiKeyId = '33333333-3333-3333-3333-333333333333';
 
   beforeEach(() => {
     service = {
@@ -31,8 +34,8 @@ describe('ApiKeysController', () => {
   });
 
   it('should generate an api key through the service', async () => {
-    const dto: CreateApiKeyDTO = { client: 'test-client', permissionIds: [1, 2] };
-    const created = { apiKey: 'plain-key', id: 10, client: 'test-client' };
+    const dto: CreateApiKeyDTO = { client: 'test-client', permissionIds: [permissionIdOne, permissionIdTwo] };
+    const created = { apiKey: 'plain-key', id: apiKeyId, client: 'test-client' };
     service.create.mockResolvedValue(created);
 
     await expect(controller.generate(dto)).resolves.toEqual(created);
@@ -40,7 +43,7 @@ describe('ApiKeysController', () => {
   });
 
   it('should return all api keys from the service', async () => {
-    const apiKeys = [{ id: 1 } as ApiKeyEntity];
+    const apiKeys = [{ id: apiKeyId } as ApiKeyEntity];
     service.findAll.mockResolvedValue(apiKeys);
 
     await expect(controller.findAll()).resolves.toEqual(apiKeys);
@@ -51,7 +54,7 @@ describe('ApiKeysController', () => {
     const response = { message: 'done' };
     service.deactivate.mockResolvedValue(response);
 
-    await expect(controller.deactivate('5' as any)).resolves.toEqual(response);
-    expect(service.deactivate).toHaveBeenCalledWith(5);
+    await expect(controller.deactivate(apiKeyId)).resolves.toEqual(response);
+    expect(service.deactivate).toHaveBeenCalledWith(apiKeyId);
   });
 });

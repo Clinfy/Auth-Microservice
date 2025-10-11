@@ -16,8 +16,8 @@ import {RoleEntity} from "./role.entity";
 
 @Entity('users')
 export class UserEntity extends BaseEntity implements UserI {
-    @PrimaryGeneratedColumn()
-    id: number;
+    @PrimaryGeneratedColumn('uuid')
+    id: string;
 
     @Column({nullable: false})
     email: string;

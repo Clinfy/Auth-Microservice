@@ -18,7 +18,7 @@ export class ApiKeysService {
         private readonly permissionService: PermissionsService,
     ) {}
 
-    async create(dto: CreateApiKeyDTO): Promise<{ apiKey: string; id: number; client: string }> {
+    async create(dto: CreateApiKeyDTO): Promise<{ apiKey: string; id: string; client: string }> {
         const permissions = await Promise.all(dto.permissionIds.map(id => this.permissionService.findOne(id)));
 
         const plainApiKey = this.generatePlainKey();
@@ -39,7 +39,7 @@ export class ApiKeysService {
         return this.apiKeyRepository.find({ relations: ['permissions'] });
     }
 
-    async findOne(id: number): Promise<ApiKeyEntity> {
+    async findOne(id: string): Promise<ApiKeyEntity> {
         const apiKey = await this.apiKeyRepository.findOne({ where: { id }, relations: ['permissions'] });
         if (!apiKey) {
             throw new NotFoundException('API key not found');
@@ -47,7 +47,7 @@ export class ApiKeysService {
         return apiKey;
     }
 
-    async deactivate(id: number): Promise<{ message: string }> {
+    async deactivate(id: string): Promise<{ message: string }> {
         const apiKey = await this.findOne(id);
 
         if (!apiKey.active) {

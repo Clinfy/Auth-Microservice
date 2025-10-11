@@ -9,6 +9,7 @@ import { CreateApiKeyDTO } from 'src/interfaces/DTO/api-key.dto';
 import { compare } from 'bcrypt';
 import {IMemoryDb, newDb, IBackup} from 'pg-mem'
 import { entities } from 'src/entities';
+import { randomUUID } from 'crypto';
 
 describe('ApiKeysService (integration)', () => {
   let moduleRef: TestingModule;
@@ -30,6 +31,16 @@ describe('ApiKeysService (integration)', () => {
     db.public.registerFunction({
       name: 'version',
       implementation: () => 'PostgreSQL 17.6'
+    })
+
+    db.public.registerFunction({
+      name: 'uuid_generate_v4',
+      implementation: () => randomUUID()
+    })
+
+    db.public.registerFunction({
+      name: 'gen_random_uuid',
+      implementation: () => randomUUID()
     })
 
     dataSource = await db.adapters.createTypeormDataSource({
@@ -88,7 +99,7 @@ describe('ApiKeysService (integration)', () => {
     const result = await service.create(payload);
     expect(result).toMatchObject({
       client: 'billing-app',
-      id: expect.any(Number),
+      id: expect.any(String),
       apiKey: expect.any(String),
     });
     expect(result.apiKey).toHaveLength(64); // 32 bytes hex encoded

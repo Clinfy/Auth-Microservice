@@ -1,12 +1,10 @@
-import { Type } from 'class-transformer';
-import {IsArray, IsInt, IsNotEmpty, IsString} from 'class-validator';
+import {IsArray, IsNotEmpty, IsString} from 'class-validator';
 
 export class AssignApiPermissionDTO {
     @IsNotEmpty({ message: 'permissionIds is required' })
     @IsArray({ message: 'permissionIds must be an array' })
-    @IsInt({ each: true, message: 'Each permission id must be numeric' })
-    @Type(() => Number)
-    permissionIds: number[];
+    @IsString({ each: true, message: 'Each permissionId must be a string' })
+    permissionIds: string[];
 }
 
 export class CreateApiKeyDTO extends AssignApiPermissionDTO {

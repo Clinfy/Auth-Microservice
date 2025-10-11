@@ -87,7 +87,7 @@ export class UsersController {
     @ApiNotFoundResponse({description: 'User not found'})
     @ApiNotFoundResponse({description: 'Role not found'})
     @Post('assign-role/:id')
-    assignRole(@Param('id') id: number, @Body() dto: AssignRoleDTO): Promise<UserEntity> {
+    assignRole(@Param('id') id: string, @Body() dto: AssignRoleDTO): Promise<UserEntity> {
         return this.userService.assignRole(id, dto);
     }
 

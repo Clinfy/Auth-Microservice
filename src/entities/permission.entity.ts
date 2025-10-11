@@ -4,8 +4,8 @@ import { ApiKeyEntity } from "./api-key.entity";
 
 @Entity('permission')
 export class PermissionEntity extends BaseEntity {
-    @PrimaryGeneratedColumn()
-    id: number;
+    @PrimaryGeneratedColumn('uuid')
+    id: string;
 
     @Column({ unique: true })
     code: string;

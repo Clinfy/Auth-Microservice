@@ -7,11 +7,13 @@ import { RoleEntity } from 'src/entities/role.entity';
 import { PermissionEntity } from 'src/entities/permission.entity';
 import { IBackup, IMemoryDb, newDb } from 'pg-mem';
 import { entities } from 'src/entities';
+import { randomUUID } from 'crypto';
 
 describe('RolesService (integration)', () => {
   let moduleRef: TestingModule;
   let service: RolesService;
   let permissionsService: PermissionsService;
+  let permissionsRepository: Repository<PermissionEntity>;
   let roleRepository: Repository<RoleEntity>;
   let dataSource: DataSource;
   let db: IMemoryDb;
@@ -28,6 +30,16 @@ describe('RolesService (integration)', () => {
     db.public.registerFunction({
       name: 'version',
       implementation: () => 'PostgreSQL 17.6'
+    })
+
+    db.public.registerFunction({
+      name: 'uuid_generate_v4',
+      implementation: () => randomUUID()
+    })
+
+    db.public.registerFunction({
+      name: 'gen_random_uuid',
+      implementation: () => randomUUID()
     })
 
     dataSource = await db.adapters.createTypeormDataSource({
@@ -60,6 +72,7 @@ describe('RolesService (integration)', () => {
     service = moduleRef.get(RolesService);
     permissionsService = moduleRef.get(PermissionsService);
     roleRepository = moduleRef.get(getRepositoryToken(RoleEntity));
+    permissionsRepository = moduleRef.get(getRepositoryToken(PermissionEntity));
     backup = db.backup();
   });
 
@@ -75,7 +88,7 @@ describe('RolesService (integration)', () => {
     const role = await service.create({ name: 'admin' });
 
     expect(role).toMatchObject({
-      id: expect.any(Number),
+      id: expect.any(String),
       name: 'admin',
     });
 
@@ -85,8 +98,11 @@ describe('RolesService (integration)', () => {
   });
 
   it('assigns permissions to a role', async () => {
-    const read = await permissionsService.create({ code: 'PERMISSIONS_READ' });
-    const write = await permissionsService.create({ code: 'PERMISSIONS_WRITE' });
+    const createPermission = async (code: string) =>
+      permissionsRepository.save(permissionsRepository.create({ id: randomUUID(), code }));
+
+    const read = await createPermission('PERMISSIONS_READ');
+    const write = await createPermission('PERMISSIONS_WRITE');
     const role = await service.create({ name: 'editor' });
 
     const updated = await service.assignPermissions(role.id, { permissionIds: [read.id, write.id] });

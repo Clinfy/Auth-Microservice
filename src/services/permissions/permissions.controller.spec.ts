@@ -7,6 +7,8 @@ import { PermissionEntity } from 'src/entities/permission.entity';
 describe('PermissionsController', () => {
   let controller: PermissionsController;
   let service: jest.Mocked<PermissionsService>;
+  const permissionId = '11111111-1111-1111-1111-111111111111';
+  const secondPermissionId = '22222222-2222-2222-2222-222222222222';
 
   beforeEach(() => {
     service = {
@@ -26,7 +28,7 @@ describe('PermissionsController', () => {
 
   it('should create a permission', async () => {
     const dto: CreatePermissionDTO = { code: 'PERMISSION' };
-    const entity = { id: 1, code: 'PERMISSION' } as PermissionEntity;
+    const entity = { id: permissionId, code: 'PERMISSION' } as PermissionEntity;
     service.create.mockResolvedValue(entity);
 
     await expect(controller.create(dto)).resolves.toEqual(entity);
@@ -35,33 +37,33 @@ describe('PermissionsController', () => {
 
   it('should update a permission', async () => {
     const dto: PatchPermissionDTO = { code: 'UPDATED' };
-    const entity = { id: 1, code: 'UPDATED' } as PermissionEntity;
+    const entity = { id: permissionId, code: 'UPDATED' } as PermissionEntity;
     service.update.mockResolvedValue(entity);
 
-    await expect(controller.edit(dto, 1 as any)).resolves.toEqual(entity);
-    expect(service.update).toHaveBeenCalledWith(1, dto);
+    await expect(controller.edit(dto, permissionId)).resolves.toEqual(entity);
+    expect(service.update).toHaveBeenCalledWith(permissionId, dto);
   });
 
   it('should delete a permission', async () => {
     const response = { message: 'deleted' };
     service.delete.mockResolvedValue(response);
 
-    await expect(controller.delete(3 as any)).resolves.toEqual(response);
-    expect(service.delete).toHaveBeenCalledWith(3);
+    await expect(controller.delete(permissionId)).resolves.toEqual(response);
+    expect(service.delete).toHaveBeenCalledWith(permissionId);
   });
 
   it('should find one permission', async () => {
-    const permission = { id: 4, code: 'EXISTING' } as PermissionEntity;
+    const permission = { id: permissionId, code: 'EXISTING' } as PermissionEntity;
     service.findOne.mockResolvedValue(permission);
 
-    await expect(controller.findOne(4 as any)).resolves.toEqual(permission);
-    expect(service.findOne).toHaveBeenCalledWith(4);
+    await expect(controller.findOne(permissionId)).resolves.toEqual(permission);
+    expect(service.findOne).toHaveBeenCalledWith(permissionId);
   });
 
   it('should list all permissions', async () => {
     const permissions = [
-      { id: 1, code: 'P1' },
-      { id: 2, code: 'P2' },
+      { id: permissionId, code: 'P1' },
+      { id: secondPermissionId, code: 'P2' },
     ] as PermissionEntity[];
     service.findAll.mockResolvedValue(permissions);
 
