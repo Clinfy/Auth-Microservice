@@ -5,9 +5,9 @@ name: Clinfy Microservice CI
 # Se activará en cada push o pull request a las ramas 'main' y 'develop'.
 on:
   push:
-    branches: [ "main", "develop" ]
+    branches: [ "main" ]
   pull_request:
-    branches: [ "main", "develop" ]
+    branches: [ "main" ]
 
 jobs:
   # Job único para construir y ejecutar las pruebas.
