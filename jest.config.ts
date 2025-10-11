@@ -5,6 +5,7 @@ module.exports = {
 
   testMatch: [
     '<rootDir>/src/**/*.spec.ts',
+    '<rootDir>/test/integration/testcontainers/*.spec.ts',
     '<rootDir>/test/integration/pg-mem/*.spec.ts',
   ],
 
