@@ -63,6 +63,7 @@ jobs:
           # (SOLUCIÓN) Esta variable le indica explícitamente a la librería Testcontainers
           # dónde encontrar el daemon de Docker, resolviendo el error "Could not find a working container runtime strategy".
           TESTCONTAINERS_HOST_OVERRIDE: 127.0.0.1
+          TESTCONTAINERS_DOCKER_PORT_OVERRIDE: 2375
           TESTCONTAINERS_RYUK_DISABLED: true
 
           # --- Configuración de la aplicación (Ejemplos para Clinfy) ---
