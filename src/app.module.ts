@@ -10,6 +10,7 @@ import { UsersModule } from 'src/services/users/users.module';
 import { RolesModule } from 'src/services/roles/roles.module';
 import { JwtModule } from 'src/services/JWT/jwt.module';
 import { EmailModule } from 'src/clients/email/email.module';
+import { IsUniquePermissionCodeConstraint } from 'src/common/validators/unique-permission-code.validator';
 
 @Module({
 imports: [ConfigModule.forRoot({
@@ -35,6 +36,6 @@ imports: [ConfigModule.forRoot({
     EmailModule
 ],
 controllers: [AppController],
-providers: [AppService],
+providers: [AppService, IsUniquePermissionCodeConstraint],
 })
 export class AppModule {}
