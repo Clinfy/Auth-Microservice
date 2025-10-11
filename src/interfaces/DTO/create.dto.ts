@@ -1,5 +1,6 @@
 import {IsNotEmpty, IsString} from "class-validator";
 import { IsUniquePermissionCode } from 'src/common/validators/unique-permission-code.validator';
+import { IsUniqueRoleName } from 'src/common/validators/unique-role-name.validator';
 
 export class CreatePermissionDTO {
     @IsString({message: 'El dato debe ser una cadena de texto string'})
@@ -11,5 +12,6 @@ export class CreatePermissionDTO {
 export class CreateRoleDTO {
     @IsString({message: 'El dato debe ser una cadena de texto string'})
     @IsNotEmpty({message: 'El dato no puede estar vacio'})
+    @IsUniqueRoleName()
     name: string;
 }
