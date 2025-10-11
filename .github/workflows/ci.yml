@@ -60,7 +60,7 @@ jobs:
           docker info
         env:
           # Apuntamos este comando al servicio 'dind'.
-          DOCKER_HOST: tcp://docker:2375
+          DOCKER_HOST: tcp://localhost:2375
 
       # 5. Ejecuta todas las pruebas (unitarias, integración, e2e).
       # Se configuran las variables de entorno necesarias para Testcontainers y la aplicación.
@@ -69,7 +69,7 @@ jobs:
         env:
           # --- Configuración para Testcontainers ---
           # Indica a Testcontainers dónde encontrar el daemon Docker del servicio 'dind'.
-          DOCKER_HOST: tcp://docker:2375
+          DOCKER_HOST: tcp://localhost:2375
           # Deshabilita Ryuk, el 'recolector de basura' de Testcontainers.
           # Es una buena práctica en entornos de CI efímeros para evitar problemas de timeouts
           # y asegurar una limpieza más rápida.
