@@ -1,0 +1,83 @@
+# Nombre del workflow: CI para Microservicios de Clinfy con Testcontainers
+name: Clinfy Microservice CI
+
+# Controla cuándo se ejecuta el workflow.
+# Se activará en cada push o pull request a las ramas 'main' y 'develop'.
+on:
+  push:
+    branches: [ "main", "develop" ]
+  pull_request:
+    branches: [ "main", "develop" ]
+
+jobs:
+  # Job único para construir y ejecutar las pruebas.
+  build-and-test:
+    name: Build and Test
+    # Se ejecutará en una máquina virtual con la última versión de Ubuntu.
+    runs-on: ubuntu-latest
+
+    # PASO CLAVE: Define los servicios que se ejecutarán en contenedores junto al job.
+    # En este caso, iniciamos un contenedor de Docker-in-Docker (dind).
+    # Esto proporciona un entorno Docker aislado para que Testcontainers
+    # pueda levantar la base de datos PostgreSQL para las pruebas de integración.
+    services:
+      docker:
+        image: docker:23-dind # Usar una versión específica es una mejor práctica que 'latest'.
+        # La opción '--privileged' es necesaria para que dind funcione correctamente.
+        options: >-
+          --privileged
+        ports:
+          - 2375:2375
+
+    steps:
+      # 1. Clona tu repositorio para que el job pueda acceder al código.
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 2. Configura el entorno de Node.js a la versión especificada.
+      - name: Set up Node.js v24.5.0
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24.5.0'
+          # Habilita el cache de dependencias de npm para acelerar instalaciones futuras.
+          cache: 'npm'
+
+      # 3. Instala las dependencias del proyecto usando 'npm ci' para una instalación limpia.
+      - name: Install NPM dependencies
+        run: npm ci
+
+      # 4. (MEJORA) Esperar a que el servicio Docker (dind) esté completamente listo.
+      # Este paso previene fallos si los tests intentan usar Docker antes de que el daemon esté disponible.
+      - name: Wait for Docker to be ready
+        run: |
+          echo "Waiting for Docker daemon..."
+          for i in {1..30}; do
+            docker info >/dev/null 2>&1 && break
+            echo -n "."
+            sleep 1
+          done
+          echo "Docker daemon is ready!"
+          docker info
+        env:
+          # Apuntamos este comando al servicio 'dind'.
+          DOCKER_HOST: tcp://docker:2375
+
+      # 5. Ejecuta todas las pruebas (unitarias, integración, e2e).
+      # Se configuran las variables de entorno necesarias para Testcontainers y la aplicación.
+      - name: Run tests with Testcontainers
+        run: npm run test
+        env:
+          # --- Configuración para Testcontainers ---
+          # Indica a Testcontainers dónde encontrar el daemon Docker del servicio 'dind'.
+          DOCKER_HOST: tcp://docker:2375
+          # Deshabilita Ryuk, el 'recolector de basura' de Testcontainers.
+          # Es una buena práctica en entornos de CI efímeros para evitar problemas de timeouts
+          # y asegurar una limpieza más rápida.
+          TESTCONTAINERS_RYUK_DISABLED: true
+
+          # --- Configuración de la aplicación (Ejemplos para Clinfy) ---
+          # Es una buena práctica pasar la configuración explícitamente a tu aplicación
+          # durante las pruebas, simulando un entorno real.
+          NODE_ENV: test
+          AUTH_MICROSERVICE_URL: http://localhost:3001 # URL de un mock o servicio de prueba
+          EMAIL_MICROSERVICE_URL: http://localhost:3002 # URL de un mock o servicio de prueba
