@@ -27,6 +27,7 @@ jobs:
         options: >-
           --privileged
         ports:
+          # Mapea el puerto 2375 del contenedor al puerto 2375 del host del runner.
           - 2375:2375
 
     steps:
@@ -59,8 +60,9 @@ jobs:
           echo "Docker daemon is ready!"
           docker info
         env:
-          # Apuntamos este comando al servicio 'dind'.
-          DOCKER_HOST: tcp://localhost:2375
+          # (CORRECCIÓN) Apuntamos explícitamente a la IP 127.0.0.1 (IPv4)
+          # para evitar problemas de resolución con 'localhost' que pueden llevar a errores de 'connection reset by peer' sobre IPv6.
+          DOCKER_HOST: tcp://127.0.0.1:2375
 
       # 5. Ejecuta todas las pruebas (unitarias, integración, e2e).
       # Se configuran las variables de entorno necesarias para Testcontainers y la aplicación.
@@ -68,8 +70,8 @@ jobs:
         run: npm run test
         env:
           # --- Configuración para Testcontainers ---
-          # Indica a Testcontainers dónde encontrar el daemon Docker del servicio 'dind'.
-          DOCKER_HOST: tcp://localhost:2375
+          # (CORRECCIÓN) Se usa 127.0.0.1 para una conexión más estable.
+          DOCKER_HOST: tcp://127.0.0.1:2375
           # Deshabilita Ryuk, el 'recolector de basura' de Testcontainers.
           # Es una buena práctica en entornos de CI efímeros para evitar problemas de timeouts
           # y asegurar una limpieza más rápida.
@@ -81,3 +83,4 @@ jobs:
           NODE_ENV: test
           AUTH_MICROSERVICE_URL: http://localhost:3001 # URL de un mock o servicio de prueba
           EMAIL_MICROSERVICE_URL: http://localhost:3002 # URL de un mock o servicio de prueba
+
