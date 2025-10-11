@@ -17,10 +17,9 @@ jobs:
     runs-on: ubuntu-latest
 
     # PASO CLAVE: Define los servicios que se ejecutarán en contenedores junto al job.
-    # En este caso, iniciamos un contenedor de Docker-in-Docker (dind).
-    # Esto proporciona un entorno Docker aislado para que Testcontainers
-    # pueda levantar la base de datos PostgreSQL para las pruebas de integración.
     services:
+      # Inicia un contenedor de Docker-in-Docker (dind) para que Testcontainers
+      # pueda levantar la base de datos PostgreSQL para las pruebas de integración.
       docker:
         image: docker:23-dind # Usar una versión específica es una mejor práctica que 'latest'.
         # La opción '--privileged' es necesaria para que dind funcione correctamente.
@@ -29,6 +28,15 @@ jobs:
         ports:
           # Mapea el puerto 2375 del contenedor al puerto 2375 del host del runner.
           - 2375:2375
+        # (CORRECCIÓN CLAVE) Se añade un 'healthcheck' para asegurar que el servicio Docker
+        # esté completamente listo antes de que los pasos del job comiencen a ejecutarse.
+        # Esto reemplaza el script de espera manual y es la solución más robusta para
+        # los errores de 'EOF' y 'connection reset by peer'.
+        healthcheck:
+          test: ["CMD", "docker", "info"]
+          interval: 10s
+          timeout: 5s
+          retries: 5
 
     steps:
       # 1. Clona tu repositorio para que el job pueda acceder al código.
@@ -47,38 +55,18 @@ jobs:
       - name: Install NPM dependencies
         run: npm ci
 
-      # 4. (MEJORA) Esperar a que el servicio Docker (dind) esté completamente listo.
-      # Este paso previene fallos si los tests intentan usar Docker antes de que el daemon esté disponible.
-      - name: Wait for Docker to be ready
-        run: |
-          echo "Waiting for Docker daemon..."
-          for i in {1..30}; do
-            docker info >/dev/null 2>&1 && break
-            echo -n "."
-            sleep 1
-          done
-          echo "Docker daemon is ready!"
-          docker info
-        env:
-          # (CORRECCIÓN) Apuntamos explícitamente a la IP 127.0.0.1 (IPv4).
-          DOCKER_HOST: tcp://127.0.0.1:2375
-          # (CORRECCIÓN CLAVE) Deshabilitar la verificación TLS para la conexión con dind.
-          # Esto resuelve los errores de "connection reset by peer" al evitar
-          # que el cliente intente una negociación TLS que el daemon no espera por defecto.
-          DOCKER_TLS_CERTDIR: ""
-
-      # 5. Ejecuta todas las pruebas (unitarias, integración, e2e).
-      # Se configuran las variables de entorno necesarias para Testcontainers y la aplicación.
+      # 4. Ejecuta todas las pruebas (unitarias, integración, e2e).
+      # El 'healthcheck' del servicio ya garantiza que Docker está listo en este punto.
       - name: Run tests with Testcontainers
         run: npm run test
         env:
-          # --- Configuración para Testcontainers ---
+          # --- Configuración para Testcontainers y Docker CLI ---
+          # Apuntamos explícitamente a la IP 127.0.0.1 (IPv4) para la conexión.
           DOCKER_HOST: tcp://127.0.0.1:2375
-          # (CORRECCIÓN CLAVE) Se deshabilita TLS también para que Testcontainers se conecte correctamente.
+          # Se deshabilita la verificación TLS, necesaria para la configuración por defecto de dind.
           DOCKER_TLS_CERTDIR: ""
           # Deshabilita Ryuk, el 'recolector de basura' de Testcontainers.
-          # Es una buena práctica en entornos de CI efímeros para evitar problemas de timeouts
-          # y asegurar una limpieza más rápida.
+          # Es una buena práctica en entornos de CI efímeros.
           TESTCONTAINERS_RYUK_DISABLED: true
 
           # --- Configuración de la aplicación (Ejemplos para Clinfy) ---
