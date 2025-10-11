@@ -86,7 +86,7 @@ describe('ApiKeysService (integration)', () => {
     const result = await service.create(payload);
     expect(result).toMatchObject({
       client: 'billing-app',
-      id: expect.any(Number),
+      id: expect.any(String),
       apiKey: expect.any(String),
     });
     expect(result.apiKey).toHaveLength(64); // 32 bytes hex encoded

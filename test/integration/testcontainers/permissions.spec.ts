@@ -66,7 +66,7 @@ describe('PermissionsService (integration)', () => {
     const created = await service.create({ code: 'PERMISSIONS_CREATE' });
 
     expect(created).toMatchObject({
-      id: expect.any(Number),
+      id: expect.any(String),
       code: 'PERMISSIONS_CREATE',
     });
 
