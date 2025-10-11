@@ -5,9 +5,9 @@ name: Clinfy Microservice CI
 # Se activará en cada push o pull request a las ramas 'main' y 'develop'.
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "main", "develop" ]
   pull_request:
-    branches: [ "main" ]
+    branches: [ "main", "develop" ]
 
 jobs:
   # Job único para construir y ejecutar las pruebas.
@@ -22,21 +22,18 @@ jobs:
       # pueda levantar la base de datos PostgreSQL para las pruebas de integración.
       docker:
         image: docker:23-dind # Usar una versión específica es una mejor práctica que 'latest'.
-        # La opción '--privileged' es necesaria para que dind funcione correctamente.
+        # (CORRECCIÓN CLAVE) Se mueven los parámetros del healthcheck a la clave 'options',
+        # que los pasa directamente al comando 'docker create'. Esta es la sintaxis correcta
+        # para healthchecks de servicios en GitHub Actions.
         options: >-
           --privileged
+          --health-cmd "docker info"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
         ports:
           # Mapea el puerto 2375 del contenedor al puerto 2375 del host del runner.
           - 2375:2375
-        # (CORRECCIÓN CLAVE) Se añade un 'healthcheck' para asegurar que el servicio Docker
-        # esté completamente listo antes de que los pasos del job comiencen a ejecutarse.
-        # Esto reemplaza el script de espera manual y es la solución más robusta para
-        # los errores de 'EOF' y 'connection reset by peer'.
-        healthcheck:
-          test: ["CMD", "docker", "info"]
-          interval: 10s
-          timeout: 5s
-          retries: 5
 
     steps:
       # 1. Clona tu repositorio para que el job pueda acceder al código.
@@ -56,7 +53,7 @@ jobs:
         run: npm ci
 
       # 4. Ejecuta todas las pruebas (unitarias, integración, e2e).
-      # El 'healthcheck' del servicio ya garantiza que Docker está listo en este punto.
+      # El healthcheck del servicio ya garantiza que Docker está listo en este punto.
       - name: Run tests with Testcontainers
         run: npm run test
         env:
