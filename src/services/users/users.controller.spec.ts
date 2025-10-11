@@ -9,6 +9,9 @@ import { ForgotPasswordDTO, ResetPasswordDTO } from 'src/interfaces/DTO/reset-pa
 describe('UsersController', () => {
   let controller: UsersController;
   let service: jest.Mocked<UsersService>;
+  const userId = '11111111-1111-1111-1111-111111111111';
+  const roleIdA = '22222222-2222-2222-2222-222222222222';
+  const roleIdB = '33333333-3333-3333-3333-333333333333';
 
   beforeEach(() => {
     service = {
@@ -71,12 +74,12 @@ describe('UsersController', () => {
   });
 
   it('should assign roles to the user', async () => {
-    const dto: AssignRoleDTO = { rolesIds: [1, 2] };
-    const updatedUser = { id: 1 } as any;
+    const dto: AssignRoleDTO = { rolesIds: [roleIdA, roleIdB] };
+    const updatedUser = { id: userId } as any;
     service.assignRole.mockResolvedValue(updatedUser);
 
-    await expect(controller.assignRole(1 as any, dto)).resolves.toEqual(updatedUser);
-    expect(service.assignRole).toHaveBeenCalledWith(1, dto);
+    await expect(controller.assignRole(userId, dto)).resolves.toEqual(updatedUser);
+    expect(service.assignRole).toHaveBeenCalledWith(userId, dto);
   });
 
   it('should trigger forgot password flow', async () => {

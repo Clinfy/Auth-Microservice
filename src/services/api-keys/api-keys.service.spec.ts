@@ -20,6 +20,9 @@ describe('ApiKeysService', () => {
   let repository: jest.Mocked<Partial<Repository<any>>>;
   let permissionsService: jest.Mocked<{ findOne: jest.Mock }>;
   let service: ApiKeysService;
+  const permissionId = '11111111-1111-1111-1111-111111111111';
+  const apiKeyId = '33333333-3333-3333-3333-333333333333';
+  const secondApiKeyId = '44444444-4444-4444-4444-444444444444';
 
   const hashMock = hash as jest.MockedFunction<typeof hash>;
   const compareMock = compare as jest.MockedFunction<typeof compare>;
@@ -45,12 +48,12 @@ describe('ApiKeysService', () => {
   });
 
   it('creates API key and returns plaintext key', async () => {
-    (permissionsService.findOne as jest.Mock).mockResolvedValue({ id: 1, code: 'PERM' });
-    (repository.save as jest.Mock).mockResolvedValue({ id: 99, client: 'client-app' });
+    (permissionsService.findOne as jest.Mock).mockResolvedValue({ id: permissionId, code: 'PERM' });
+    (repository.save as jest.Mock).mockResolvedValue({ id: apiKeyId, client: 'client-app' });
 
-    await expect(service.create({ client: 'client-app', permissionIds: [1] })).resolves.toEqual({
+    await expect(service.create({ client: 'client-app', permissionIds: [permissionId] })).resolves.toEqual({
       apiKey: 'PLAINTEXT_KEY',
-      id: 99,
+      id: apiKeyId,
       client: 'client-app',
     });
 
@@ -59,39 +62,39 @@ describe('ApiKeysService', () => {
     expect(repository.create).toHaveBeenCalledWith({
       client: 'client-app',
       key_hash: 'HASHED',
-      permissions: [{ id: 1, code: 'PERM' }],
+      permissions: [{ id: permissionId, code: 'PERM' }],
     });
   });
 
   it('findAll returns API keys with relations', async () => {
-    (repository.find as jest.Mock).mockResolvedValue([{ id: 1 }]);
+    (repository.find as jest.Mock).mockResolvedValue([{ id: apiKeyId }]);
 
-    await expect(service.findAll()).resolves.toEqual([{ id: 1 }]);
+    await expect(service.findAll()).resolves.toEqual([{ id: apiKeyId }]);
     expect(repository.find).toHaveBeenCalledWith({ relations: ['permissions'] });
   });
 
   it('findOne returns key when present or throws', async () => {
     (repository.findOne as jest.Mock).mockResolvedValueOnce(null);
 
-    await expect(service.findOne(5)).rejects.toBeInstanceOf(NotFoundException);
+    await expect(service.findOne(apiKeyId)).rejects.toBeInstanceOf(NotFoundException);
 
-    (repository.findOne as jest.Mock).mockResolvedValueOnce({ id: 5 });
-    await expect(service.findOne(5)).resolves.toEqual({ id: 5 });
+    (repository.findOne as jest.Mock).mockResolvedValueOnce({ id: apiKeyId });
+    await expect(service.findOne(apiKeyId)).resolves.toEqual({ id: apiKeyId });
   });
 
   it('deactivate disables active API key', async () => {
-    const activeKey = { id: 7, client: 'client', active: true };
+    const activeKey = { id: apiKeyId, client: 'client', active: true };
     (repository.findOne as jest.Mock).mockResolvedValue(activeKey);
     (repository.save as jest.Mock).mockResolvedValue(undefined);
 
-    await expect(service.deactivate(7)).resolves.toEqual({ message: 'API key 7 client deactivated' });
-    expect(repository.save).toHaveBeenCalledWith(expect.objectContaining({ id: 7, active: false }));
+    await expect(service.deactivate(apiKeyId)).resolves.toEqual({ message: `API key ${apiKeyId} client deactivated` });
+    expect(repository.save).toHaveBeenCalledWith(expect.objectContaining({ id: apiKeyId, active: false }));
   });
 
   it('findActiveByPlainKey returns matching active key', async () => {
     const keys = [
-      { id: 1, key_hash: 'HASH1', active: true },
-      { id: 2, key_hash: 'HASH2', active: true },
+      { id: apiKeyId, key_hash: 'HASH1', active: true },
+      { id: secondApiKeyId, key_hash: 'HASH2', active: true },
     ];
     (repository.find as jest.Mock).mockResolvedValue(keys);
     compareMock.mockResolvedValueOnce(false).mockResolvedValueOnce(true);
@@ -102,7 +105,7 @@ describe('ApiKeysService', () => {
   });
 
   it('findActiveByPlainKey throws when no key matches', async () => {
-    (repository.find as jest.Mock).mockResolvedValue([{ id: 1, key_hash: 'HASH', active: true }]);
+    (repository.find as jest.Mock).mockResolvedValue([{ id: apiKeyId, key_hash: 'HASH', active: true }]);
     compareMock.mockResolvedValue(false);
 
     await expect(service.findActiveByPlainKey('PLAINTEXT')).rejects.toBeInstanceOf(ForbiddenException);

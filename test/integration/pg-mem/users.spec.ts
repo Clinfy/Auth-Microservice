@@ -11,6 +11,7 @@ import { JwtService } from 'src/services/JWT/jwt.service';
 import { EmailService } from 'src/clients/email/email.service';
 import { IBackup, IMemoryDb, newDb } from 'pg-mem';
 import { entities } from 'src/entities';
+import { randomUUID } from 'crypto';
 
 describe('UsersService (integration)', () => {
   let moduleRef: TestingModule;
@@ -45,6 +46,16 @@ describe('UsersService (integration)', () => {
     db.public.registerFunction({
       name: 'version',
       implementation: () => 'PostgreSQL 17.6'
+    })
+
+    db.public.registerFunction({
+      name: 'uuid_generate_v4',
+      implementation: () => randomUUID()
+    })
+
+    db.public.registerFunction({
+      name: 'gen_random_uuid',
+      implementation: () => randomUUID()
     })
 
     dataSource = await db.adapters.createTypeormDataSource({

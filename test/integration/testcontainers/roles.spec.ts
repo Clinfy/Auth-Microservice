@@ -73,7 +73,7 @@ describe('RolesService (integration)', () => {
     const role = await service.create({ name: 'admin' });
 
     expect(role).toMatchObject({
-      id: expect.any(Number),
+      id: expect.any(String),
       name: 'admin',
     });
 

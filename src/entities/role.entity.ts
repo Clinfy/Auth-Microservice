@@ -4,8 +4,8 @@ import {UserEntity} from "./user.entity";
 
 @Entity('role')
 export class RoleEntity extends BaseEntity {
-    @PrimaryGeneratedColumn()
-    id: number;
+    @PrimaryGeneratedColumn('uuid')
+    id: string;
 
     @Column({unique: true})
     name: string;
