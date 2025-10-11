@@ -27,7 +27,7 @@ export class RolesController {
     @ApiOkResponse({type: RoleEntity})
     @ApiNotFoundResponse({description: 'Role not found'})
     @Patch('edit/:id')
-    edit(@Body() dto: PatchRoleDTO, @Param('id') id: number): Promise<RoleEntity> {
+    edit(@Body() dto: PatchRoleDTO, @Param('id') id: string): Promise<RoleEntity> {
         return this.rolesService.update(id, dto);
     }
 
@@ -38,7 +38,7 @@ export class RolesController {
     @ApiNotFoundResponse({description: 'Role not found'})
     @ApiNotFoundResponse({description: 'Permission not found'})
     @Patch('assign-permissions/:id')
-    assignPermissions(@Param('id') id: number, @Body() dto: AssignPermissionDTO): Promise<RoleEntity> {
+    assignPermissions(@Param('id') id: string, @Body() dto: AssignPermissionDTO): Promise<RoleEntity> {
         return this.rolesService.assignPermissions(id, dto);
     }
 
@@ -48,7 +48,7 @@ export class RolesController {
     @ApiOkResponse({description: 'Role deleted'})
     @ApiNotFoundResponse({description: 'Role not found'})
     @Delete('delete/:id')
-    delete(@Param('id') id: number): Promise<{message: string}> {
+    delete(@Param('id') id: string): Promise<{message: string}> {
         return this.rolesService.delete(id);
     }
 
@@ -58,7 +58,7 @@ export class RolesController {
     @ApiOkResponse({type: RoleEntity})
     @ApiNotFoundResponse({description: 'Role not found'})
     @Get('find/:id')
-    findOne(@Param('id') id: number): Promise<RoleEntity> {
+    findOne(@Param('id') id: string): Promise<RoleEntity> {
         return this.rolesService.findOne(id);
     }
 

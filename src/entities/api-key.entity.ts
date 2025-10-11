@@ -3,8 +3,8 @@ import {PermissionEntity} from "src/entities/permission.entity";
 
 @Entity('api_key')
 export class ApiKeyEntity extends BaseEntity {
-    @PrimaryGeneratedColumn()
-    id: number;
+    @PrimaryGeneratedColumn('uuid')
+    id: string;
 
     @Index({unique: true})
     @Column()

@@ -90,7 +90,7 @@ export class UsersService {
         return this.userRepository.findOne({ where: { email } });
     }
 
-    async assignRole(id: number, dto: AssignRoleDTO): Promise<UserEntity> {
+    async assignRole(id: string, dto: AssignRoleDTO): Promise<UserEntity> {
         const user = await this.findOne(id);
         user.roles = await Promise.all(dto.rolesIds.map(roleId => this.roleService.findOne(roleId)));
         return this.userRepository.save(user);
@@ -126,7 +126,7 @@ export class UsersService {
       return {message: 'Password reset successfully'}
     }
 
-    private async findOne(id: number): Promise<UserEntity> {
+    private async findOne(id: string): Promise<UserEntity> {
         const user = await this.userRepository.findOneBy({ id });
         if (!user) throw new NotFoundException('User not found');
         return user;

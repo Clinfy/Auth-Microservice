@@ -65,7 +65,7 @@ export class UsersController {
     @ApiBearerAuth()
     @ApiOperation({summary: 'Return if a user have permissions to do something'})
     @ApiOkResponse({type: Boolean})
-    @Get('can-do')
+    @Get('can-do/:permission')
     canDo(@Req() request: requestUser.RequestWithUser, @Param('permission') permission: string ): Promise<Boolean> {
         return this.userService.canDo(request.user, permission);
     }
@@ -87,7 +87,7 @@ export class UsersController {
     @ApiNotFoundResponse({description: 'User not found'})
     @ApiNotFoundResponse({description: 'Role not found'})
     @Post('assign-role/:id')
-    assignRole(@Param('id') id: number, @Body() dto: AssignRoleDTO): Promise<UserEntity> {
+    assignRole(@Param('id') id: string, @Body() dto: AssignRoleDTO): Promise<UserEntity> {
         return this.userService.assignRole(id, dto);
     }
 
