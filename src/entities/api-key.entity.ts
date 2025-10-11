@@ -1,26 +1,47 @@
-import {BaseEntity, Column, Entity, Index, JoinTable, ManyToMany, PrimaryGeneratedColumn} from "typeorm";
+import {
+  BaseEntity,
+  Column,
+  CreateDateColumn,
+  Entity,
+  Index,
+  JoinTable,
+  ManyToMany,
+  ManyToOne,
+  PrimaryGeneratedColumn,
+  UpdateDateColumn,
+} from 'typeorm';
 import {PermissionEntity} from "src/entities/permission.entity";
+import { UserEntity } from 'src/entities/user.entity';
 
 @Entity('api_key')
 export class ApiKeyEntity extends BaseEntity {
-    @PrimaryGeneratedColumn('uuid')
-    id: string;
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
 
-    @Index({unique: true})
-    @Column()
-    key_hash: string;
+  @Index({unique: true})
+  @Column()
+  key_hash: string;
 
-    @Column()
-    client: string;
+  @Column()
+  client: string;
 
-    @Column({ default: true})
-    active: boolean;
+  @Column({ default: true})
+  active: boolean;
 
-    @ManyToMany(()=>PermissionEntity, permission => permission.api_keys)
-    @JoinTable()
-    permissions: PermissionEntity[];
+  @CreateDateColumn()
+  created_at: Date;
 
-    get permissionCodes(): string[] {
-        return this.permissions?.map(permission => permission.code) || [];
-    }
+  @UpdateDateColumn()
+  updated_at: Date;
+
+  @ManyToOne(()=> UserEntity, { nullable: true })
+  created_by: UserEntity;
+
+  @ManyToMany(()=>PermissionEntity, permission => permission.api_keys)
+  @JoinTable()
+  permissions: PermissionEntity[];
+
+  get permissionCodes(): string[] {
+      return this.permissions?.map(permission => permission.code) || [];
+  }
 }

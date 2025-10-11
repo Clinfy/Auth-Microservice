@@ -1,11 +1,14 @@
 import {
   BaseEntity,
   Column,
+  CreateDateColumn,
   Entity,
   JoinTable,
   ManyToMany,
+  ManyToOne,
   PrimaryGeneratedColumn,
   Unique,
+  UpdateDateColumn,
 } from 'typeorm';
 import {PermissionEntity} from "./permission.entity";
 import {UserEntity} from "./user.entity";
@@ -14,17 +17,26 @@ import {UserEntity} from "./user.entity";
 
 @Entity('role')
 export class RoleEntity extends BaseEntity {
-    @PrimaryGeneratedColumn('uuid')
-    id: string;
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
 
-    @Column({unique: true})
-    name: string;
+  @Column({unique: true})
+  name: string;
 
-    @ManyToMany(()=> PermissionEntity, permission => permission.roles,
-        {nullable: true, eager: true, onDelete: "RESTRICT", onUpdate: "CASCADE"})
-    @JoinTable()
-    permissions: PermissionEntity[];
+  @CreateDateColumn()
+  created_at: Date;
 
-    @ManyToMany(()=> UserEntity, user => user.roles)
-    users: UserEntity[];
+  @UpdateDateColumn()
+  updated_at: Date;
+
+  @ManyToOne(()=> UserEntity, { nullable: true })
+  created_by: UserEntity;
+
+  @ManyToMany(()=> PermissionEntity, permission => permission.roles,
+      {nullable: true, eager: true, onDelete: "RESTRICT", onUpdate: "CASCADE"})
+  @JoinTable()
+  permissions: PermissionEntity[];
+
+  @ManyToMany(()=> UserEntity, user => user.roles)
+  users: UserEntity[];
 }
