@@ -1,6 +1,16 @@
-import {BaseEntity, Column, Entity, JoinTable, ManyToMany, PrimaryGeneratedColumn} from "typeorm";
+import {
+  BaseEntity,
+  Column,
+  Entity,
+  JoinTable,
+  ManyToMany,
+  PrimaryGeneratedColumn,
+  Unique,
+} from 'typeorm';
 import {PermissionEntity} from "./permission.entity";
 import {UserEntity} from "./user.entity";
+
+@Unique('UQ_role_name',['name'])
 
 @Entity('role')
 export class RoleEntity extends BaseEntity {
