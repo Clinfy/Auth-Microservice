@@ -25,7 +25,7 @@ export class IsUniquePermissionCodeConstraint implements ValidatorConstraintInte
     }
 
     defaultMessage() {
-        return 'This code is already register. Please choose another one.';
+        return 'This permission code is already register. Please choose another one.';
     }
 }
 
