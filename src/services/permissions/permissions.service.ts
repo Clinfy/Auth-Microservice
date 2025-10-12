@@ -13,12 +13,11 @@ export class PermissionsService {
         private readonly permissionRepository: Repository<PermissionEntity>,
     ) {}
 
-    async create(dto: CreatePermissionDTO, request: RequestWithUser): Promise<{message: string}> {
-        const permission = await this.permissionRepository.save(this.permissionRepository.create({
+    async create(dto: CreatePermissionDTO, request: RequestWithUser): Promise<PermissionEntity> {
+        return await this.permissionRepository.save(this.permissionRepository.create({
           ...dto,
           created_by: request.user,
         }));
-        return {message: `Permission '${permission.code}' created`};
     }
 
     async update(id: string, dto: PatchPermissionDTO): Promise<PermissionEntity> {

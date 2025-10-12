@@ -1,4 +1,16 @@
-import {Body, Controller, Delete, Get, Param, Patch, Post, Req, UseGuards} from '@nestjs/common';
+import {
+  Body,
+  ClassSerializerInterceptor,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Req,
+  UseGuards,
+  UseInterceptors,
+} from '@nestjs/common';
 import {PermissionsService} from "src/services/permissions/permissions.service";
 import {AuthGuard} from "src/middlewares/auth.middleware";
 import {Permissions} from "src/middlewares/decorators/permissions.decorator";
@@ -14,10 +26,11 @@ export class PermissionsController {
 
   @UseGuards(AuthGuard)
   @Permissions(['PERMISSIONS_CREATE'])
+  @UseInterceptors(ClassSerializerInterceptor)
   @ApiOperation({ summary: 'Create a new permission' })
   @ApiCreatedResponse({schema: {type: 'object', properties: {message: { type: 'string' },},},})
   @Post('new')
-  create(@Req() request: requestUser.RequestWithUser, @Body() dto: CreatePermissionDTO): Promise<{message: string}> {
+  create(@Req() request: requestUser.RequestWithUser, @Body() dto: CreatePermissionDTO): Promise<PermissionEntity> {
     return this.permissionService.create(dto, request);
   }
 
