@@ -12,12 +12,14 @@ import {
 } from 'typeorm';
 import {PermissionEntity} from "src/entities/permission.entity";
 import { UserEntity } from 'src/entities/user.entity';
+import { Exclude } from 'class-transformer';
 
 @Entity('api_key')
 export class ApiKeyEntity extends BaseEntity {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
+  @Exclude()
   @Index({unique: true})
   @Column()
   key_hash: string;

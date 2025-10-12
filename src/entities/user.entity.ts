@@ -15,6 +15,7 @@ import {
 import {UserI} from "../interfaces/user.interface";
 import { hashSync } from 'bcrypt';
 import {RoleEntity} from "./role.entity";
+import { Exclude } from 'class-transformer';
 
 @Unique('UQ_users_email',['email'])
 
@@ -26,12 +27,14 @@ export class UserEntity extends BaseEntity implements UserI {
   @Column({nullable: false})
   email: string;
 
+  @Exclude()
   @Column({nullable: false})
   password: string;
 
   @Column({ default: true, nullable: false})
   active: boolean;
 
+  @Exclude()
   @Column({type: "varchar", default: null, nullable: true})
   passResetToken:string|null = null
 
