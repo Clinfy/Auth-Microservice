@@ -16,6 +16,8 @@ export class ApiKeysService {
   constructor(
       @InjectRepository(ApiKeyEntity)
       private readonly apiKeyRepository: Repository<ApiKeyEntity>,
+      @InjectRepository(OutboxEntity)
+      private readonly outboxRepository: Repository<OutboxEntity>,
 
       @InjectEntityManager()
       private readonly entityManager: EntityManager,
@@ -72,15 +74,33 @@ export class ApiKeysService {
       return apiKey;
   }
 
-  async deactivate(id: string): Promise<{ message: string }> {
-      const apiKey = await this.findOne(id);
+  async deactivate(id: string, request: RequestWithUser): Promise<{ message: string }> {
+    const apiKey = await this.findOne(id);
 
-      if (!apiKey.active) {
-          return { message: 'API key is already inactive' };
-      }
+    if (!apiKey.active) {
+        return { message: 'API key is already inactive' };
+    }
 
-      apiKey.active = false;
-      await this.apiKeyRepository.save(apiKey);
+    apiKey.active = false;
+    await this.apiKeyRepository.save(apiKey);
+
+    const eventPayload = {
+      action: 'DEACTIVATE_API_KEY',
+      api_id: apiKey.id,
+      details: `API key for cliente: ${apiKey.client} deactivated`,
+      done_by_id: request.user.id,
+      done_by_mail: request.user.email,
+      timestamp: new Date().toISOString()
+    }
+
+    const outbox = this.outboxRepository.create({
+      pattern: 'api_key_deactivated',
+      destination: 'audit_queue',
+      payload: eventPayload
+    })
+
+    await this.outboxRepository.save(outbox);
+
 
       return { message: `API key ${id} ${apiKey.client} deactivated` };
   }
