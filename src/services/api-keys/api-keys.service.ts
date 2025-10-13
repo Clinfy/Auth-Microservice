@@ -43,7 +43,8 @@ export class ApiKeysService {
         action: 'CREATE_API_KEY',
         api_id: apiKey.id,
         details: `new API key for client: ${apiKey.client} with permission/s: ${apiKey.permissionCodes} created`,
-        done_by: apiKey.created_by,
+        done_by_id: apiKey.created_by.id,
+        done_by_mail: apiKey.created_by.email,
         timestamp: new Date().toISOString()
       };
 
