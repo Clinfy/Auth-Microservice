@@ -31,6 +31,7 @@ imports: [ConfigModule.forRoot({
           synchronize: true,
       }),
   }),
+
   ClientsModule.registerAsync([
     {
       imports: [ConfigModule],

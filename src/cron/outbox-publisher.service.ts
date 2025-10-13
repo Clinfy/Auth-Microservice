@@ -16,16 +16,16 @@ export class OutboxPublisherService {
   ) {}
 
   @Cron(CronExpression.EVERY_10_SECONDS)
-  async handleAuditEvents() {
+  private async handleAuditEvents() {
     const pendingEvents = await this.outboxRepository.find({
       where: { status: OutboxStatus.PENDING, destination: 'audit_queue' },
     });
-
 
     for (const event of pendingEvents) {
       try {
         this.auditClient.emit(event.pattern, event.payload);
         await this.outboxRepository.update(event.id, { status: OutboxStatus.SENT });
+
       } catch (error) {
         console.error('Error publishing event:', error);
       }
