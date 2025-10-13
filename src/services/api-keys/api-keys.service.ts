@@ -50,7 +50,7 @@ export class ApiKeysService {
 
       const outbox = transactionManager.create(OutboxEntity, {
         pattern: 'api_key_created',
-        destination: 'auth_queque',
+        destination: 'audit_queue',
         payload: eventPayload
       });
 
