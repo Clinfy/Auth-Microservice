@@ -1,5 +1,6 @@
 import {
   Body,
+  ClassSerializerInterceptor,
   Controller,
   Get,
   Param,
@@ -7,6 +8,7 @@ import {
   Query,
   Req,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
 import {AuthGuard} from "src/middlewares/auth.middleware";
 import {Permissions} from "src/middlewares/decorators/permissions.decorator";
@@ -58,7 +60,9 @@ export class UsersController {
   @ApiOkResponse({ schema: { type: 'object', properties: { accessToken: { type: 'string' }, refreshToken: { type: 'string' }, }, }, })
   @Get('refresh-token')
   refreshToken(@Req() request: Request): Promise<AuthInterface> {
-    return this.userService.refreshToken(request.headers['refresh-token'] as string);
+    return this.userService.refreshToken(
+      request.headers['refresh-token'] as string,
+    );
   }
 
   @UseGuards(AuthGuard)
@@ -75,12 +79,16 @@ export class UsersController {
   @ApiOperation({ summary: 'Return the email of the user logged in' })
   @ApiOkResponse({ schema: { type: 'object', properties: { email: { type: 'string' } } }, })
   @Get('me')
-  me(@Req() request: requestUser.RequestWithUser): Promise<string> {
-    return Promise.resolve(request.user.email);
+  me(@Req() request: requestUser.RequestWithUser) {
+    return {
+      id: request.user.id ,
+      email: request.user.email
+    };
   }
 
   @UseGuards(AuthGuard)
   @Permissions(['USERS_UPDATE'])
+  @UseInterceptors(ClassSerializerInterceptor)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Assign roles to a user' })
   @ApiOkResponse({ type: UserEntity })

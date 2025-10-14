@@ -18,8 +18,7 @@ export class RolesController {
   @ApiOperation({ summary: 'Create a new role' })
   @ApiCreatedResponse({ type: RoleEntity })
   @Post('new')
-  create(
-    @Req() request: requestUser.RequestWithUser, @Body() dto: any): Promise<RoleEntity> {
+  create(@Req() request: requestUser.RequestWithUser, @Body() dto: any): Promise<RoleEntity> {
     return this.rolesService.create(dto, request);
   }
 
@@ -29,10 +28,7 @@ export class RolesController {
   @ApiOkResponse({ type: RoleEntity })
   @ApiNotFoundResponse({ description: 'Role not found' })
   @Patch('edit/:id')
-  edit(
-    @Body() dto: PatchRoleDTO,
-    @Param('id') id: string,
-  ): Promise<RoleEntity> {
+  edit(@Body() dto: PatchRoleDTO, @Param('id') id: string): Promise<RoleEntity> {
     return this.rolesService.update(id, dto);
   }
 
@@ -43,10 +39,7 @@ export class RolesController {
   @ApiNotFoundResponse({ description: 'Role not found' })
   @ApiNotFoundResponse({ description: 'Permission not found' })
   @Patch('assign-permissions/:id')
-  assignPermissions(
-    @Param('id') id: string,
-    @Body() dto: AssignPermissionDTO,
-  ): Promise<RoleEntity> {
+  assignPermissions(@Param('id') id: string, @Body() dto: AssignPermissionDTO): Promise<RoleEntity> {
     return this.rolesService.assignPermissions(id, dto);
   }
 
