@@ -69,7 +69,7 @@ export class ApiKeysController {
     schema: { type: 'object', properties: { message: { type: 'string' } } },
   })
   @Patch('deactivate/:id')
-  deactivate(@Req() request: requestUser.RequestWithUser, @Param('id') id: string): Promise<{ message: string }> {
-    return this.apiKeysService.deactivate(id, request);
+  deactivate(@Param('id') id: string): Promise<{ message: string }> {
+    return this.apiKeysService.deactivate(id);
   }
 }

@@ -16,8 +16,6 @@ export class ApiKeysService {
   constructor(
       @InjectRepository(ApiKeyEntity)
       private readonly apiKeyRepository: Repository<ApiKeyEntity>,
-      @InjectRepository(OutboxEntity)
-      private readonly outboxRepository: Repository<OutboxEntity>,
 
       @InjectEntityManager()
       private readonly entityManager: EntityManager,
@@ -41,23 +39,6 @@ export class ApiKeysService {
 
       await transactionManager.save(apiKey);
 
-      const eventPayload = {
-        action: 'CREATE_API_KEY',
-        api_id: apiKey.id,
-        details: `new API key for client: ${apiKey.client} with permission/s: ${apiKey.permissionCodes} created`,
-        done_by_id: apiKey.created_by.id,
-        done_by_mail: apiKey.created_by.email,
-        timestamp: new Date().toISOString()
-      };
-
-      const outbox = transactionManager.create(OutboxEntity, {
-        pattern: 'api_key_created',
-        destination: 'audit_queue',
-        payload: eventPayload
-      });
-
-      await transactionManager.save(outbox);
-
       return { apiKey: plainApiKey, id: apiKey.id, client: apiKey.client };
     })
   }
@@ -74,7 +55,7 @@ export class ApiKeysService {
       return apiKey;
   }
 
-  async deactivate(id: string, request: RequestWithUser): Promise<{ message: string }> {
+  async deactivate(id: string): Promise<{ message: string }> {
     const apiKey = await this.findOne(id);
 
     if (!apiKey.active) {
@@ -83,23 +64,6 @@ export class ApiKeysService {
 
     apiKey.active = false;
     await this.apiKeyRepository.save(apiKey);
-
-    const eventPayload = {
-      action: 'DEACTIVATE_API_KEY',
-      api_id: apiKey.id,
-      details: `API key for cliente: ${apiKey.client} deactivated`,
-      done_by_id: request.user.id,
-      done_by_mail: request.user.email,
-      timestamp: new Date().toISOString()
-    }
-
-    const outbox = this.outboxRepository.create({
-      pattern: 'api_key_deactivated',
-      destination: 'audit_queue',
-      payload: eventPayload
-    })
-
-    await this.outboxRepository.save(outbox);
 
 
       return { message: `API key ${id} ${apiKey.client} deactivated` };
