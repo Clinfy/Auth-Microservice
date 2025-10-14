@@ -15,9 +15,8 @@ import { IsUniqueRoleNameConstraint } from 'src/common/validators/unique-role-na
 import { ClientsModule, Transport } from '@nestjs/microservices';
 import { ScheduleModule } from '@nestjs/schedule';
 import { OutboxPublisherService } from 'src/cron/outbox-publisher.service';
-import { RequestContextModule } from 'src/common/context/request-context.module';
-import { RequestContextMiddleware } from 'src/middlewares/request-context.middleware';
 import { OutboxSubscriberService } from 'src/cron/outbox-subscriber.service';
+import { RequestContextService } from 'src/common/context/request-context.service';
 
 @Module({
 imports: [ConfigModule.forRoot({
@@ -55,7 +54,6 @@ imports: [ConfigModule.forRoot({
 
   ScheduleModule.forRoot(),
   TypeOrmModule.forFeature(entities),
-  RequestContextModule,
   PermissionsModule,
   ApiKeysModule,
   UsersModule,
@@ -64,10 +62,6 @@ imports: [ConfigModule.forRoot({
   EmailModule
 ],
 controllers: [AppController],
-providers: [AppService, IsUniquePermissionCodeConstraint, IsUniqueRoleNameConstraint, OutboxPublisherService, OutboxSubscriberService],
+providers: [AppService, IsUniquePermissionCodeConstraint, IsUniqueRoleNameConstraint, OutboxPublisherService, OutboxSubscriberService, RequestContextService],
 })
-export class AppModule implements NestModule {
-  configure(consumer: MiddlewareConsumer) {
-    consumer.apply(RequestContextMiddleware).forRoutes('*');
-  }
-}
+export class AppModule {}
