@@ -121,10 +121,7 @@ export class OutboxSubscriberService implements EntitySubscriberInterface {
     );
   }
 
-  private resolveEntityName(
-    metadata: EntityMetadata | undefined,
-    entity: Record<string, unknown>,
-  ): string {
+  private resolveEntityName(metadata: EntityMetadata | undefined, entity: Record<string, unknown>): string {
     return (
       metadata?.targetName ??
       metadata?.name ??
@@ -133,10 +130,7 @@ export class OutboxSubscriberService implements EntitySubscriberInterface {
     );
   }
 
-  private extractPrimaryKeys(
-    metadata: EntityMetadata | undefined,
-    entity: Record<string, unknown>,
-  ): Record<string, unknown> {
+  private extractPrimaryKeys(metadata: EntityMetadata | undefined, entity: Record<string, unknown>): Record<string, unknown> {
     return metadata?.primaryColumns.reduce<Record<string, unknown>>(
       (acc, column) => {
         const key = column.propertyName;
@@ -147,11 +141,7 @@ export class OutboxSubscriberService implements EntitySubscriberInterface {
     ) ?? {};
   }
 
-  private async createOutboxRecord(
-    manager: EntityManager,
-    pattern: string,
-    payload: Record<string, unknown>,
-  ) {
+  private async createOutboxRecord(manager: EntityManager, pattern: string, payload: Record<string, unknown>) {
     const outbox = manager.create(OutboxEntity, {
       pattern,
       destination: 'audit_queue',
