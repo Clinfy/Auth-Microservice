@@ -7,7 +7,6 @@ export class RequestContextMiddleware implements NestMiddleware {
   constructor(private readonly contextService: RequestContextService) {}
 
   use(req: Request, res: Response, next: NextFunction) {
-    console.log('RequestContextMiddleware: Iniciando contexto de solicitud');
     this.contextService.start(next);
   }
 }

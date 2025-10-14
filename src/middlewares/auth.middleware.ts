@@ -22,7 +22,6 @@ export class AuthGuard implements CanActivate {
     ) {}
 
     async canActivate(context: ExecutionContext): Promise<boolean> {
-      console.log('Activando middleware')
         const request: RequestWithUser = context.switchToHttp().getRequest();
 
         const authorizationHeader = request.headers?.authorization;
