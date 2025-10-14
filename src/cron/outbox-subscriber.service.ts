@@ -28,8 +28,8 @@ export class OutboxSubscriberService implements EntitySubscriberInterface {
       action: 'API_KEY_CREATED',
       api_key_id: apiKey.id,
       details: `New API key created for client: ${apiKey.client} with permissions: ${apiKey.permissionCodes.join(', ')}`,
-      //done_by_id: user?.id,
-      //done_by_email: user?.email,
+      done_by_id: user?.id,
+      done_by_email: user?.email,
       timestamp: new Date().toISOString(),
     }
 
