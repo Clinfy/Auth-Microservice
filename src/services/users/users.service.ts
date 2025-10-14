@@ -25,116 +25,116 @@ import { RequestWithUser } from 'src/interfaces/request-user';
 
 @Injectable()
 export class UsersService {
-    constructor(
-        @InjectRepository(UserEntity)
-        private readonly userRepository: Repository<UserEntity>,
+  constructor(
+      @InjectRepository(UserEntity)
+      private readonly userRepository: Repository<UserEntity>,
 
-        @InjectDataSource()
-        private readonly dataSource: DataSource,
+      @InjectDataSource()
+      private readonly dataSource: DataSource,
 
-        private readonly jwtService: JwtService,
-        private readonly roleService: RolesService,
-        private readonly emailService: EmailService,
-    ) {}
+      private readonly jwtService: JwtService,
+      private readonly roleService: RolesService,
+      private readonly emailService: EmailService,
+  ) {}
 
-    async refreshToken(refreshToken: string): Promise<AuthInterface> {
-        return this.jwtService.refreshToken(refreshToken);
-    }
+  async refreshToken(refreshToken: string): Promise<AuthInterface> {
+      return this.jwtService.refreshToken(refreshToken);
+  }
 
-    async canDo(user: UserI, permissionCode: string): Promise<boolean> {
-        const result = user.permissionCodes.includes(permissionCode);
-        if (!result) {
-            throw new UnauthorizedException('You do not have permission to perform this action');
-        }
-        return result;
-    }
-
-    async register(dto: RegisterUserDTO, request: RequestWithUser): Promise<{ message: string }> {
-        return this.dataSource.transaction(async manager => {
-            const transactionalRepository = manager.getRepository(UserEntity);
-            const user = await transactionalRepository.save(
-              transactionalRepository.create({
-                ...dto,
-                created_by: request.user
-              }),
-            );
-            return {message: `User ${user.email} created`};
-        });
-    }
-
-    async logIn(body: LoginDTO): Promise<AuthInterface> {
-        const user = await this.findByEmail(body.email);
-        if (!user) {
-            throw new UnauthorizedException('Wrong email or password');
-        }
-
-        if (!user.active) {
-            throw new UnauthorizedException('This user is not active');
-        }
-
-        const isPasswordValid = await compare(body.password, user.password);
-        if (!isPasswordValid) {
-            throw new UnauthorizedException('Wrong email or password');
-        }
-
-        try {
-            const [accessToken, refreshToken] = await Promise.all([
-                this.jwtService.generateToken({ email: user.email }, 'auth'),
-                this.jwtService.generateToken({ email: user.email }, 'refresh'),
-            ]);
-
-            return {
-                accessToken,
-                refreshToken,
-            };
-        } catch (error) {
-            throw new InternalServerErrorException('Unable to issue authentication tokens');
-        }
-    }
-
-    async findByEmail(email: string): Promise<UserEntity | null> {
-        return this.userRepository.findOne({ where: { email } });
-    }
-
-    async assignRole(id: string, dto: AssignRoleDTO): Promise<UserEntity> {
-        const user = await this.findOne(id);
-        user.roles = await Promise.all(dto.rolesIds.map(roleId => this.roleService.findOne(roleId)));
-        return this.userRepository.save(user);
-    }
-    
-    async forgotPassword(dto: ForgotPasswordDTO): Promise<{ message: string }> {
-      const user = await this.findByEmail(dto.email);
-      if (user) {
-        const token = await this.jwtService.generateToken({email: dto.email},'resetPassword')
-        user.passResetToken = token
-        await this.userRepository.save(user)
-        await this.emailService.sendResetPasswordMail(dto.email, token);
+  async canDo(user: UserI, permissionCode: string): Promise<boolean> {
+      const result = user.permissionCodes.includes(permissionCode);
+      if (!result) {
+          throw new UnauthorizedException('You do not have permission to perform this action');
       }
-      
-      return {message: 'If the email exists, a reset password link will be sent to it.'}
-    }
-    
-    async resetPassword(token: string, dto: ResetPasswordDTO): Promise<{ message: string }> {
-      const payload = await this.jwtService.getPayload(token, 'resetPassword');
-      const user = await this.findByEmail(payload.email);
+      return result;
+  }
+
+  async register(dto: RegisterUserDTO, request: RequestWithUser): Promise<{ message: string }> {
+      return this.dataSource.transaction(async manager => {
+          const transactionalRepository = manager.getRepository(UserEntity);
+          const user = await transactionalRepository.save(
+            transactionalRepository.create({
+              ...dto,
+              created_by: request.user
+            }),
+          );
+          return {message: `User ${user.email} created`};
+      });
+  }
+
+  async logIn(body: LoginDTO): Promise<AuthInterface> {
+      const user = await this.findByEmail(body.email);
       if (!user) {
-        throw new UnauthorizedException('Invalid or expired token');
+          throw new UnauthorizedException('Wrong email or password');
       }
 
-      if (user.passResetToken!=token) {
-        throw new ForbiddenException('Password already changed')
+      if (!user.active) {
+          throw new UnauthorizedException('This user is not active');
       }
 
-      user.password = dto.password;
-      user.passResetToken = null;
-      await this.userRepository.save(user);
-      await this.emailService.confirmPasswordChange(user.email)
-      return {message: 'Password reset successfully'}
+      const isPasswordValid = await compare(body.password, user.password);
+      if (!isPasswordValid) {
+          throw new UnauthorizedException('Wrong email or password');
+      }
+
+      try {
+          const [accessToken, refreshToken] = await Promise.all([
+              this.jwtService.generateToken({ email: user.email }, 'auth'),
+              this.jwtService.generateToken({ email: user.email }, 'refresh'),
+          ]);
+
+          return {
+              accessToken,
+              refreshToken,
+          };
+      } catch (error) {
+          throw new InternalServerErrorException('Unable to issue authentication tokens');
+      }
+  }
+
+  async findByEmail(email: string): Promise<UserEntity | null> {
+      return this.userRepository.findOne({ where: { email } });
+  }
+
+  async assignRole(id: string, dto: AssignRoleDTO): Promise<UserEntity> {
+      const user = await this.findOne(id);
+      user.roles = await Promise.all(dto.rolesIds.map(roleId => this.roleService.findOne(roleId)));
+      return this.userRepository.save(user);
+  }
+
+  async forgotPassword(dto: ForgotPasswordDTO): Promise<{ message: string }> {
+    const user = await this.findByEmail(dto.email);
+    if (user) {
+      const token = await this.jwtService.generateToken({email: dto.email},'resetPassword')
+      user.passResetToken = token
+      await this.userRepository.save(user)
+      await this.emailService.sendResetPasswordMail(dto.email, token);
     }
 
-    private async findOne(id: string): Promise<UserEntity> {
-        const user = await this.userRepository.findOneBy({ id });
-        if (!user) throw new NotFoundException('User not found');
-        return user;
+    return {message: 'If the email exists, a reset password link will be sent to it.'}
+  }
+
+  async resetPassword(token: string, dto: ResetPasswordDTO): Promise<{ message: string }> {
+    const payload = await this.jwtService.getPayload(token, 'resetPassword');
+    const user = await this.findByEmail(payload.email);
+    if (!user) {
+      throw new UnauthorizedException('Invalid or expired token');
     }
+
+    if (user.passResetToken!=token) {
+      throw new ForbiddenException('Password already changed')
+    }
+
+    user.password = dto.password;
+    user.passResetToken = null;
+    await this.userRepository.save(user);
+    await this.emailService.confirmPasswordChange(user.email)
+    return {message: 'Password reset successfully'}
+  }
+
+  private async findOne(id: string): Promise<UserEntity> {
+      const user = await this.userRepository.findOneBy({ id });
+      if (!user) throw new NotFoundException('User not found');
+      return user;
+  }
 }
