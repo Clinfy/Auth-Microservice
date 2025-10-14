@@ -10,6 +10,7 @@ import { RequestWithUser } from 'src/interfaces/request-user';
 import { JwtService } from 'src/services/JWT/jwt.service';
 import { Permissions } from './decorators/permissions.decorator';
 import { UsersService } from 'src/services/users/users.service';
+import { RequestContextService } from 'src/common/context/request-context.service';
 
 @Injectable()
 export class AuthGuard implements CanActivate {
@@ -17,6 +18,7 @@ export class AuthGuard implements CanActivate {
         private readonly jwtService: JwtService,
         private readonly reflector: Reflector,
         private readonly moduleRef: ModuleRef,
+        private readonly requestContextService: RequestContextService,
     ) {}
 
     async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -45,6 +47,7 @@ export class AuthGuard implements CanActivate {
         }
 
         request.user = user;
+        this.requestContextService.setCurrentUser(user);
 
         const permissions = this.reflector.getAllAndOverride<string[]>(Permissions, [
             context.getHandler(),
