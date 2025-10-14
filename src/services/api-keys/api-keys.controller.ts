@@ -29,27 +29,17 @@ import * as requestUser from 'src/interfaces/request-user';
 export class ApiKeysController {
   constructor(private readonly apiKeysService: ApiKeysService) {}
 
-  @ApiOperation({
-    summary: 'Return if an API key have permissions to do something',
-  })
+  @ApiOperation({ summary: 'Return if an API key have permissions to do something' })
   @ApiOkResponse({ type: Boolean })
   @Get('can-do/:permission')
-  canDo(
-    @Req() request: requestWithApi.RequestWithApiKey,
-    @Param('permission') permission: string,
-  ): Promise<boolean> {
+  canDo(@Req() request: requestWithApi.RequestWithApiKey, @Param('permission') permission: string): Promise<boolean> {
     return this.apiKeysService.canDo(request, permission);
   }
 
   @UseGuards(AuthGuard)
   @Permissions(['API_KEYS_CREATE'])
   @ApiOperation({ summary: 'Create a new API key' })
-  @ApiCreatedResponse({
-    schema: {
-      type: 'object',
-      properties: { id: { type: 'string' }, apiKey: { type: 'string' } },
-    },
-  })
+  @ApiCreatedResponse({ schema: { type: 'object', properties: { id: { type: 'string' }, apiKey: { type: 'string' } } } })
   @Post('generate')
   generate(@Req() response: requestUser.RequestWithUser, @Body() dto: CreateApiKeyDTO,): Promise<{ apiKey: string; id: string; client: string }> {
     return this.apiKeysService.create(dto, response);
@@ -68,9 +58,7 @@ export class ApiKeysController {
   @UseGuards(AuthGuard)
   @Permissions(['API_KEYS_DEACTIVATE'])
   @ApiOperation({ summary: 'Deactivate an API key' })
-  @ApiOkResponse({
-    schema: { type: 'object', properties: { message: { type: 'string' } } },
-  })
+  @ApiOkResponse({ schema: { type: 'object', properties: { message: { type: 'string' } } } })
   @Patch('deactivate/:id')
   deactivate(@Param('id') id: string): Promise<{ message: string }> {
     return this.apiKeysService.deactivate(id);
