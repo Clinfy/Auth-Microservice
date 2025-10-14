@@ -79,7 +79,7 @@ export class UsersController {
   @ApiOperation({ summary: 'Return the email of the user logged in' })
   @ApiOkResponse({ schema: { type: 'object', properties: { email: { type: 'string' } } }, })
   @Get('me')
-  me(@Req() request: requestUser.RequestWithUser) {
+  me(@Req() request: requestUser.RequestWithUser): {id: string, email: string} {
     return {
       id: request.user.id ,
       email: request.user.email
