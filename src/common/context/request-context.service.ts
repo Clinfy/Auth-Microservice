@@ -3,18 +3,29 @@ import { Injectable } from '@nestjs/common';
 import { AsyncLocalStorage } from 'node:async_hooks';
 
 interface RequestContext {
-  user: UserEntity;
+  user: UserEntity | null;
 }
 
 @Injectable()
 export class RequestContextService {
-  private readonly asyncLocalStorage = new AsyncLocalStorage<RequestContext>()
+  private readonly asyncLocalStorage = new AsyncLocalStorage<RequestContext>();
 
-  start<T>(user: UserEntity, callback: () => T): T  {
-    return this.asyncLocalStorage.run({ user }, callback)
+  start<T>(user: UserEntity | null, callback: () => T): T {
+    return this.asyncLocalStorage.run({ user }, callback);
   }
 
-  getCurrentUser(): UserEntity | undefined {
-    return this.asyncLocalStorage.getStore()?.user
+  setCurrentUser(user: UserEntity | null): void {
+    const store = this.asyncLocalStorage.getStore();
+
+    if (store) {
+      store.user = user;
+      return;
+    }
+
+    this.asyncLocalStorage.enterWith({ user });
+  }
+
+  getCurrentUser(): UserEntity | null {
+    return this.asyncLocalStorage.getStore()?.user ?? null;
   }
 }
