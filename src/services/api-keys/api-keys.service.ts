@@ -9,7 +9,6 @@ import {PermissionsService} from "src/services/permissions/permissions.service";
 import {RequestWithApiKey} from "src/interfaces/request-api-key";
 import {extractApiKey} from "src/common/tools/extract-api-key";
 import { RequestWithUser } from 'src/interfaces/request-user';
-import { OutboxEntity } from 'src/entities/outbox.entity';
 
 @Injectable()
 export class ApiKeysService {
