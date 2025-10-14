@@ -36,6 +36,7 @@ export class PermissionsController {
 
   @UseGuards(AuthGuard)
   @Permissions(['PERMISSIONS_UPDATE'])
+  @UseInterceptors(ClassSerializerInterceptor)
   @ApiOperation({ summary: 'Update a permission' })
   @ApiOkResponse({ type: PermissionEntity })
   @ApiNotFoundResponse({ description: 'Permission not found' })
@@ -46,6 +47,7 @@ export class PermissionsController {
 
   @UseGuards(AuthGuard)
   @Permissions(['PERMISSIONS_DELETE'])
+  @UseInterceptors(ClassSerializerInterceptor)
   @ApiOperation({ summary: 'Delete a permission' })
   @ApiOkResponse({ description: 'Permission deleted' })
   @ApiNotFoundResponse({ description: 'Permission not found' })
@@ -56,6 +58,7 @@ export class PermissionsController {
 
   @UseGuards(AuthGuard)
   @Permissions(['PERMISSIONS_READ'])
+  @UseInterceptors(ClassSerializerInterceptor)
   @ApiOperation({ summary: 'Find a permission by id number' })
   @ApiCreatedResponse({type: PermissionEntity})
   @ApiNotFoundResponse({ description: 'Permission not found' })
@@ -66,6 +69,7 @@ export class PermissionsController {
 
   @UseGuards(AuthGuard)
   @Permissions(['PERMISSIONS_READ'])
+  @UseInterceptors(ClassSerializerInterceptor)
   @ApiOperation({ summary: 'Find all permissions' })
   @ApiOkResponse({ type: [PermissionEntity] })
   @Get('all')

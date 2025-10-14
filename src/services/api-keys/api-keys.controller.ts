@@ -1,5 +1,6 @@
 import {
   Body,
+  ClassSerializerInterceptor,
   Controller,
   Get,
   Param,
@@ -7,6 +8,7 @@ import {
   Post,
   Req,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -55,6 +57,7 @@ export class ApiKeysController {
 
   @UseGuards(AuthGuard)
   @Permissions(['API_KEYS_READ'])
+  @UseInterceptors(ClassSerializerInterceptor)
   @ApiOperation({ summary: 'List all API keys' })
   @ApiOkResponse({ type: [ApiKeyEntity] })
   @Get('all')
