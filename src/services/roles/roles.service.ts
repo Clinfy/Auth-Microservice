@@ -46,7 +46,7 @@ export class RolesService {
 
     async assignPermissions(roleId: string, dto: AssignPermissionDTO): Promise<RoleEntity> {
         const role = await this.findOne(roleId);
-        role.permissions = await Promise.all(dto.permissionIds.map(id => this.permissionService.findOne(id)));
+        role.permissions = await Promise.all(dto.permissionsIds.map(id => this.permissionService.findOne(id)));
         return await this.roleRepository.save(role);
     }
 }
