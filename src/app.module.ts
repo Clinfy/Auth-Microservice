@@ -32,7 +32,6 @@ imports: [ConfigModule.forRoot({
           url: configService.get('DATABASE_HOST'),
           entities: [...entities],
           synchronize: true,
-          subscribers: [OutboxSubscriberService],
       }),
   }),
 
@@ -65,7 +64,7 @@ imports: [ConfigModule.forRoot({
   EmailModule
 ],
 controllers: [AppController],
-providers: [AppService, IsUniquePermissionCodeConstraint, IsUniqueRoleNameConstraint, OutboxPublisherService],
+providers: [AppService, IsUniquePermissionCodeConstraint, IsUniqueRoleNameConstraint, OutboxPublisherService, OutboxSubscriberService],
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
