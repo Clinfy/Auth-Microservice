@@ -79,6 +79,32 @@ export class OutboxSubscriberService implements EntitySubscriberInterface {
     await this.createOutboxRecord(event.manager, pattern, payload);
   }
 
+  async afterRemove(event: UpdateEvent<unknown>) {
+    const entity = event.entity as Record<string, unknown> | undefined;
+
+    if (!entity || this.shouldSkip(event.metadata)) {
+      return;
+    }
+
+    const user = this.contextService.getCurrentUser();
+    const metadata = event.metadata;
+    const entityName = this.resolveEntityName(metadata, entity);
+    const primaryKeys = this.extractPrimaryKeys(metadata, entity);
+
+    const payload = {
+      action: `${entityName.toUpperCase()}_DELETED`,
+      entity: entityName,
+      primary_key: primaryKeys,
+      done_by_id: user?.id ?? null,
+      done_by_email: user?.email ?? null,
+      timestamp: new Date().toISOString(),
+    };
+
+    const pattern = `${this.toSnakeCase(entityName)}_deleted`;
+
+    await this.createOutboxRecord(event.manager, pattern, payload);
+  }
+
   private toSnakeCase(value: string): string {
     return value
       .replace(/([a-z0-9])([A-Z])/g, '$1_$2')
