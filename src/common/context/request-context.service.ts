@@ -1,8 +1,8 @@
-import { UserEntity } from 'src/entities/user.entity';
 import { Injectable } from '@nestjs/common';
-import { AsyncLocalStorage } from 'node:async_hooks';
+import { AsyncLocalStorage } from 'async_hooks';
+import { UserEntity } from 'src/entities/user.entity';
 
-interface RequestContext {
+export interface RequestContext {
   user: UserEntity | null;
 }
 
@@ -10,22 +10,24 @@ interface RequestContext {
 export class RequestContextService {
   private readonly asyncLocalStorage = new AsyncLocalStorage<RequestContext>();
 
-  start<T>(user: UserEntity | null, callback: () => T): T {
-    return this.asyncLocalStorage.run({ user }, callback);
+  start<T>(callback: () => T): T {
+    return this.asyncLocalStorage.run({ user: null }, callback);
   }
 
-  setCurrentUser(user: UserEntity | null): void {
-    const store = this.asyncLocalStorage.getStore();
-
-    if (store) {
-      store.user = user;
-      return;
+  private getContext(): RequestContext {
+    const context = this.asyncLocalStorage.getStore();
+    if (!context) {
+      throw new Error('RequestContext no inicializado. ¿Olvidaste el RequestContextMiddleware?');
     }
+    return context;
+  }
 
-    this.asyncLocalStorage.enterWith({ user });
+  setUser(user: UserEntity): void {
+    const context = this.getContext();
+    context.user = user;
   }
 
   getCurrentUser(): UserEntity | null {
-    return this.asyncLocalStorage.getStore()?.user ?? null;
+    return this.getContext()?.user;
   }
 }
