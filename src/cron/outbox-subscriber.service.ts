@@ -61,15 +61,6 @@ export class OutboxSubscriberService implements EntitySubscriberInterface {
       {},
     );
 
-    const columnData = metadata.columns.reduce<Record<string, unknown>>(
-      (acc, column) => {
-        const key = column.propertyName;
-        acc[key] = entity[key];
-        return acc;
-      },
-      {},
-    );
-
     const payload = {
       action: `${entityName.toUpperCase()}_CREATED`,
       entity: entityName,
