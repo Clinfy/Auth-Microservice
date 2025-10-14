@@ -1,47 +1,40 @@
 # Nombre del workflow
-name: Nest.js run tests
+name: Run Jest tests
 
 # Se ejecuta en cada push o pull request a la rama 'main'
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "main","develop" ]
   pull_request:
-    branches: [ "main" ]
+    branches: [ "main","develop" ]
 
 jobs:
   build-and-test:
     # La máquina virtual donde correrá el trabajo
     runs-on: ubuntu-latest
 
-    # PASO CLAVE: Inicia un contenedor de Docker-in-Docker como servicio
-    # Esto proporciona un entorno Docker para tus pruebas de Testcontainers
-    services:
-      docker:
-        image: docker:dind
-        ports:
-          - 2375:2375
-
     steps:
-      # 1. Clona tu repositorio
+      #1. Configura Docker
+      - name: Set up Docker
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y docker-compose
+
+      # 2. Clona tu repositorio
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 2. Configura Node.js v24.5.0
+      # 3. Configura Node.js v24.5.0
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '24.5.0'
           cache: 'npm'
 
-      # 3. Instala las dependencias
+      # 4. Instala las dependencias
       - name: Install dependencies
         run: npm ci
 
-      # 4. Ejecuta todas las pruebas (unitarias y de integración)
+      # 5. Ejecuta todas las pruebas (unitarias y de integración)
       - name: Run tests
         run: npm run test
-        env:
-          # Variable para que Testcontainers se conecte al servicio Docker
-          DOCKER_HOST: tcp://docker:2375
-          # Deshabilita Ryuk para evitar problemas de limpieza en entornos de CI
-          TESTCONTAINERS_RYUK_DISABLED: true
