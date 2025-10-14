@@ -64,7 +64,7 @@ export class OutboxSubscriberService implements EntitySubscriberInterface {
     const payload = {
       action: `${entityName.toUpperCase()}_CREATED`,
       entity: entityName,
-      primary_keys: primaryKeys,
+      primary_key: primaryKeys,
       details: `New ${entityName} created`,
       done_by_id: user?.id ?? null,
       done_by_email: user?.email ?? null,
