@@ -21,6 +21,7 @@ import {
   ResetPasswordDTO,
 } from 'src/interfaces/DTO/reset-password.dto';
 import { EmailService } from 'src/clients/email/email.service';
+import { RequestWithUser } from 'src/interfaces/request-user';
 
 @Injectable()
 export class UsersService {
@@ -48,10 +49,15 @@ export class UsersService {
         return result;
     }
 
-    async register(dto: RegisterUserDTO): Promise<{ message: string }> {
+    async register(dto: RegisterUserDTO, request: RequestWithUser): Promise<{ message: string }> {
         return this.dataSource.transaction(async manager => {
             const transactionalRepository = manager.getRepository(UserEntity);
-            const user = await transactionalRepository.save(transactionalRepository.create(dto));
+            const user = await transactionalRepository.save(
+              transactionalRepository.create({
+                ...dto,
+                created_by: request.user
+              }),
+            );
             return {message: `User ${user.email} created`};
         });
     }

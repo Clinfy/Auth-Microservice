@@ -6,6 +6,7 @@ import {PermissionsService} from "src/services/permissions/permissions.service";
 import {CreateRoleDTO} from "src/interfaces/DTO/create.dto";
 import {AssignPermissionDTO} from "src/interfaces/DTO/assign.dto";
 import {PatchRoleDTO} from "src/interfaces/DTO/patch.dto";
+import { RequestWithUser } from 'src/interfaces/request-user';
 
 @Injectable()
 export class RolesService {
@@ -16,8 +17,11 @@ export class RolesService {
         private readonly permissionService: PermissionsService,
     ) {}
 
-    async create(dto: CreateRoleDTO): Promise<RoleEntity> {
-        return await this.roleRepository.save(this.roleRepository.create(dto));
+    async create(dto: CreateRoleDTO, request: RequestWithUser): Promise<RoleEntity> {
+        return await this.roleRepository.save(this.roleRepository.create({
+          ...dto,
+          created_by: request.user
+        }));
     }
 
     async update(id: string, dto: PatchRoleDTO): Promise<RoleEntity> {
