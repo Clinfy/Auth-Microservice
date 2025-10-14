@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import {
+  DataSource,
   EntitySubscriberInterface,
   EventSubscriber,
   InsertEvent,
@@ -11,7 +12,12 @@ import { OutboxEntity } from 'src/entities/outbox.entity';
 @Injectable()
 @EventSubscriber()
 export class OutboxSubscriberService implements EntitySubscriberInterface {
-  constructor(private readonly contextService: RequestContextService) {}
+  constructor(
+    private readonly dataSource: DataSource,
+    private readonly contextService: RequestContextService,
+  ) {
+    this.dataSource.subscribers.push(this);
+  }
   
   listenTo() {
     return ApiKeyEntity;
@@ -19,7 +25,11 @@ export class OutboxSubscriberService implements EntitySubscriberInterface {
   
   async afterInsert(event: InsertEvent<ApiKeyEntity>) {
     const apiKey = event.entity;
-    
+
+    if (!apiKey) {
+      return;
+    }
+
     const user = this.contextService.getCurrentUser();
 
     console.log('API Key Created Event:', apiKey.id, apiKey.client, apiKey.permissionCodes);
@@ -31,7 +41,7 @@ export class OutboxSubscriberService implements EntitySubscriberInterface {
       done_by_id: user?.id,
       done_by_email: user?.email,
       timestamp: new Date().toISOString(),
-    }
+    };
 
     const outbox = event.manager.create(OutboxEntity, {
       pattern: 'api_key_created',
