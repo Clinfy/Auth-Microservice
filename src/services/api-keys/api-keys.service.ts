@@ -1,8 +1,8 @@
 import {ForbiddenException, Injectable, NotFoundException} from '@nestjs/common';
-import { InjectEntityManager, InjectRepository } from '@nestjs/typeorm';
+import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
 import {compare, hash} from 'bcrypt';
 import {randomBytes} from 'crypto';
-import { EntityManager, Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 import {ApiKeyEntity} from 'src/entities/api-key.entity';
 import {CreateApiKeyDTO} from 'src/interfaces/DTO/api-key.dto';
 import {PermissionsService} from "src/services/permissions/permissions.service";
@@ -16,14 +16,14 @@ export class ApiKeysService {
       @InjectRepository(ApiKeyEntity)
       private readonly apiKeyRepository: Repository<ApiKeyEntity>,
 
-      @InjectEntityManager()
-      private readonly entityManager: EntityManager,
+      @InjectDataSource()
+      private readonly dataSource: DataSource,
 
       private readonly permissionService: PermissionsService,
   ) {}
 
   async create(dto: CreateApiKeyDTO, response: RequestWithUser): Promise<{ apiKey: string; id: string; client: string }> {
-    return this.entityManager.transaction(async (transactionManager)=> {
+    return this.dataSource.transaction(async (transactionManager)=> {
       const permissions = await Promise.all(dto.permissionIds.map(id => this.permissionService.findOne(id)));
 
       const plainApiKey = this.generatePlainKey();
