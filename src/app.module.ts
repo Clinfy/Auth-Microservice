@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { ConfigModule, ConfigService } from "@nestjs/config";
@@ -17,6 +17,8 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { OutboxPublisherService } from 'src/cron/outbox-publisher.service';
 import { OutboxSubscriberService } from 'src/cron/outbox-subscriber.service';
 import { RequestContextService } from 'src/common/context/request-context.service';
+import { RequestContextMiddleware } from 'src/middlewares/request-context.middleware';
+import { RequestContextModule } from 'src/common/context/request-context.module';
 
 @Module({
 imports: [ConfigModule.forRoot({
@@ -55,6 +57,7 @@ imports: [ConfigModule.forRoot({
   ScheduleModule.forRoot(),
   TypeOrmModule.forFeature(entities),
   PermissionsModule,
+  RequestContextModule,
   ApiKeysModule,
   UsersModule,
   RolesModule,
@@ -62,6 +65,12 @@ imports: [ConfigModule.forRoot({
   EmailModule
 ],
 controllers: [AppController],
-providers: [AppService, IsUniquePermissionCodeConstraint, IsUniqueRoleNameConstraint, OutboxPublisherService, OutboxSubscriberService, RequestContextService],
+providers: [AppService, IsUniquePermissionCodeConstraint, IsUniqueRoleNameConstraint, OutboxPublisherService, OutboxSubscriberService],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer
+      .apply(RequestContextMiddleware)
+      .forRoutes('*');
+  }
+}
