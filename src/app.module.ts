@@ -16,7 +16,6 @@ import { ClientsModule, Transport } from '@nestjs/microservices';
 import { ScheduleModule } from '@nestjs/schedule';
 import { OutboxPublisherService } from 'src/cron/outbox-publisher.service';
 import { OutboxSubscriberService } from 'src/cron/outbox-subscriber.service';
-import { RequestContextService } from 'src/common/context/request-context.service';
 import { RequestContextMiddleware } from 'src/middlewares/request-context.middleware';
 import { RequestContextModule } from 'src/common/context/request-context.module';
 
