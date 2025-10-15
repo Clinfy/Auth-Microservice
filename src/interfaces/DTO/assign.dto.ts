@@ -4,7 +4,7 @@ export class AssignPermissionDTO {
     @IsNotEmpty({ message: 'This field is required'})
     @IsString({ each: true, message: 'Each permissionId must be a string' })
     @IsArray({ message: 'This field must be an array'})
-    permissionIds: string[];
+    permissionsIds: string[];
 }
 
 export class AssignRoleDTO {

@@ -1,6 +1,7 @@
 import { ForbiddenException, NotFoundException } from '@nestjs/common';
 import { Repository } from 'typeorm';
 import { ApiKeysService } from './api-keys.service';
+import { ApiKeyEntity } from 'src/entities/api-key.entity';
 
 jest.mock('bcrypt', () => ({
   hash: jest.fn(async () => 'HASHED'),
@@ -19,10 +20,14 @@ import { randomBytes } from 'crypto';
 describe('ApiKeysService', () => {
   let repository: jest.Mocked<Partial<Repository<any>>>;
   let permissionsService: jest.Mocked<{ findOne: jest.Mock }>;
+  let dataSource: { transaction: jest.Mock };
+  let transactionManager: { create: jest.Mock; save: jest.Mock };
   let service: ApiKeysService;
   const permissionId = '11111111-1111-1111-1111-111111111111';
   const apiKeyId = '33333333-3333-3333-3333-333333333333';
   const secondApiKeyId = '44444444-4444-4444-4444-444444444444';
+  const actingUser = { id: '55555555-5555-5555-5555-555555555555' } as any;
+  const request = { user: actingUser } as any;
 
   const hashMock = hash as jest.MockedFunction<typeof hash>;
   const compareMock = compare as jest.MockedFunction<typeof compare>;
@@ -44,14 +49,22 @@ describe('ApiKeysService', () => {
       findOne: jest.fn(),
     };
 
-    service = new ApiKeysService(repository as any, permissionsService as any);
+    transactionManager = {
+      create: jest.fn((_entity, data) => ({ ...data })),
+      save: jest.fn(async entity => Object.assign(entity, { id: apiKeyId })),
+    };
+
+    dataSource = {
+      transaction: jest.fn(async callback => callback(transactionManager as any)),
+    };
+
+    service = new ApiKeysService(repository as any, dataSource as any, permissionsService as any);
   });
 
   it('creates API key and returns plaintext key', async () => {
     (permissionsService.findOne as jest.Mock).mockResolvedValue({ id: permissionId, code: 'PERM' });
-    (repository.save as jest.Mock).mockResolvedValue({ id: apiKeyId, client: 'client-app' });
 
-    await expect(service.create({ client: 'client-app', permissionIds: [permissionId] })).resolves.toEqual({
+    await expect(service.create({ client: 'client-app', permissionIds: [permissionId] }, request)).resolves.toEqual({
       apiKey: 'PLAINTEXT_KEY',
       id: apiKeyId,
       client: 'client-app',
@@ -59,11 +72,14 @@ describe('ApiKeysService', () => {
 
     expect(randomBytesMock).toHaveBeenCalledWith(32);
     expect(hashMock).toHaveBeenCalled();
-    expect(repository.create).toHaveBeenCalledWith({
+    expect(transactionManager.create).toHaveBeenCalledWith(ApiKeyEntity, {
       client: 'client-app',
       key_hash: 'HASHED',
       permissions: [{ id: permissionId, code: 'PERM' }],
+      created_by: actingUser,
     });
+    expect(transactionManager.save).toHaveBeenCalledWith(expect.objectContaining({ client: 'client-app' }));
+    expect(dataSource.transaction).toHaveBeenCalledTimes(1);
   });
 
   it('findAll returns API keys with relations', async () => {

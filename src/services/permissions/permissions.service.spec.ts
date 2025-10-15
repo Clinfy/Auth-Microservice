@@ -9,6 +9,8 @@ describe('PermissionsService', () => {
   const permissionId = '11111111-1111-1111-1111-111111111111';
   const otherPermissionId = '22222222-2222-2222-2222-222222222222';
   const missingPermissionId = '99999999-9999-9999-9999-999999999999';
+  const actingUser = { id: '99999999-9999-9999-9999-888888888888' } as any;
+  const request = { user: actingUser } as any;
 
   beforeEach(() => {
     permissionRepository = {
@@ -26,8 +28,8 @@ describe('PermissionsService', () => {
   it('creates a permission', async () => {
     (permissionRepository.save as jest.Mock).mockResolvedValue({ id: permissionId, code: 'PERM_CREATE' });
 
-    await expect(service.create({ code: 'PERM_CREATE' })).resolves.toEqual({ id: permissionId, code: 'PERM_CREATE' });
-    expect(permissionRepository.create).toHaveBeenCalledWith({ code: 'PERM_CREATE' });
+    await expect(service.create({ code: 'PERM_CREATE' }, request)).resolves.toEqual({ id: permissionId, code: 'PERM_CREATE' });
+    expect(permissionRepository.create).toHaveBeenCalledWith({ code: 'PERM_CREATE', created_by: actingUser });
   });
 
   it('updates a permission', async () => {

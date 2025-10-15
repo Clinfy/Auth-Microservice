@@ -12,6 +12,8 @@ describe('RolesService', () => {
   const otherRoleId = '22222222-2222-2222-2222-222222222222';
   const permissionIdA = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa';
   const permissionIdB = 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb';
+  const actingUser = { id: '99999999-9999-9999-9999-999999999999' } as any;
+  const request = { user: actingUser } as any;
 
   beforeEach(() => {
     roleRepository = {
@@ -33,8 +35,8 @@ describe('RolesService', () => {
   it('creates a role', async () => {
     (roleRepository.save as jest.Mock).mockResolvedValue({ id: roleId, name: 'ADMIN' });
 
-    await expect(service.create({ name: 'ADMIN' })).resolves.toEqual({ id: roleId, name: 'ADMIN' });
-    expect(roleRepository.create).toHaveBeenCalledWith({ name: 'ADMIN' });
+    await expect(service.create({ name: 'ADMIN' }, request)).resolves.toEqual({ id: roleId, name: 'ADMIN' });
+    expect(roleRepository.create).toHaveBeenCalledWith({ name: 'ADMIN', created_by: actingUser });
   });
 
   it('updates a role with merged data', async () => {
@@ -76,7 +78,7 @@ describe('RolesService', () => {
       permissions: [{ id: permissionIdA }, { id: permissionIdB }],
     });
 
-    await expect(service.assignPermissions(roleId, { permissionIds: [permissionIdA, permissionIdB] })).resolves.toEqual({
+    await expect(service.assignPermissions(roleId, { permissionsIds: [permissionIdA, permissionIdB] })).resolves.toEqual({
       id: roleId,
       name: 'ADMIN',
       permissions: [{ id: permissionIdA }, { id: permissionIdB }],

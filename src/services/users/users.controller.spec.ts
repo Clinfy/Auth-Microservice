@@ -35,9 +35,10 @@ describe('UsersController', () => {
     const dto: RegisterUserDTO = { email: 'user@example.com', password: 'secret' };
     const response = { message: 'User user@example.com created' };
     service.register.mockResolvedValue(response);
+    const request = { user: { id: '44444444-4444-4444-4444-444444444444' } } as any;
 
-    await expect(controller.register(dto)).resolves.toEqual(response);
-    expect(service.register).toHaveBeenCalledWith(dto);
+    await expect(controller.register(request, dto)).resolves.toEqual(response);
+    expect(service.register).toHaveBeenCalledWith(dto, request);
   });
 
   it('should log in a user', async () => {
@@ -68,9 +69,9 @@ describe('UsersController', () => {
   });
 
   it('should return the logged user email', async () => {
-    const request = { user: { email: 'user@example.com' } } as any;
+    const request = { user: { id: userId, email: 'user@example.com' } } as any;
 
-    await expect(controller.me(request)).resolves.toBe('user@example.com');
+    expect(controller.me(request)).toEqual({ id: userId, email: 'user@example.com' });
   });
 
   it('should assign roles to the user', async () => {
