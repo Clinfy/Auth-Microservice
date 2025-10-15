@@ -18,6 +18,7 @@ describe('RolesService (integration)', () => {
   let dataSource: DataSource;
   let db: IMemoryDb;
   let backup: IBackup;
+  const request = { user: null } as any;
 
   beforeAll(async () => {
     db = newDb();
@@ -85,7 +86,7 @@ describe('RolesService (integration)', () => {
   });
 
   it('creates a role with the given name', async () => {
-    const role = await service.create({ name: 'admin' });
+    const role = await service.create({ name: 'admin' }, request);
 
     expect(role).toMatchObject({
       id: expect.any(String),
@@ -103,9 +104,9 @@ describe('RolesService (integration)', () => {
 
     const read = await createPermission('PERMISSIONS_READ');
     const write = await createPermission('PERMISSIONS_WRITE');
-    const role = await service.create({ name: 'editor' });
+    const role = await service.create({ name: 'editor' }, request);
 
-    const updated = await service.assignPermissions(role.id, { permissionIds: [read.id, write.id] });
+    const updated = await service.assignPermissions(role.id, { permissionsIds: [read.id, write.id] } as any);
 
     expect(updated.permissions.map(permission => permission.code).sort()).toEqual([
       'PERMISSIONS_READ',
@@ -120,7 +121,7 @@ describe('RolesService (integration)', () => {
   });
 
   it('deletes a role and confirms removal', async () => {
-    const role = await service.create({ name: 'temp-role' });
+    const role = await service.create({ name: 'temp-role' }, request);
 
     const response = await service.delete(role.id);
     expect(response).toEqual({ message: `Role ${role.name} deleted` });

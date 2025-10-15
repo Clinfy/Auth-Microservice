@@ -15,6 +15,7 @@ describe('RolesService (integration)', () => {
   let roleRepository: Repository<RoleEntity>;
   let dataSource: DataSource;
   let container: StartedPostgreSqlContainer;
+  const request = { user: null } as any;
 
   jest.setTimeout(60000);
 
@@ -70,7 +71,7 @@ describe('RolesService (integration)', () => {
   });
 
   it('creates a role with the given name', async () => {
-    const role = await service.create({ name: 'admin' });
+    const role = await service.create({ name: 'admin' }, request);
 
     expect(role).toMatchObject({
       id: expect.any(String),
@@ -83,11 +84,11 @@ describe('RolesService (integration)', () => {
   });
 
   it('assigns permissions to a role', async () => {
-    const read = await permissionsService.create({ code: 'PERMISSIONS_READ' });
-    const write = await permissionsService.create({ code: 'PERMISSIONS_WRITE' });
-    const role = await service.create({ name: 'editor' });
+    const read = await permissionsService.create({ code: 'PERMISSIONS_READ' }, request);
+    const write = await permissionsService.create({ code: 'PERMISSIONS_WRITE' }, request);
+    const role = await service.create({ name: 'editor' }, request);
 
-    const updated = await service.assignPermissions(role.id, { permissionIds: [read.id, write.id] });
+    const updated = await service.assignPermissions(role.id, { permissionsIds: [read.id, write.id] } as any);
 
     expect(updated.permissions.map(permission => permission.code).sort()).toEqual([
       'PERMISSIONS_READ',
@@ -102,7 +103,7 @@ describe('RolesService (integration)', () => {
   });
 
   it('deletes a role and confirms removal', async () => {
-    const role = await service.create({ name: 'temp-role' });
+    const role = await service.create({ name: 'temp-role' }, request);
 
     const response = await service.delete(role.id);
     expect(response).toEqual({ message: `Role ${role.name} deleted` });

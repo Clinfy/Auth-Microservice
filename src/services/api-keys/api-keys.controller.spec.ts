@@ -9,6 +9,7 @@ describe('ApiKeysController', () => {
   const permissionIdOne = '11111111-1111-1111-1111-111111111111';
   const permissionIdTwo = '22222222-2222-2222-2222-222222222222';
   const apiKeyId = '33333333-3333-3333-3333-333333333333';
+  const request = { user: { id: '55555555-5555-5555-5555-555555555555' } } as any;
 
   beforeEach(() => {
     service = {
@@ -38,8 +39,8 @@ describe('ApiKeysController', () => {
     const created = { apiKey: 'plain-key', id: apiKeyId, client: 'test-client' };
     service.create.mockResolvedValue(created);
 
-    await expect(controller.generate(dto)).resolves.toEqual(created);
-    expect(service.create).toHaveBeenCalledWith(dto);
+    await expect(controller.generate(request, dto)).resolves.toEqual(created);
+    expect(service.create).toHaveBeenCalledWith(dto, request);
   });
 
   it('should return all api keys from the service', async () => {

@@ -1,88 +1,96 @@
 import {ForbiddenException, Injectable, NotFoundException} from '@nestjs/common';
-import {InjectRepository} from '@nestjs/typeorm';
+import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
 import {compare, hash} from 'bcrypt';
 import {randomBytes} from 'crypto';
-import {Repository} from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 import {ApiKeyEntity} from 'src/entities/api-key.entity';
 import {CreateApiKeyDTO} from 'src/interfaces/DTO/api-key.dto';
 import {PermissionsService} from "src/services/permissions/permissions.service";
 import {RequestWithApiKey} from "src/interfaces/request-api-key";
 import {extractApiKey} from "src/common/tools/extract-api-key";
+import { RequestWithUser } from 'src/interfaces/request-user';
 
 @Injectable()
 export class ApiKeysService {
-    constructor(
-        @InjectRepository(ApiKeyEntity)
-        private readonly apiKeyRepository: Repository<ApiKeyEntity>,
+  constructor(
+      @InjectRepository(ApiKeyEntity)
+      private readonly apiKeyRepository: Repository<ApiKeyEntity>,
 
-        private readonly permissionService: PermissionsService,
-    ) {}
+      @InjectDataSource()
+      private readonly dataSource: DataSource,
 
-    async create(dto: CreateApiKeyDTO): Promise<{ apiKey: string; id: string; client: string }> {
-        const permissions = await Promise.all(dto.permissionIds.map(id => this.permissionService.findOne(id)));
+      private readonly permissionService: PermissionsService,
+  ) {}
 
-        const plainApiKey = this.generatePlainKey();
-        const hashedApiKey = await hash(plainApiKey, 10);
+  async create(dto: CreateApiKeyDTO, response: RequestWithUser): Promise<{ apiKey: string; id: string; client: string }> {
+    return this.dataSource.transaction(async (transactionManager)=> {
+      const permissions = await Promise.all(dto.permissionIds.map(id => this.permissionService.findOne(id)));
 
-        const apiKeyEntity = this.apiKeyRepository.create({
-            client: dto.client,
-            key_hash: hashedApiKey,
-            permissions,
-        });
+      const plainApiKey = this.generatePlainKey();
+      const hashedApiKey = await hash(plainApiKey, 10);
 
-        const savedApiKey = await this.apiKeyRepository.save(apiKeyEntity);
+      const apiKey = transactionManager.create(ApiKeyEntity,{
+        client: dto.client,
+        key_hash: hashedApiKey,
+        permissions,
+        created_by: response.user
+      });
 
-        return { apiKey: plainApiKey, id: savedApiKey.id, client: savedApiKey.client };
+      await transactionManager.save(apiKey);
+
+      return { apiKey: plainApiKey, id: apiKey.id, client: apiKey.client };
+    })
+  }
+
+  async findAll(): Promise<ApiKeyEntity[]> {
+      return this.apiKeyRepository.find({ relations: ['permissions'] });
+  }
+
+  async findOne(id: string): Promise<ApiKeyEntity> {
+      const apiKey = await this.apiKeyRepository.findOne({ where: { id }, relations: ['permissions'] });
+      if (!apiKey) {
+          throw new NotFoundException('API key not found');
+      }
+      return apiKey;
+  }
+
+  async deactivate(id: string): Promise<{ message: string }> {
+    const apiKey = await this.findOne(id);
+
+    if (!apiKey.active) {
+        return { message: 'API key is already inactive' };
     }
 
-    async findAll(): Promise<ApiKeyEntity[]> {
-        return this.apiKeyRepository.find({ relations: ['permissions'] });
-    }
+    apiKey.active = false;
+    await this.apiKeyRepository.save(apiKey);
 
-    async findOne(id: string): Promise<ApiKeyEntity> {
-        const apiKey = await this.apiKeyRepository.findOne({ where: { id }, relations: ['permissions'] });
-        if (!apiKey) {
-            throw new NotFoundException('API key not found');
-        }
-        return apiKey;
-    }
 
-    async deactivate(id: string): Promise<{ message: string }> {
-        const apiKey = await this.findOne(id);
+      return { message: `API key ${id} ${apiKey.client} deactivated` };
+  }
 
-        if (!apiKey.active) {
-            return { message: 'API key is already inactive' };
-        }
+  async canDo(rawApiKey: RequestWithApiKey, permissionCode: string): Promise<boolean> {
+      const apiKey = await this.findActiveByPlainKey(extractApiKey(rawApiKey));
+      if (!apiKey) {
+          return false;
+      }
+      return apiKey.permissionCodes.includes(permissionCode)
+  }
 
-        apiKey.active = false;
-        await this.apiKeyRepository.save(apiKey);
+  async findActiveByPlainKey(rawApiKey: string): Promise<ApiKeyEntity> {
+      const activeKeys = await this.apiKeyRepository.find({where: { active: true },relations: ['permissions']});
 
-        return { message: `API key ${id} ${apiKey.client} deactivated` };
-    }
+      for (const apiKey of activeKeys) {
 
-    async canDo(rawApiKey: RequestWithApiKey, permissionCode: string): Promise<boolean> {
-        const apiKey = await this.findActiveByPlainKey(extractApiKey(rawApiKey));
-        if (!apiKey) {
-            return false;
-        }
-        return apiKey.permissionCodes.includes(permissionCode)
-    }
+          const isMatch = await compare(rawApiKey, apiKey.key_hash);
 
-    async findActiveByPlainKey(rawApiKey: string): Promise<ApiKeyEntity> {
-        const activeKeys = await this.apiKeyRepository.find({where: { active: true },relations: ['permissions']});
+          if (isMatch) return apiKey;
 
-        for (const apiKey of activeKeys) {
+      }
 
-            const isMatch = await compare(rawApiKey, apiKey.key_hash);
+      throw new ForbiddenException('Invalid or inactive API key');
+  }
 
-            if (isMatch) return apiKey;
-
-        }
-
-        throw new ForbiddenException('Invalid or inactive API key');
-    }
-
-    private generatePlainKey(): string {
-        return randomBytes(32).toString('hex')
-    }
+  private generatePlainKey(): string {
+      return randomBytes(32).toString('hex')
+  }
 }
