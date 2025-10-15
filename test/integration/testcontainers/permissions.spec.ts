@@ -12,6 +12,7 @@ describe('PermissionsService (integration)', () => {
   let repository: Repository<PermissionEntity>;
   let dataSource: DataSource;
   let container: StartedPostgreSqlContainer;
+  const request = { user: null } as any;
 
   jest.setTimeout(60000); // 1 minute timeout
 
@@ -63,7 +64,7 @@ describe('PermissionsService (integration)', () => {
   });
 
   it('persists a new permission with the provided code', async () => {
-    const created = await service.create({ code: 'PERMISSIONS_CREATE' });
+    const created = await service.create({ code: 'PERMISSIONS_CREATE' }, request);
 
     expect(created).toMatchObject({
       id: expect.any(String),
@@ -76,7 +77,7 @@ describe('PermissionsService (integration)', () => {
   });
 
   it('updates an existing permission code', async () => {
-    const created = await service.create({ code: 'PERMISSIONS_UPDATE' });
+    const created = await service.create({ code: 'PERMISSIONS_UPDATE' }, request);
 
     const updated = await service.update(created.id, { code: 'PERMISSIONS_EDIT' });
     expect(updated.code).toBe('PERMISSIONS_EDIT');
@@ -86,7 +87,7 @@ describe('PermissionsService (integration)', () => {
   });
 
   it('deletes a permission and returns a confirmation message', async () => {
-    const created = await service.create({ code: 'PERMISSIONS_DELETE' });
+    const created = await service.create({ code: 'PERMISSIONS_DELETE' }, request);
 
     const response = await service.delete(created.id);
     expect(response).toEqual({ message: `Permission ${created.code} deleted` });

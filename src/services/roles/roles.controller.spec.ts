@@ -12,6 +12,7 @@ describe('RolesController', () => {
   const anotherRoleId = '22222222-2222-2222-2222-222222222222';
   const permissionIdA = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa';
   const permissionIdB = 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb';
+  const request = { user: { id: '99999999-9999-9999-9999-999999999999' } } as any;
 
   beforeEach(() => {
     service = {
@@ -35,8 +36,8 @@ describe('RolesController', () => {
     const role = { id: roleId, name: 'admin' } as RoleEntity;
     service.create.mockResolvedValue(role);
 
-    await expect(controller.create(dto)).resolves.toEqual(role);
-    expect(service.create).toHaveBeenCalledWith(dto);
+    await expect(controller.create(request, dto)).resolves.toEqual(role);
+    expect(service.create).toHaveBeenCalledWith(dto, request);
   });
 
   it('should update a role', async () => {
@@ -49,7 +50,7 @@ describe('RolesController', () => {
   });
 
   it('should assign permissions to a role', async () => {
-    const dto: AssignPermissionDTO = { permissionIds: [permissionIdA, permissionIdB] };
+    const dto = { permissionsIds: [permissionIdA, permissionIdB] } as AssignPermissionDTO;
     const role = { id: roleId, name: 'with-perms' } as RoleEntity;
     service.assignPermissions.mockResolvedValue(role);
 

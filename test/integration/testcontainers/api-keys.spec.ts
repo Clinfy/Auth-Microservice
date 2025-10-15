@@ -18,6 +18,7 @@ describe('ApiKeysService (integration)', () => {
   let permissionRepository: Repository<PermissionEntity>;
   let dataSource: DataSource;
   let container: StartedPostgreSqlContainer;
+  const request = { user: null } as any;
 
   jest.setTimeout(60000); // 1 minute
 
@@ -76,14 +77,14 @@ describe('ApiKeysService (integration)', () => {
   });
 
   it('creates an API key with the requested permissions', async () => {
-    const permission = await permissionsService.create({ code: 'API_KEYS_CREATE' });
+    const permission = await permissionsService.create({ code: 'API_KEYS_CREATE' }, request);
 
     const payload: CreateApiKeyDTO = {
       client: 'billing-app',
       permissionIds: [permission.id],
     };
 
-    const result = await service.create(payload);
+    const result = await service.create(payload, request);
     expect(result).toMatchObject({
       client: 'billing-app',
       id: expect.any(String),
@@ -104,11 +105,11 @@ describe('ApiKeysService (integration)', () => {
   });
 
   it('deactivates an API key and persists the change', async () => {
-    const permission = await permissionsService.create({ code: 'API_KEYS_DEACTIVATE' });
+    const permission = await permissionsService.create({ code: 'API_KEYS_DEACTIVATE' }, request);
     const { id } = await service.create({
       client: 'internal-tool',
       permissionIds: [permission.id],
-    });
+    }, request);
 
     const response = await service.deactivate(id);
     expect(response.message).toContain(`API key ${id}`);
@@ -118,11 +119,11 @@ describe('ApiKeysService (integration)', () => {
   });
 
   it('validates permissions through canDo using the plain API key', async () => {
-    const permission = await permissionsService.create({ code: 'API_KEYS_READ' });
+    const permission = await permissionsService.create({ code: 'API_KEYS_READ' }, request);
     const { apiKey } = await service.create({
       client: 'reporting-dashboard',
       permissionIds: [permission.id],
-    });
+    }, request);
 
     const canDo = await service.canDo(
       { headers: { 'x-api-key': apiKey } } as any,

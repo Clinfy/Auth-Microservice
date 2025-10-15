@@ -9,6 +9,7 @@ describe('PermissionsController', () => {
   let service: jest.Mocked<PermissionsService>;
   const permissionId = '11111111-1111-1111-1111-111111111111';
   const secondPermissionId = '22222222-2222-2222-2222-222222222222';
+  const request = { user: { id: '33333333-3333-3333-3333-333333333333' } } as any;
 
   beforeEach(() => {
     service = {
@@ -31,8 +32,8 @@ describe('PermissionsController', () => {
     const entity = { id: permissionId, code: 'PERMISSION' } as PermissionEntity;
     service.create.mockResolvedValue(entity);
 
-    await expect(controller.create(dto)).resolves.toEqual(entity);
-    expect(service.create).toHaveBeenCalledWith(dto);
+    await expect(controller.create(request, dto)).resolves.toEqual(entity);
+    expect(service.create).toHaveBeenCalledWith(dto, request);
   });
 
   it('should update a permission', async () => {
