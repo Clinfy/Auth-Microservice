@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
-import { AsyncLocalStorage } from 'async_hooks';
 import { UserEntity } from 'src/entities/user.entity';
+import { AsyncLocalStorage } from 'node:async_hooks';
 
 export interface RequestContext {
   user: UserEntity | null;
