@@ -1,7 +1,5 @@
-# Nombre del workflow
 name: Run Jest tests
 
-# Se ejecuta en cada push o pull request a la rama 'main'
 on:
   push:
     branches: [ "main","develop" ]
@@ -9,32 +7,35 @@ on:
     branches: [ "main","develop" ]
 
 jobs:
-  build-and-test:
-    # La máquina virtual donde correrá el trabajo
+  run-tests-and-build:
     runs-on: ubuntu-latest
 
     steps:
-      #1. Configura Docker
+      #1. Set up Docker
       - name: Set up Docker
         run: |
           sudo apt-get update
           sudo apt-get install -y docker-compose
 
-      # 2. Clona tu repositorio
+      # 2. Clone repository
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 3. Configura Node.js v24.5.0
+      # 3. Set up Node.js v24.5.0
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '24.5.0'
           cache: 'npm'
 
-      # 4. Instala las dependencias
+      # 4. Install dependencies
       - name: Install dependencies
         run: npm ci
 
-      # 5. Ejecuta todas las pruebas (unitarias y de integración)
+      # 5. Execute all tests (see jest.config.js)
       - name: Run tests
         run: npm run test
+
+      #6. Compile the application
+      - name: Build
+        run: npm run build
