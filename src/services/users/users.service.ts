@@ -132,6 +132,10 @@ export class UsersService {
     return {message: 'Password reset successfully'}
   }
 
+  async findAll(): Promise<UserEntity[]> {
+    return this.userRepository.find({ relations: ['roles'] });
+  }
+
   private async findOne(id: string): Promise<UserEntity> {
       const user = await this.userRepository.findOneBy({ id });
       if (!user) throw new NotFoundException('User not found');
