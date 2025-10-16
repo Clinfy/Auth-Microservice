@@ -14,7 +14,15 @@ import {
 import {PermissionsService} from "src/services/permissions/permissions.service";
 import {AuthGuard} from "src/middlewares/auth.middleware";
 import {Permissions} from "src/middlewares/decorators/permissions.decorator";
-import {ApiBearerAuth, ApiCreatedResponse, ApiNotFoundResponse, ApiOkResponse, ApiOperation} from "@nestjs/swagger";
+import {
+  ApiBearerAuth,
+  ApiCreatedResponse,
+  ApiForbiddenResponse,
+  ApiNotFoundResponse,
+  ApiOkResponse,
+  ApiOperation,
+  ApiUnauthorizedResponse,
+} from "@nestjs/swagger";
 import {PermissionEntity} from "src/entities/permission.entity";
 import {CreatePermissionDTO} from "src/interfaces/DTO/create.dto";
 import * as requestUser from 'src/interfaces/request-user';
@@ -28,7 +36,9 @@ export class PermissionsController {
   @Permissions(['PERMISSIONS_CREATE'])
   @UseInterceptors(ClassSerializerInterceptor)
   @ApiOperation({ summary: 'Create a new permission' })
-  @ApiCreatedResponse({schema: {type: 'object', properties: {message: { type: 'string' },},},})
+  @ApiCreatedResponse({ type: PermissionEntity })
+  @ApiUnauthorizedResponse({ description: 'Missing or invalid bearer token' })
+  @ApiForbiddenResponse({ description: 'Insufficient permissions' })
   @Post('new')
   create(@Req() request: requestUser.RequestWithUser, @Body() dto: CreatePermissionDTO): Promise<PermissionEntity> {
     return this.permissionService.create(dto, request);
@@ -40,6 +50,8 @@ export class PermissionsController {
   @ApiOperation({ summary: 'Update a permission' })
   @ApiOkResponse({ type: PermissionEntity })
   @ApiNotFoundResponse({ description: 'Permission not found' })
+  @ApiUnauthorizedResponse({ description: 'Missing or invalid bearer token' })
+  @ApiForbiddenResponse({ description: 'Insufficient permissions' })
   @Patch('edit/:id')
   edit(@Body() dto: CreatePermissionDTO, @Param('id') id: string): Promise<PermissionEntity> {
     return this.permissionService.update(id, dto);
@@ -49,8 +61,10 @@ export class PermissionsController {
   @Permissions(['PERMISSIONS_DELETE'])
   @UseInterceptors(ClassSerializerInterceptor)
   @ApiOperation({ summary: 'Delete a permission' })
-  @ApiOkResponse({ description: 'Permission deleted' })
+  @ApiOkResponse({ schema: { type: 'object', properties: { message: { type: 'string' } } } })
   @ApiNotFoundResponse({ description: 'Permission not found' })
+  @ApiUnauthorizedResponse({ description: 'Missing or invalid bearer token' })
+  @ApiForbiddenResponse({ description: 'Insufficient permissions' })
   @Delete('delete/:id')
   delete(@Param('id') id: string): Promise<{ message: string }> {
     return this.permissionService.delete(id);
@@ -60,8 +74,10 @@ export class PermissionsController {
   @Permissions(['PERMISSIONS_READ'])
   @UseInterceptors(ClassSerializerInterceptor)
   @ApiOperation({ summary: 'Find a permission by id number' })
-  @ApiCreatedResponse({type: PermissionEntity})
+  @ApiOkResponse({ type: PermissionEntity })
   @ApiNotFoundResponse({ description: 'Permission not found' })
+  @ApiUnauthorizedResponse({ description: 'Missing or invalid bearer token' })
+  @ApiForbiddenResponse({ description: 'Insufficient permissions' })
   @Get('find/:id')
   findOne(@Param('id') id: string): Promise<PermissionEntity> {
     return this.permissionService.findOne(id);
@@ -72,6 +88,8 @@ export class PermissionsController {
   @UseInterceptors(ClassSerializerInterceptor)
   @ApiOperation({ summary: 'Find all permissions' })
   @ApiOkResponse({ type: [PermissionEntity] })
+  @ApiUnauthorizedResponse({ description: 'Missing or invalid bearer token' })
+  @ApiForbiddenResponse({ description: 'Insufficient permissions' })
   @Get('all')
   findAll(): Promise<PermissionEntity[]> {
     return this.permissionService.findAll();
