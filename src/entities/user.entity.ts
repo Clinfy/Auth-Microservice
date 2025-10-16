@@ -18,6 +18,7 @@ import {RoleEntity} from "./role.entity";
 import { Exclude } from 'class-transformer';
 
 @Unique('UQ_users_email',['email'])
+@Unique('UQ_users_personId',['person_id'])
 
 @Entity('users')
 export class UserEntity extends BaseEntity implements UserI {
@@ -33,6 +34,9 @@ export class UserEntity extends BaseEntity implements UserI {
 
   @Column({ default: true, nullable: false})
   active: boolean;
+
+  @Column({type: "uuid", nullable: false})
+  person_id: string;
 
   @Exclude()
   @Column({type: "varchar", default: null, nullable: true})
