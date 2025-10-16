@@ -22,6 +22,7 @@ describe('UsersController', () => {
       assignRole: jest.fn(),
       forgotPassword: jest.fn(),
       resetPassword: jest.fn(),
+      findAll: jest.fn(),
     } as unknown as jest.Mocked<UsersService>;
 
     controller = new UsersController(service);
@@ -32,7 +33,7 @@ describe('UsersController', () => {
   });
 
   it('should register a user', async () => {
-    const dto: RegisterUserDTO = { email: 'user@example.com', password: 'secret' };
+    const dto: RegisterUserDTO = { email: 'user@example.com', password: 'secret', person_id: '55555555-5555-5555-5555-555555555555' };
     const response = { message: 'User user@example.com created' };
     service.register.mockResolvedValue(response);
     const request = { user: { id: '44444444-4444-4444-4444-444444444444' } } as any;
@@ -68,10 +69,18 @@ describe('UsersController', () => {
     expect(service.canDo).toHaveBeenCalledWith(user, 'PERMISSION_CODE');
   });
 
-  it('should return the logged user email', async () => {
-    const request = { user: { id: userId, email: 'user@example.com' } } as any;
+  it('should return the logged user details', async () => {
+    const request = { user: { id: userId, email: 'user@example.com', person_id: '66666666-6666-6666-6666-666666666666' } } as any;
 
-    expect(controller.me(request)).toEqual({ id: userId, email: 'user@example.com' });
+    expect(controller.me(request)).toEqual({ id: userId, email: 'user@example.com', person_id: '66666666-6666-6666-6666-666666666666' });
+  });
+
+  it('should return all users', async () => {
+    const users = [{ id: userId, email: 'user@example.com', person_id: '77777777-7777-7777-7777-777777777777' }] as any;
+    service.findAll.mockResolvedValue(users);
+
+    await expect(controller.findAll()).resolves.toEqual(users);
+    expect(service.findAll).toHaveBeenCalledTimes(1);
   });
 
   it('should assign roles to the user', async () => {
