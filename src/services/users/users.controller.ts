@@ -79,10 +79,11 @@ export class UsersController {
   @ApiOperation({ summary: 'Return the email of the user logged in' })
   @ApiOkResponse({ schema: { type: 'object', properties: { email: { type: 'string' } } }, })
   @Get('me')
-  me(@Req() request: requestUser.RequestWithUser): {id: string, email: string} {
+  me(@Req() request: requestUser.RequestWithUser): {id: string, email: string, person_id: string} {
     return {
-      id: request.user.id ,
-      email: request.user.email
+      id: request.user.id,
+      email: request.user.email,
+      person_id: request.user.person_id
     };
   }
 
@@ -114,5 +115,17 @@ export class UsersController {
   @Post('reset-password')
   resetPassword(@Query('token') token: string, @Body() dto: ResetPasswordDTO): Promise<{ message: string }> {
     return this.userService.resetPassword(token, dto);
+  }
+
+  @UseGuards(AuthGuard)
+  @Permissions(['USERS_READ_ALL'])
+  @UseInterceptors(ClassSerializerInterceptor)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Find all users' })
+  @ApiOkResponse({ type: [UserEntity] })
+  @ApiNotFoundResponse({ description: 'User not found' })
+  @Get('all')
+  findAll(): Promise<UserEntity[]> {
+    return this.userService.findAll();
   }
 }
