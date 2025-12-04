@@ -1,8 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import axios from 'axios';
 import { EmailBody } from 'src/interfaces/clients/email-body.interface';
-import { propagateAxiosError } from 'src/common/tools/propagate-axios-error';
 import { TemplateService } from 'src/clients/email/template.service';
 import { ClientProxy } from '@nestjs/microservices';
 
