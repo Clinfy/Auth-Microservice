@@ -1,15 +1,17 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import axios from 'axios';
 import { EmailBody } from 'src/interfaces/clients/email-body.interface';
-import { propagateAxiosError } from 'src/common/tools/propagate-axios-error';
 import { TemplateService } from 'src/clients/email/template.service';
+import { ClientProxy } from '@nestjs/microservices';
 
 @Injectable()
 export class EmailService {
   constructor(
     private readonly configService: ConfigService,
-    private readonly templateService: TemplateService
+    private readonly templateService: TemplateService,
+
+    @Inject('EMAIL_SERVICE')
+    private readonly emailClient: ClientProxy,
   ) {}
 
   async sendResetPasswordMail(email: string, token: string) {
@@ -52,19 +54,11 @@ export class EmailService {
 
   private async sendMail(body: EmailBody) {
 
-    await axios.post(`${this.configService.get('EMAIL_API_URL')}/email/send`, {
-      recipient: body.recipient,
-      subject: body.subject,
-      html: body.html,
-      text: body.text
-    }, {
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': this.configService.get('EMAIL_API_KEY'),
-      },
-    }).catch(error => {
+    try {
+      this.emailClient.emit('email_queue', body);
+    } catch (error) {
       console.error('Error sending email:', error);
-      propagateAxiosError(error);
-    })
+      throw error;
+    }
   }
 }

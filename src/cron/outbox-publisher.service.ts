@@ -24,8 +24,9 @@ export class OutboxPublisherService {
     for (const event of pendingEvents) {
       try {
         this.auditClient.emit(event.pattern, event.payload);
-        await this.outboxRepository.update(event.id, { status: OutboxStatus.SENT });
-
+        await this.outboxRepository.update(event.id, {
+          status: OutboxStatus.SENT,
+        });
       } catch (error) {
         console.error('Error publishing event:', error);
       }

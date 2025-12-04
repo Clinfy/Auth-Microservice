@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
-import { UserEntity } from 'src/entities/user.entity';
 import { AsyncLocalStorage } from 'node:async_hooks';
+import { UserEntity } from 'src/entities/user.entity';
 
 export interface RequestContext {
   user: UserEntity | null;
@@ -17,7 +17,7 @@ export class RequestContextService {
   private getContext(): RequestContext {
     const context = this.asyncLocalStorage.getStore();
     if (!context) {
-      throw new Error('RequestContext no inicializado. ¿Olvidaste el RequestContextMiddleware?');
+      throw new Error('RequestContext not initialized');
     }
     return context;
   }
