@@ -25,7 +25,6 @@ export class OutboxSubscriberService implements EntitySubscriberInterface {
     return Object;
   }
 
-
   async afterInsert(event: InsertEvent<unknown>) {
     const entity = event.entity as Record<string, unknown> | undefined;
 
@@ -63,7 +62,6 @@ export class OutboxSubscriberService implements EntitySubscriberInterface {
     const metadata = event.metadata;
     const entityName = this.resolveEntityName(metadata, entity);
     const primaryKeys = this.extractPrimaryKeys(metadata, entity);
-
 
     const payload = {
       action: `${entityName.toUpperCase()}_UPDATED`,
@@ -121,7 +119,10 @@ export class OutboxSubscriberService implements EntitySubscriberInterface {
     );
   }
 
-  private resolveEntityName(metadata: EntityMetadata | undefined, entity: Record<string, unknown>): string {
+  private resolveEntityName(
+    metadata: EntityMetadata | undefined,
+    entity: Record<string, unknown>,
+  ): string {
     return (
       metadata?.targetName ??
       metadata?.name ??
@@ -130,18 +131,27 @@ export class OutboxSubscriberService implements EntitySubscriberInterface {
     );
   }
 
-  private extractPrimaryKeys(metadata: EntityMetadata | undefined, entity: Record<string, unknown>): Record<string, unknown> {
-    return metadata?.primaryColumns.reduce<Record<string, unknown>>(
-      (acc, column) => {
-        const key = column.propertyName;
-        acc[key] = entity[key];
-        return acc;
-      },
-      {},
-    ) ?? {};
+  private extractPrimaryKeys(
+    metadata: EntityMetadata | undefined,
+    entity: Record<string, unknown>,
+  ): Record<string, unknown> {
+    return (
+      metadata?.primaryColumns.reduce<Record<string, unknown>>(
+        (acc, column) => {
+          const key = column.propertyName;
+          acc[key] = entity[key];
+          return acc;
+        },
+        {},
+      ) ?? {}
+    );
   }
 
-  private async createOutboxRecord(manager: EntityManager, pattern: string, payload: Record<string, unknown>) {
+  private async createOutboxRecord(
+    manager: EntityManager,
+    pattern: string,
+    payload: Record<string, unknown>,
+  ) {
     const outbox = manager.create(OutboxEntity, {
       pattern,
       destination: 'audit_queue',
