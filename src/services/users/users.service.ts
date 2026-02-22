@@ -101,7 +101,7 @@ export class UsersService {
 
       const cacheKey = `auth_session:${accessToken}`;
 
-      await this.cacheManager.set(cacheKey, sessionData, 36000);
+      await this.cacheManager.set(cacheKey, sessionData, this.jwtService.getTtlFromEnv('JWT_AUTH_EXPIRES_IN') )
 
       return {
         accessToken,
