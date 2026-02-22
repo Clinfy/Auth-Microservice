@@ -3,7 +3,6 @@ import { ConfigService } from '@nestjs/config';
 import { sign, verify, SignOptions, JsonWebTokenError, TokenExpiredError, NotBeforeError } from 'jsonwebtoken';
 import dayjs from 'dayjs';
 import { Payload } from 'src/interfaces/payload';
-import ms, { StringValue } from 'ms';
 
 type TokenType = 'refresh' | 'auth' | 'resetPassword';
 
