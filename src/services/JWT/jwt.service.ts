@@ -158,11 +158,4 @@ export class JwtService {
       });
     });
   }
-
-  getTtlFromEnv(key: string): number {
-    const value = this.configService.get<string>(key) as string;
-    if (!value) throw new Error(`Missing environment variable ${key}`);
-
-    return Math.floor(ms(value as StringValue));
-  }
 }
