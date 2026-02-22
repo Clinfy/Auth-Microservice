@@ -19,7 +19,6 @@ import { OutboxSubscriberService } from 'src/cron/outbox-subscriber.service';
 import { RequestContextMiddleware } from 'src/middlewares/request-context.middleware';
 import { RequestContextModule } from 'src/common/context/request-context.module';
 import { CacheModule } from '@nestjs/cache-manager';
-import { redisStore } from 'cache-manager-redis-yet';
 import { createKeyv } from '@keyv/redis';
 
 @Module({
