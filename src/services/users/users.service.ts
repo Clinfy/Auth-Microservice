@@ -24,6 +24,7 @@ import { EmailService } from 'src/clients/email/email.service';
 import { RequestWithUser } from 'src/interfaces/request-user';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import * as cacheManager_1 from 'cache-manager';
+import { getTtlFromEnv } from 'src/common/tools/get-ttl';
 
 @Injectable()
 export class UsersService {
@@ -101,7 +102,7 @@ export class UsersService {
 
       const cacheKey = `auth_session:${accessToken}`;
 
-      await this.cacheManager.set(cacheKey, sessionData, this.jwtService.getTtlFromEnv('JWT_AUTH_EXPIRES_IN') )
+      await this.cacheManager.set(cacheKey, sessionData, getTtlFromEnv('JWT_AUTH_EXPIRES_IN') )
 
       return {
         accessToken,
