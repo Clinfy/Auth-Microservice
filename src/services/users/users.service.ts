@@ -98,6 +98,7 @@ export class UsersService {
         person_id: user.person_id,
         email: user.email,
         permissions: user.permissionCodes,
+        active: true
       };
 
       const cacheKey = `auth_session:${accessToken}`;
