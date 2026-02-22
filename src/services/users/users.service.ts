@@ -25,6 +25,7 @@ import { RequestWithUser } from 'src/interfaces/request-user';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import * as cacheManager_1 from 'cache-manager';
 import { getTtlFromEnv } from 'src/common/tools/get-ttl';
+import { Session } from 'src/interfaces/session.interface';
 
 @Injectable()
 export class UsersService {
@@ -94,7 +95,7 @@ export class UsersService {
         this.jwtService.generateToken({ email: user.email }, 'refresh'),
       ]);
 
-      const sessionData = {
+      const sessionData: Session = {
         person_id: user.person_id,
         email: user.email,
         permissions: user.permissionCodes,
