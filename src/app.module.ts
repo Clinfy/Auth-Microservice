@@ -18,58 +18,80 @@ import { OutboxPublisherService } from 'src/cron/outbox-publisher.service';
 import { OutboxSubscriberService } from 'src/cron/outbox-subscriber.service';
 import { RequestContextMiddleware } from 'src/middlewares/request-context.middleware';
 import { RequestContextModule } from 'src/common/context/request-context.module';
+import { CacheModule } from '@nestjs/cache-manager';
+import { redisStore } from 'cache-manager-redis-yet';
+import { createKeyv } from '@keyv/redis';
 
 @Module({
-imports: [ConfigModule.forRoot({
-  isGlobal: true,
-  }),
+  imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+    }),
 
-  TypeOrmModule.forRootAsync({
+    TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({
-          type: 'postgres',
-          url: configService.get('DATABASE_HOST'),
-          entities: [...entities],
-          synchronize: true,
+        type: 'postgres',
+        url: configService.get('DATABASE_HOST'),
+        entities: [...entities],
+        synchronize: true,
       }),
-  }),
+    }),
 
-  ClientsModule.registerAsync([
-    {
+    ClientsModule.registerAsync([
+      {
+        imports: [ConfigModule],
+        inject: [ConfigService],
+        name: 'AUDIT_SERVICE',
+        useFactory: async (configService: ConfigService) => ({
+          transport: Transport.RMQ,
+          options: {
+            urls: [configService.get<string>('RABBITMQ_URL') as string],
+            queue: 'audit_queue',
+            queueOptions: {
+              durable: true,
+            },
+          },
+        }),
+      },
+    ]),
+
+    CacheModule.registerAsync({
+      isGlobal: true,
       imports: [ConfigModule],
       inject: [ConfigService],
-      name: 'AUDIT_SERVICE',
-      useFactory: async (configService: ConfigService) => ({
-        transport: Transport.RMQ,
-        options: {
-          urls: [configService.get<string>('RABBITMQ_URL') as string],
-          queue: 'audit_queue',
-          queueOptions: {
-            durable: true
-          }
-        }
-      })
-    }
-  ]),
+      useFactory: async (config: ConfigService) => {
+        const url = config.get<string>('REDIS_URL');
+        if (!url) throw new Error('Missing REDIS_URL');
 
-  ScheduleModule.forRoot(),
-  TypeOrmModule.forFeature(entities),
-  PermissionsModule,
-  RequestContextModule,
-  ApiKeysModule,
-  UsersModule,
-  RolesModule,
-  JwtModule,
-  EmailModule
-],
-controllers: [AppController],
-providers: [AppService, IsUniquePermissionCodeConstraint, IsUniqueRoleNameConstraint, OutboxPublisherService, OutboxSubscriberService],
+        return {
+          stores: [createKeyv(url)],
+        };
+      },
+    }),
+
+    ScheduleModule.forRoot(),
+    TypeOrmModule.forFeature(entities),
+    PermissionsModule,
+    RequestContextModule,
+    ApiKeysModule,
+    UsersModule,
+    RolesModule,
+    JwtModule,
+    EmailModule,
+  ],
+  controllers: [AppController],
+  providers: [
+    AppService,
+    IsUniquePermissionCodeConstraint,
+    IsUniqueRoleNameConstraint,
+    OutboxPublisherService,
+    OutboxSubscriberService,
+  ],
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
-    consumer
-      .apply(RequestContextMiddleware)
-      .forRoutes('*');
+    consumer.apply(RequestContextMiddleware).forRoutes('*');
   }
 }
