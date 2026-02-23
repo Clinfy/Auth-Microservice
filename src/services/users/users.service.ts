@@ -10,7 +10,6 @@ import { UserEntity } from 'src/entities/user.entity';
 import { DataSource, Repository } from 'typeorm';
 import { JwtService } from 'src/services/JWT/jwt.service';
 import { RegisterUserDTO } from 'src/interfaces/DTO/register.dto';
-import { UserI } from 'src/interfaces/user.interface';
 import { compare } from 'bcrypt';
 import { LoginDTO } from 'src/interfaces/DTO/login.dto';
 import { AuthInterface } from 'src/interfaces/auth.interface';
