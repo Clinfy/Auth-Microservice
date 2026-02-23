@@ -11,6 +11,15 @@ type TokenConfig = {
     expiresIn: string;
 };
 
+type AuthJwtPayload = {email: string, sid: string};
+type ResetJwtPayload = {email: string};
+
+type TokenPayloadType = {
+  auth: AuthJwtPayload;
+  refresh: AuthJwtPayload;
+  resetPassword: ResetJwtPayload;
+};
+
 @Injectable()
 export class JwtService {
   private readonly configByType: Record<TokenType, TokenConfig>;
@@ -56,9 +65,9 @@ export class JwtService {
         : 20;
   }
 
-  async generateToken(
-    payload: { email: string },
-    type: TokenType = 'auth',
+  async generateToken<T extends TokenType>(
+    payload: TokenPayloadType[T],
+    type: T = 'auth' as T,
   ): Promise<string> {
     try {
       return await this.signToken(payload, this.configByType[type]);
@@ -78,9 +87,9 @@ export class JwtService {
         timeToExpire < this.refreshRenewThresholdMinutes;
 
       const [accessToken, nextRefreshToken] = await Promise.all([
-        this.generateToken({ email: payload.email }, 'auth'),
+        this.generateToken({ email: payload.email, sid: payload.sid! }, 'auth'),
         shouldRotateRefresh
-          ? this.generateToken({ email: payload.email }, 'refresh')
+          ? this.generateToken({ email: payload.email, sid: payload.sid! }, 'refresh')
           : Promise.resolve(refreshToken),
       ]);
 
@@ -108,6 +117,10 @@ export class JwtService {
         throw new UnauthorizedException('Token payload is invalid');
       }
 
+      if ((type === 'refresh' || type === 'resetPassword') && !decoded.sid) {
+        throw new UnauthorizedException('Token payload is missing session id');
+      }
+
       return decoded;
     } catch (error) {
       if (error instanceof TokenExpiredError) {
@@ -126,7 +139,7 @@ export class JwtService {
   }
 
   private signToken(
-    payload: { email: string },
+    payload: TokenPayloadType[TokenType],
     config: TokenConfig,
   ): Promise<string> {
     return new Promise((resolve, reject) => {
