@@ -6,7 +6,7 @@ import {
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
-import { ModuleRef, Reflector } from '@nestjs/core';
+import { Reflector } from '@nestjs/core';
 import { RequestWithUser } from 'src/interfaces/request-user';
 import { JwtService } from 'src/services/JWT/jwt.service';
 import { Permissions } from './decorators/permissions.decorator';
@@ -21,7 +21,6 @@ export class AuthGuard implements CanActivate {
     constructor(
         private readonly jwtService: JwtService,
         private readonly reflector: Reflector,
-        private readonly moduleRef: ModuleRef,
         private readonly requestContextService: RequestContextService,
 
         @Inject(CACHE_MANAGER)
@@ -42,7 +41,7 @@ export class AuthGuard implements CanActivate {
         }
 
         const payload = await this.jwtService.getPayload(token.trim(), 'auth');
-        // Resolve UsersService lazily to avoid static module import dependencies
+        // Checks Permission via Redis cached session
         const sid = payload.sid;
         const sessionKey = `auth_session:${sid ?? token.trim()}`;
 
