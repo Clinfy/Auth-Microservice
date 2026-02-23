@@ -23,9 +23,11 @@ import {
 import { EmailService } from 'src/clients/email/email.service';
 import { RequestWithUser } from 'src/interfaces/request-user';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
-import * as cacheManager_1 from 'cache-manager';
 import { getTtlFromEnv } from 'src/common/tools/get-ttl';
 import { Session } from 'src/interfaces/session.interface';
+import type { Cache } from 'cache-manager';
+import { randomUUID } from 'crypto';
+import { AuthUser } from 'src/interfaces/auth-user.interface';
 
 @Injectable()
 export class UsersService {
@@ -37,7 +39,7 @@ export class UsersService {
     private readonly dataSource: DataSource,
 
     @Inject(CACHE_MANAGER)
-    private cacheManager: cacheManager_1.Cache,
+    private cacheManager: Cache,
 
     private readonly jwtService: JwtService,
     private readonly roleService: RolesService,
@@ -48,14 +50,21 @@ export class UsersService {
     return this.jwtService.refreshToken(refreshToken);
   }
 
-  async canDo(user: UserI, permissionCode: string): Promise<boolean> {
-    const result = user.permissionCodes.includes(permissionCode);
-    if (!result) {
-      throw new UnauthorizedException(
-        'You do not have permission to perform this action',
-      );
+  async canDo(user: AuthUser, permissionCode: string): Promise<boolean> {
+    const cacheKey = `auth_session:${user.session_id}`;
+    const session = await this.cacheManager.get<Session>(cacheKey);
+
+    if(!session || !session.active) {
+      throw new UnauthorizedException('Session expired or invalid');
     }
-    return result;
+
+    const allowed = session.permissions.includes(permissionCode);
+
+    if(!allowed) {
+      throw new ForbiddenException('Insufficient permissions');
+    }
+
+    return allowed;
   }
 
   async register(
@@ -90,19 +99,21 @@ export class UsersService {
     }
 
     try {
+      const sessionId = randomUUID()
       const [accessToken, refreshToken] = await Promise.all([
-        this.jwtService.generateToken({ email: user.email }, 'auth'),
-        this.jwtService.generateToken({ email: user.email }, 'refresh'),
+        this.jwtService.generateToken({ email: user.email, sid: sessionId }, 'auth'),
+        this.jwtService.generateToken({ email: user.email, sid: sessionId }, 'refresh'),
       ]);
 
       const sessionData: Session = {
+        id: user.id,
         person_id: user.person_id,
         email: user.email,
         permissions: user.permissionCodes,
         active: true
       };
 
-      const cacheKey = `auth_session:${accessToken}`;
+      const cacheKey = `auth_session:${sessionId}`;
 
       await this.cacheManager.set(cacheKey, sessionData, getTtlFromEnv('JWT_AUTH_EXPIRES_IN') )
 
