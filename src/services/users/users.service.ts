@@ -128,6 +128,12 @@ export class UsersService {
     }
   }
 
+  async logOut(user: AuthUser): Promise<{ message: string }> {
+    const cacheKey = `auth_session:${user.session_id}`;
+    await this.cacheManager.del(cacheKey);
+    return { message: 'Logged out successfully' };
+  }
+
   async findByEmail(email: string): Promise<UserEntity | null> {
     return this.userRepository.findOne({ where: { email } });
   }

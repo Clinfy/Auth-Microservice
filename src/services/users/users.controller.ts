@@ -61,6 +61,16 @@ export class UsersController {
     return this.userService.logIn(dto);
   }
 
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Log out a user' })
+  @ApiOkResponse({ schema: { type: 'object', properties: { message: { type: 'string' } } }, })
+  @ApiUnauthorizedResponse({ description: 'Missing or invalid bearer token' })
+  @Post('logout')
+  logOut(@Req() request: requestUser.RequestWithUser): Promise<{ message: string }> {
+    return this.userService.logOut(request.user);
+  }
+
   @ApiOperation({ summary: 'Refresh a user token' })
   @ApiHeader({ name: 'refresh-token', required: true })
   @ApiOkResponse({ schema: { type: 'object', properties: { accessToken: { type: 'string' }, refreshToken: { type: 'string' }, }, }, })
