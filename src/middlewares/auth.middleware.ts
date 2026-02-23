@@ -1,16 +1,20 @@
 import {
-    CanActivate,
-    ExecutionContext,
-    ForbiddenException,
-    Injectable,
-    UnauthorizedException,
+  CanActivate,
+  ExecutionContext,
+  ForbiddenException,
+  Inject,
+  Injectable,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { ModuleRef, Reflector } from '@nestjs/core';
 import { RequestWithUser } from 'src/interfaces/request-user';
 import { JwtService } from 'src/services/JWT/jwt.service';
 import { Permissions } from './decorators/permissions.decorator';
-import { UsersService } from 'src/services/users/users.service';
 import { RequestContextService } from 'src/common/context/request-context.service';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import type { Cache } from 'cache-manager';
+import { Session } from 'src/interfaces/session.interface';
+import { AuthUser } from 'src/interfaces/auth-user.interface';
 
 @Injectable()
 export class AuthGuard implements CanActivate {
@@ -19,6 +23,9 @@ export class AuthGuard implements CanActivate {
         private readonly reflector: Reflector,
         private readonly moduleRef: ModuleRef,
         private readonly requestContextService: RequestContextService,
+
+        @Inject(CACHE_MANAGER)
+        private readonly cacheManager: Cache,
     ) {}
 
     async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -36,18 +43,30 @@ export class AuthGuard implements CanActivate {
 
         const payload = await this.jwtService.getPayload(token.trim(), 'auth');
         // Resolve UsersService lazily to avoid static module import dependencies
-        const usersService = this.moduleRef.get(UsersService, { strict: false });
-        const user = await usersService.findByEmail(payload.email);
-        if (!user) {
-            throw new UnauthorizedException('Wrong email or password');
+        const sid = payload.sid;
+        const sessionKey = `auth_session:${sid ?? token.trim()}`;
+
+        const session = await this.cacheManager.get<Session>(sessionKey);
+
+        if (!session) {
+          throw new UnauthorizedException('Session expired or invalid');
+        }
+        if(!session.active) {
+          throw new UnauthorizedException('This session is no longer active');
+        }
+        if (session.email !== payload.email) {
+          throw new UnauthorizedException('Token/Session mismatch');
         }
 
-        if (!user.active) {
-            throw new UnauthorizedException('This user is not active');
-        }
+        const authUser: AuthUser = {
+          id: session.id,
+          email: session.email,
+          person_id: session.person_id,
+          session_id: sid ?? token.trim(),
+        };
 
-        request.user = user;
-        this.requestContextService.setUser(user);
+        request.user = authUser;
+        this.requestContextService.setUser(authUser)
 
         const permissions = this.reflector.getAllAndOverride<string[]>(Permissions, [
             context.getHandler(),
@@ -58,8 +77,7 @@ export class AuthGuard implements CanActivate {
             return true;
         }
 
-        const userPermissions = user.permissionCodes;
-        const hasAllPermissions = permissions.some(permission => userPermissions.includes(permission));
+        const hasAllPermissions = permissions.some(permission => session.permissions.includes(permission));
 
         if (!hasAllPermissions) {
             throw new ForbiddenException('Insufficient permissions');
