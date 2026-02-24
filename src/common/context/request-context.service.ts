@@ -1,9 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { AsyncLocalStorage } from 'node:async_hooks';
-import { UserEntity } from 'src/entities/user.entity';
+import { AuthUser } from 'src/interfaces/auth-user.interface';
 
 export interface RequestContext {
-  user: UserEntity | null;
+  user: AuthUser | null;
 }
 
 @Injectable()
@@ -22,12 +22,12 @@ export class RequestContextService {
     return context;
   }
 
-  setUser(user: UserEntity): void {
+  setUser(user: AuthUser): void {
     const context = this.getContext();
     context.user = user;
   }
 
-  getCurrentUser(): UserEntity | null {
+  getCurrentUser(): AuthUser | null {
     return this.getContext()?.user;
   }
 }

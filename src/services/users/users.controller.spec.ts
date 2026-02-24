@@ -46,9 +46,10 @@ describe('UsersController', () => {
     const dto: LoginDTO = { email: 'user@example.com', password: 'secret' };
     const tokens: AuthInterface = { accessToken: 'access', refreshToken: 'refresh' };
     service.logIn.mockResolvedValue(tokens);
+    const request = { ip: '127.0.0.1' } as any;
 
-    await expect(controller.logIn(dto)).resolves.toEqual(tokens);
-    expect(service.logIn).toHaveBeenCalledWith(dto);
+    await expect(controller.logIn(dto, request)).resolves.toEqual(tokens);
+    expect(service.logIn).toHaveBeenCalledWith(dto, request);
   });
 
   it('should refresh a token using the header', async () => {
@@ -70,9 +71,21 @@ describe('UsersController', () => {
   });
 
   it('should return the logged user details', async () => {
-    const request = { user: { id: userId, email: 'user@example.com', person_id: '66666666-6666-6666-6666-666666666666' } } as any;
+    const request = {
+      user: {
+        id: userId,
+        email: 'user@example.com',
+        person_id: '66666666-6666-6666-6666-666666666666',
+        session_id: 'abcd',
+      },
+    } as any;
 
-    expect(controller.me(request)).toEqual({ id: userId, email: 'user@example.com', person_id: '66666666-6666-6666-6666-666666666666' });
+    expect(controller.me(request)).toEqual({
+      id: userId,
+      email: 'user@example.com',
+      person_id: '66666666-6666-6666-6666-666666666666',
+      session_id: 'abcd',
+    });
   });
 
   it('should return all users', async () => {
