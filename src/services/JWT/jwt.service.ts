@@ -117,7 +117,7 @@ export class JwtService {
         throw new UnauthorizedException('Token payload is invalid');
       }
 
-      if ((type === 'refresh' || type === 'resetPassword') && !decoded.sid) {
+      if ((type === 'refresh') && !decoded.sid) {
         throw new UnauthorizedException({
           message: 'Token payload is missing data',
           code: 'TOKEN_PAYLOAD_MISSING_DATA',
