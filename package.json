@@ -57,6 +57,7 @@
     "@nestjs/schematics": "^11.0.9",
     "@nestjs/testing": "^11.0.1",
     "@testcontainers/postgresql": "^11.7.1",
+    "@types/bcrypt": "^6.0.0",
     "@types/express": "^5.0.0",
     "@types/jest": "^30.0.0",
     "@types/ms": "^2.1.0",
