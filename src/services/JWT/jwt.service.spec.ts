@@ -105,9 +105,20 @@ describe('JwtService', () => {
   });
 
   it('getPayload returns decoded payload', async () => {
-    verifyMock.mockImplementation((_token, _secret, callback) => callback(null, { email: 'user@example.com', exp: 1 }));
+    verifyMock.mockImplementation((_token, _secret, callback) =>
+      callback(null, { email: 'user@example.com', exp: 1 }),
+    );
 
     await expect(service.getPayload('token', 'auth')).resolves.toEqual({ email: 'user@example.com', exp: 1 });
+  });
+
+  it('getPayload enforces sid presence for refresh and reset tokens', async () => {
+    verifyMock.mockImplementation((_token, _secret, callback) =>
+      callback(null, { email: 'user@example.com', exp: 1 }),
+    );
+
+    await expect(service.getPayload('token', 'refresh')).rejects.toBeInstanceOf(UnauthorizedException);
+    await expect(service.getPayload('token', 'resetPassword')).rejects.toBeInstanceOf(UnauthorizedException);
   });
 
   it('getPayload maps token errors to UnauthorizedException', async () => {
@@ -125,7 +136,7 @@ describe('JwtService', () => {
 
   it('refreshToken rotates refresh token when close to expiry', async () => {
     verifyMock.mockImplementation((_token, _secret, callback) =>
-      callback(null, { email: 'user@example.com', exp: 1 }),
+      callback(null, { email: 'user@example.com', exp: 1, sid: 'session-1' }),
     );
     signMock
       .mockImplementationOnce((_payload, _secret, _options, callback) => callback(null, 'ACCESS'))
@@ -140,7 +151,7 @@ describe('JwtService', () => {
   it('refreshToken reuses existing refresh token when far from expiry', async () => {
     diffMinutes = 999;
     verifyMock.mockImplementation((_token, _secret, callback) =>
-      callback(null, { email: 'user@example.com', exp: 1 }),
+      callback(null, { email: 'user@example.com', exp: 1, sid: 'session-1' }),
     );
     signMock.mockImplementation((_payload, _secret, _options, callback) => callback(null, 'ACCESS'));
 
