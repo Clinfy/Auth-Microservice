@@ -5,3 +5,7 @@ export interface Session {
   permissions: string[];
   active: boolean;
 }
+
+export interface SessionWithSid extends Session {
+  sid: string;
+}
