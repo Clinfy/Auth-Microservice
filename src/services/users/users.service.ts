@@ -114,7 +114,11 @@ export class UsersService {
 
       const cacheKey = `auth_session:${sessionId}`;
 
-      await this.cacheManager.set(cacheKey, sessionData, getTtlFromEnv('JWT_AUTH_EXPIRES_IN') )
+      await this.cacheManager.set(
+        cacheKey,
+        sessionData,
+        getTtlFromEnv('JWT_REFRESH_EXPIRES_IN'),
+      );
 
       return {
         accessToken,
