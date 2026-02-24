@@ -76,7 +76,7 @@ export class AuthGuard implements CanActivate {
         }
 
         const authUser: AuthUser = {
-          id: session.id,
+          id: session.user_id,
           email: session.email,
           person_id: session.person_id,
           session_id: sid ?? token.trim(),

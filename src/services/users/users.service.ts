@@ -57,7 +57,7 @@ export class UsersService {
       });
     }
 
-    const user = await this.findOne(session.id)
+    const user = await this.findOne(session.user_id)
 
     const newSession: Session = {
       ... session,
@@ -126,7 +126,7 @@ export class UsersService {
       ]);
 
       const sessionData: Session = {
-        id: user.id,
+        user_id: user.id,
         person_id: user.person_id,
         email: user.email,
         permissions: user.permissionCodes,

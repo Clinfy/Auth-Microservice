@@ -1,5 +1,5 @@
 export interface Session {
-  id: string;
+  user_id: string;
   person_id: string;
   email: string;
   permissions: string[];
