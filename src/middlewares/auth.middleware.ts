@@ -32,12 +32,20 @@ export class AuthGuard implements CanActivate {
 
         const authorizationHeader = request.headers?.authorization;
         if (typeof authorizationHeader !== 'string' || authorizationHeader.trim().length === 0) {
-            throw new UnauthorizedException('Authorization header missing');
+            throw new UnauthorizedException({
+              message: 'Authorization header missing',
+              code: 'AUTH_HEADER_MISSING',
+              statusCode: 401,
+            });
         }
 
         const [scheme, token] = authorizationHeader.trim().split(/\s+/);
         if (!/^Bearer$/i.test(scheme) || !token) {
-            throw new UnauthorizedException('Invalid authorization header format');
+            throw new UnauthorizedException({
+              message: 'Invalid authorization header format',
+              code: 'AUTH_HEADER_INVALID',
+              statusCode: 401,
+            });
         }
 
         const payload = await this.jwtService.getPayload(token.trim(), 'auth');
@@ -48,13 +56,25 @@ export class AuthGuard implements CanActivate {
         const session = await this.cacheManager.get<Session>(sessionKey);
 
         if (!session) {
-          throw new UnauthorizedException('Session expired or invalid');
+          throw new UnauthorizedException({
+            message: 'Session expired or invalid',
+            code: 'SESSION_INVALID',
+            statusCode: 401,
+          });
         }
         if(!session.active) {
-          throw new UnauthorizedException('This session is no longer active');
+          throw new UnauthorizedException({
+            message: 'This session is no longer active',
+            code: 'SESSION_EXPIRED',
+            statusCode: 401,
+          });
         }
         if (session.email !== payload.email) {
-          throw new UnauthorizedException('Token/Session mismatch');
+          throw new UnauthorizedException({
+            message: 'Token/Session mismatch',
+            code: 'SESSION_TOKEN_MISMATCH',
+            statusCode: 401,
+          });
         }
 
         const authUser: AuthUser = {
