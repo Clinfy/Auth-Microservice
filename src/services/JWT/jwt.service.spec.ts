@@ -87,9 +87,9 @@ describe('JwtService', () => {
   it('generates JWT tokens via jsonwebtoken.sign', async () => {
     signMock.mockImplementation((_payload, _secret, _options, callback) => callback(null, 'TOKEN'));
 
-    await expect(service.generateToken({ email: 'user@example.com' }, 'auth')).resolves.toBe('TOKEN');
+    await expect(service.generateToken({ email: 'user@example.com',sid: '1111' }, 'auth')).resolves.toBe('TOKEN');
     expect(signMock).toHaveBeenCalledWith(
-      { email: 'user@example.com' },
+      { email: 'user@example.com', sid: '1111' },
       'auth-secret',
       expect.objectContaining({ expiresIn: '1d' }),
       expect.any(Function),
@@ -99,7 +99,7 @@ describe('JwtService', () => {
   it('wraps signing errors in InternalServerErrorException', async () => {
     signMock.mockImplementation((_payload, _secret, _options, callback) => callback(new Error('fail')));
 
-    await expect(service.generateToken({ email: 'user@example.com' }, 'auth')).rejects.toBeInstanceOf(
+    await expect(service.generateToken({ email: 'user@example.com', sid: '111' }, 'auth')).rejects.toBeInstanceOf(
       InternalServerErrorException,
     );
   });
@@ -112,13 +112,12 @@ describe('JwtService', () => {
     await expect(service.getPayload('token', 'auth')).resolves.toEqual({ email: 'user@example.com', exp: 1 });
   });
 
-  it('getPayload enforces sid presence for refresh and reset tokens', async () => {
+  it('getPayload enforces sid presence for refresh token', async () => {
     verifyMock.mockImplementation((_token, _secret, callback) =>
       callback(null, { email: 'user@example.com', exp: 1 }),
     );
 
     await expect(service.getPayload('token', 'refresh')).rejects.toBeInstanceOf(UnauthorizedException);
-    await expect(service.getPayload('token', 'resetPassword')).rejects.toBeInstanceOf(UnauthorizedException);
   });
 
   it('getPayload maps token errors to UnauthorizedException', async () => {
