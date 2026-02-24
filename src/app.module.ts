@@ -19,6 +19,7 @@ import { OutboxSubscriberService } from 'src/cron/outbox-subscriber.service';
 import { RequestContextMiddleware } from 'src/middlewares/request-context.middleware';
 import { RequestContextModule } from 'src/common/context/request-context.module';
 import { RedisModule } from 'src/common/redis/redis.module';
+import { SessionsModule } from 'src/services/sessions/sessions.module';
 
 @Module({
   imports: [
@@ -63,6 +64,7 @@ import { RedisModule } from 'src/common/redis/redis.module';
     ApiKeysModule,
     UsersModule,
     RolesModule,
+    SessionsModule,
     JwtModule,
     EmailModule,
   ],
