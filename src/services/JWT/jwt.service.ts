@@ -118,20 +118,32 @@ export class JwtService {
       }
 
       if ((type === 'refresh' || type === 'resetPassword') && !decoded.sid) {
-        throw new UnauthorizedException('Token payload is missing session id');
+        throw new UnauthorizedException({
+          message: 'Token payload is missing data',
+          code: 'TOKEN_PAYLOAD_MISSING_DATA',
+          statusCode: 401
+        });
       }
 
       return decoded;
     } catch (error) {
       if (error instanceof TokenExpiredError) {
-        throw new UnauthorizedException('Token expired');
+        throw new UnauthorizedException({
+          message: 'Token has expired',
+          code: 'TOKEN_EXPIRED',
+          statusCode: 401
+        });
       }
 
       if (
         error instanceof JsonWebTokenError ||
         error instanceof NotBeforeError
       ) {
-        throw new UnauthorizedException('Token verification failed');
+        throw new UnauthorizedException({
+          message: 'Token verification failed',
+          code: 'TOKEN_VERIFICATION_FAILED',
+          statusCode: 401
+        });
       }
 
       throw error;
