@@ -163,7 +163,6 @@ export class UsersService {
         refreshToken,
       };
     } catch (error) {
-      console.error(error)
       throw new InternalServerErrorException(
         'Unable to issue authentication tokens',
       );
