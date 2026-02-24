@@ -70,8 +70,8 @@ export class UsersController {
   })
   @ApiUnauthorizedResponse({ description: 'Wrong email or password' })
   @Post('login')
-  logIn(@Body() dto: LoginDTO): Promise<AuthInterface> {
-    return this.userService.logIn(dto);
+  logIn(@Body() dto: LoginDTO, @Req() req: Request): Promise<AuthInterface> {
+    return this.userService.logIn(dto, req);
   }
 
   @UseGuards(AuthGuard)

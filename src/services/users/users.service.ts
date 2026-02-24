@@ -15,10 +15,7 @@ import { LoginDTO } from 'src/interfaces/DTO/login.dto';
 import { AuthInterface } from 'src/interfaces/auth.interface';
 import { AssignRoleDTO } from 'src/interfaces/DTO/assign.dto';
 import { RolesService } from 'src/services/roles/roles.service';
-import {
-  ForgotPasswordDTO,
-  ResetPasswordDTO,
-} from 'src/interfaces/DTO/reset-password.dto';
+import { ForgotPasswordDTO, ResetPasswordDTO, } from 'src/interfaces/DTO/reset-password.dto';
 import { EmailService } from 'src/clients/email/email.service';
 import { RequestWithUser } from 'src/interfaces/request-user';
 import { getTtlFromEnv } from 'src/common/tools/get-ttl';
@@ -26,6 +23,8 @@ import { Session } from 'src/interfaces/session.interface';
 import { randomUUID } from 'crypto';
 import { AuthUser } from 'src/interfaces/auth-user.interface';
 import { RedisService } from 'src/common/redis/redis.service';
+import type { Request } from 'express';
+import { UAParser } from 'ua-parser-js';
 
 @Injectable()
 export class UsersService {
@@ -60,9 +59,10 @@ export class UsersService {
     const user = await this.findOne(session.user_id)
 
     const newSession: Session = {
-      ... session,
+      ...session,
       permissions: user.permissionCodes,
-    }
+      last_refresh_at: new Date().toISOString(),
+    };
 
     await this.redis.raw.set(cacheKey, JSON.stringify(newSession), {KEEPTTL: true})
 
@@ -103,7 +103,7 @@ export class UsersService {
     });
   }
 
-  async logIn(body: LoginDTO): Promise<AuthInterface> {
+  async logIn(body: LoginDTO, req: Request): Promise<AuthInterface> {
     const user = await this.findByEmail(body.email);
     if (!user) {
       throw new UnauthorizedException('Wrong email or password');
@@ -125,12 +125,19 @@ export class UsersService {
         this.jwtService.generateToken({ email: user.email, sid: sessionId }, 'refresh'),
       ]);
 
+      const requestData = this.getRequestData(req)
+
       const sessionData: Session = {
         user_id: user.id,
         person_id: user.person_id,
         email: user.email,
         permissions: user.permissionCodes,
-        active: true
+        active: true,
+        ip: requestData.ip,
+        userAgent: requestData.userAgent,
+        device: this.getDevice(requestData.userAgent),
+        created_at: new Date().toISOString(),
+        last_refresh_at: new Date().toISOString(),
       };
 
       const cacheKey = `auth_session:${sessionId}`;
@@ -229,5 +236,23 @@ export class UsersService {
     const user = await this.userRepository.findOneBy({ id });
     if (!user) throw new NotFoundException('User not found');
     return user;
+  }
+
+  private getRequestData(req: Request)  {
+    const ip =
+      (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() ||
+      req.socket.remoteAddress ||
+      'unknown';
+
+    const userAgent = req.headers['user-agent'] || 'unknown';
+
+    return {ip, userAgent };
+  }
+
+  private getDevice (userAgent: string): string {
+    const parser = new UAParser(userAgent);
+    const ua = parser.getResult();
+
+    return `${ua.os.name ?? 'Unknown OS'} - ${ua.browser.name ?? 'Unknown Browser'}`;
   }
 }
