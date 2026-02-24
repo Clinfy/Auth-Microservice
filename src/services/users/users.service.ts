@@ -25,6 +25,7 @@ import { AuthUser } from 'src/interfaces/auth-user.interface';
 import { RedisService } from 'src/common/redis/redis.service';
 import type { Request } from 'express';
 import { UAParser } from 'ua-parser-js';
+import { getClientIp } from 'src/common/tools/get-client-ip';
 
 @Injectable()
 export class UsersService {
@@ -239,10 +240,7 @@ export class UsersService {
   }
 
   private getRequestData(req: Request)  {
-    const ip =
-      (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() ||
-      req.socket.remoteAddress ||
-      'unknown';
+    const ip = getClientIp(req);
 
     const userAgent = req.headers['user-agent'] || 'unknown';
 
