@@ -18,8 +18,7 @@ import { OutboxPublisherService } from 'src/cron/outbox-publisher.service';
 import { OutboxSubscriberService } from 'src/cron/outbox-subscriber.service';
 import { RequestContextMiddleware } from 'src/middlewares/request-context.middleware';
 import { RequestContextModule } from 'src/common/context/request-context.module';
-import { CacheModule } from '@nestjs/cache-manager';
-import { createKeyv } from '@keyv/redis';
+import { RedisModule } from 'src/common/redis/redis.module';
 
 @Module({
   imports: [
@@ -56,20 +55,7 @@ import { createKeyv } from '@keyv/redis';
       },
     ]),
 
-    CacheModule.registerAsync({
-      isGlobal: true,
-      imports: [ConfigModule],
-      inject: [ConfigService],
-      useFactory: async (config: ConfigService) => {
-        const url = config.get<string>('REDIS_URL');
-        if (!url) throw new Error('Missing REDIS_URL');
-
-        return {
-          stores: [createKeyv(url)],
-        };
-      },
-    }),
-
+    RedisModule,
     ScheduleModule.forRoot(),
     TypeOrmModule.forFeature(entities),
     PermissionsModule,

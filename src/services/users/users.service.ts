@@ -21,12 +21,11 @@ import {
 } from 'src/interfaces/DTO/reset-password.dto';
 import { EmailService } from 'src/clients/email/email.service';
 import { RequestWithUser } from 'src/interfaces/request-user';
-import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { getTtlFromEnv } from 'src/common/tools/get-ttl';
 import { Session } from 'src/interfaces/session.interface';
-import type { Cache } from 'cache-manager';
 import { randomUUID } from 'crypto';
 import { AuthUser } from 'src/interfaces/auth-user.interface';
+import { RedisService } from 'src/common/redis/redis.service';
 
 @Injectable()
 export class UsersService {
@@ -37,9 +36,7 @@ export class UsersService {
     @InjectDataSource()
     private readonly dataSource: DataSource,
 
-    @Inject(CACHE_MANAGER)
-    private cacheManager: Cache,
-
+    private readonly redis: RedisService,
     private readonly jwtService: JwtService,
     private readonly roleService: RolesService,
     private readonly emailService: EmailService,
@@ -49,7 +46,9 @@ export class UsersService {
     const payload = await this.jwtService.getPayload(refreshToken, 'refresh');
     const cacheKey = `auth_session:${payload.sid}`;
 
-    const session = await this.cacheManager.get<Session>(cacheKey);
+    const raw = await this.redis.raw.get(cacheKey);
+    const session = raw ? JSON.parse(raw) as Session : null;
+
     if(!session || !session.active) {
       throw new UnauthorizedException({
         message: 'Session expired or invalid',
@@ -65,14 +64,15 @@ export class UsersService {
       permissions: user.permissionCodes,
     }
 
-    await this.cacheManager.set(cacheKey, newSession,await this.cacheManager.ttl(cacheKey) ?? getTtlFromEnv('JWT_REFRESH_EXPIRES_IN'))
+    await this.redis.raw.set(cacheKey, JSON.stringify(newSession), {KEEPTTL: true})
 
     return this.jwtService.refreshToken(refreshToken);
   }
 
   async canDo(user: AuthUser, permissionCode: string): Promise<boolean> {
     const cacheKey = `auth_session:${user.session_id}`;
-    const session = await this.cacheManager.get<Session>(cacheKey);
+    const raw = await this.redis.raw.get(cacheKey);
+    const session = raw ? JSON.parse(raw) as Session : null;
 
     if(!session || !session.active) {
       throw new UnauthorizedException('Session expired or invalid');
@@ -135,10 +135,10 @@ export class UsersService {
 
       const cacheKey = `auth_session:${sessionId}`;
 
-      await this.cacheManager.set(
+      await this.redis.raw.set(
         cacheKey,
-        sessionData,
-        getTtlFromEnv('JWT_REFRESH_EXPIRES_IN'),
+        JSON.stringify(sessionData),
+        { PX: getTtlFromEnv('JWT_REFRESH_EXPIRES_IN')}
       );
 
       return {
@@ -155,7 +155,7 @@ export class UsersService {
 
   async logOut(user: AuthUser): Promise<{ message: string }> {
     const cacheKey = `auth_session:${user.session_id}`;
-    await this.cacheManager.del(cacheKey);
+    await this.redis.raw.del(cacheKey);
     return { message: 'Logged out successfully' };
   }
 

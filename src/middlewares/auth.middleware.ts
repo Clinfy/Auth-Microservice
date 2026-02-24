@@ -11,10 +11,9 @@ import { RequestWithUser } from 'src/interfaces/request-user';
 import { JwtService } from 'src/services/JWT/jwt.service';
 import { Permissions } from './decorators/permissions.decorator';
 import { RequestContextService } from 'src/common/context/request-context.service';
-import { CACHE_MANAGER } from '@nestjs/cache-manager';
-import type { Cache } from 'cache-manager';
 import { Session } from 'src/interfaces/session.interface';
 import { AuthUser } from 'src/interfaces/auth-user.interface';
+import { RedisService } from 'src/common/redis/redis.service';
 
 @Injectable()
 export class AuthGuard implements CanActivate {
@@ -23,8 +22,7 @@ export class AuthGuard implements CanActivate {
         private readonly reflector: Reflector,
         private readonly requestContextService: RequestContextService,
 
-        @Inject(CACHE_MANAGER)
-        private readonly cacheManager: Cache,
+        private readonly redis: RedisService,
     ) {}
 
     async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -53,7 +51,8 @@ export class AuthGuard implements CanActivate {
         const sid = payload.sid;
         const sessionKey = `auth_session:${sid ?? token.trim()}`;
 
-        const session = await this.cacheManager.get<Session>(sessionKey);
+        const raw = await this.redis.raw.get(sessionKey);
+        const session: Session | null = raw ? JSON.parse(raw) : null;
 
         if (!session) {
           throw new UnauthorizedException({
