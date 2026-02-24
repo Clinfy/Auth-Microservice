@@ -36,4 +36,21 @@ export class SessionsService {
     }
     return {sessions, total: sessions.length};
   }
+
+  async deactivateSession (sid: string): Promise<{message: string}> {
+    const cacheKey = `auth_session:${sid}`;
+    const raw = await this.redis.raw.get(cacheKey);
+    const session = raw ? (JSON.parse(raw) as Session) : null;
+
+    if (session) {
+      const deactivatedSession: Session = {
+        ...session,
+        active: false,
+      };
+      await this.redis.raw.set(cacheKey, JSON.stringify(deactivatedSession), {KEEPTTL: true});
+      return {message: 'Session deactivated'};
+    } else {
+      return {message: 'Session not found'};
+    }
+  }
 }
