@@ -1,6 +1,6 @@
 import { Controller, Get, Param } from '@nestjs/common';
 import { SessionsService } from 'src/services/sessions/sessions.service';
-import { Session, SessionWithSid } from 'src/interfaces/session.interface';
+import { SessionWithSid } from 'src/interfaces/session.interface';
 
 @Controller('sessions')
 export class SessionsController {
