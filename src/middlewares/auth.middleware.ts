@@ -13,6 +13,8 @@ import { RequestContextService } from 'src/common/context/request-context.servic
 import { Session } from 'src/interfaces/session.interface';
 import { AuthUser } from 'src/interfaces/auth-user.interface';
 import { RedisService } from 'src/common/redis/redis.service';
+import { getClientIp } from 'src/common/tools/get-client-ip';
+import { sameSubnetCheck } from 'src/common/tools/same-subnet-check';
 
 @Injectable()
 export class AuthGuard implements CanActivate {
@@ -71,6 +73,14 @@ export class AuthGuard implements CanActivate {
           throw new UnauthorizedException({
             message: 'Token/Session mismatch',
             code: 'SESSION_TOKEN_MISMATCH',
+            statusCode: 401,
+          });
+        }
+
+        if(!sameSubnetCheck(session.ip, getClientIp(request))) {
+          throw new UnauthorizedException({
+            message: 'Session IP mismatch',
+            code: 'SESSION_IP_MISMATCH',
             statusCode: 401,
           });
         }
