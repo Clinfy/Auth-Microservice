@@ -58,14 +58,7 @@ export class UsersService {
       });
     }
 
-    const user = await this.findByEmail(session.email);
-    if(!user) {
-      throw new UnauthorizedException({
-        message: 'Session email mismatch',
-        code: 'SESSION_INVALID',
-        statusCode: 401,
-      });
-    }
+    const user = await this.findOne(session.id)
 
     const newSession: Session = {
       ... session,
