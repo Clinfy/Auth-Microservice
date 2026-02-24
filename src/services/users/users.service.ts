@@ -46,6 +46,34 @@ export class UsersService {
   ) {}
 
   async refreshToken(refreshToken: string): Promise<AuthInterface> {
+    const payload = await this.jwtService.getPayload(refreshToken, 'refresh');
+    const cacheKey = `auth_session:${payload.sid}`;
+
+    const session = await this.cacheManager.get<Session>(cacheKey);
+    if(!session || !session.active) {
+      throw new UnauthorizedException({
+        message: 'Session expired or invalid',
+        code: 'SESSION_INVALID',
+        statusCode: 401,
+      });
+    }
+
+    const user = await this.findByEmail(session.email);
+    if(!user) {
+      throw new UnauthorizedException({
+        message: 'Session email mismatch',
+        code: 'SESSION_INVALID',
+        statusCode: 401,
+      });
+    }
+
+    const newSession: Session = {
+      ... session,
+      permissions: user.permissionCodes,
+    }
+
+    await this.cacheManager.set(cacheKey, newSession,await this.cacheManager.ttl(cacheKey) ?? getTtlFromEnv('JWT_REFRESH_EXPIRES_IN'))
+
     return this.jwtService.refreshToken(refreshToken);
   }
 
