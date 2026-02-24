@@ -141,6 +141,15 @@ export class UsersService {
         { PX: getTtlFromEnv('JWT_REFRESH_EXPIRES_IN')}
       );
 
+
+      //Add user sessions index
+      const userIndex = `user_sessions:${user.id}`;
+      await this.redis.raw.sAdd(userIndex, sessionId);
+      await this.redis.raw.pExpire(
+        userIndex,
+        getTtlFromEnv('JWT_REFRESH_EXPIRES_IN'),
+      );
+
       return {
         accessToken,
         refreshToken,
@@ -155,7 +164,10 @@ export class UsersService {
 
   async logOut(user: AuthUser): Promise<{ message: string }> {
     const cacheKey = `auth_session:${user.session_id}`;
+    const userIndex = `user_sessions:${user.id}`;
+
     await this.redis.raw.del(cacheKey);
+    await this.redis.raw.sRem(userIndex, user.session_id);
     return { message: 'Logged out successfully' };
   }
 
