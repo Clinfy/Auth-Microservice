@@ -12,6 +12,7 @@ import { EmailService } from 'src/clients/email/email.service';
 import { entities } from 'src/entities';
 import { PostgreSqlContainer, StartedPostgreSqlContainer } from '@testcontainers/postgresql';
 import { randomUUID } from 'crypto';
+import { RedisService } from 'src/common/redis/redis.service';
 
 describe('UsersService (integration)', () => {
   let moduleRef: TestingModule;
@@ -22,6 +23,7 @@ describe('UsersService (integration)', () => {
   let dataSource: DataSource;
   let container: StartedPostgreSqlContainer;
   const request = { user: null } as any;
+  let originalTtlEnv: string | undefined;
 
   jest.setTimeout(60000);
 
@@ -36,7 +38,20 @@ describe('UsersService (integration)', () => {
     confirmPasswordChange: jest.fn(),
   };
 
+  const redisServiceMock = {
+    raw: {
+      get: jest.fn(),
+      set: jest.fn().mockResolvedValue('OK'),
+      sAdd: jest.fn().mockResolvedValue(1),
+      pExpire: jest.fn().mockResolvedValue(true),
+      del: jest.fn().mockResolvedValue(1),
+      sRem: jest.fn().mockResolvedValue(1),
+    },
+  };
+
   beforeAll(async () => {
+    originalTtlEnv = process.env.JWT_REFRESH_EXPIRES_IN;
+    process.env.JWT_REFRESH_EXPIRES_IN = '1000';
     console.log('Starting PostgreSQL container...');
     container = await new PostgreSqlContainer('postgres:17.6').start()
     console.log('PostgreSQL container started');
@@ -69,6 +84,10 @@ describe('UsersService (integration)', () => {
           useValue: emailServiceMock,
         },
         {
+          provide: RedisService,
+          useValue: redisServiceMock,
+        },
+        {
           provide: getRepositoryToken(UserEntity),
           useValue: dataSource.getRepository(UserEntity),
         },
@@ -96,10 +115,12 @@ describe('UsersService (integration)', () => {
   afterAll(async () => {
     await dataSource.destroy();
     await container.stop();
+    process.env.JWT_REFRESH_EXPIRES_IN = originalTtlEnv;
   });
 
   beforeEach(async () => {
     jest.clearAllMocks();
+    Object.values(redisServiceMock.raw).forEach((fn: jest.Mock) => fn.mockClear());
     await dataSource.synchronize(true);
   });
 
@@ -122,13 +143,31 @@ describe('UsersService (integration)', () => {
 
     jwtServiceMock.generateToken.mockImplementation(async (_payload: any, type: string) => `${type}-token`);
 
-    const tokens = await usersService.logIn({ email: 'bob@example.com', password: 'Secret123' });
+    const httpRequest: any = {
+      headers: {
+        'user-agent': 'Mozilla/5.0',
+        'x-forwarded-for': '203.0.113.5',
+      },
+      ip: '127.0.0.1',
+      socket: { remoteAddress: '127.0.0.1' },
+    };
+
+    const tokens = await usersService.logIn({ email: 'bob@example.com', password: 'Secret123' }, httpRequest);
 
     expect(tokens).toEqual({
       accessToken: 'auth-token',
       refreshToken: 'refresh-token',
     });
     expect(jwtServiceMock.generateToken).toHaveBeenCalledTimes(2);
+    expect(redisServiceMock.raw.set).toHaveBeenCalledWith(
+      expect.stringMatching(/^auth_session:/),
+      expect.any(String),
+      { PX: 1000 },
+    );
+    expect(redisServiceMock.raw.sAdd).toHaveBeenCalledWith(
+      expect.stringMatching(/^user_sessions:/),
+      expect.any(String),
+    );
   });
 
   it('assigns roles to a user and allows permission checks', async () => {
@@ -145,11 +184,29 @@ describe('UsersService (integration)', () => {
     expect(updated.roles).toHaveLength(1);
     expect(updated.roles[0].name).toBe('manager');
 
-    const canDo = await usersService.canDo(updated, 'USERS_ASSIGN');
+    redisServiceMock.raw.get.mockResolvedValue(
+      JSON.stringify({ active: true, permissions: ['USERS_ASSIGN'] }),
+    );
+    const canDo = await usersService.canDo(
+      { id: updated.id, email: updated.email, person_id: updated.person_id, session_id: 'sess-1' } as any,
+      'USERS_ASSIGN',
+    );
     expect(canDo).toBe(true);
   });
 
-  it('delegates refresh token issuance to the JWT service', async () => {
+  it('refreshes an active session before issuing new tokens', async () => {
+    await usersService.register({ email: 'frank@example.com', password: 'Secret123', person_id: randomUUID() }, request);
+    const stored = await userRepository.findOneBy({ email: 'frank@example.com' });
+    expect(stored).toBeDefined();
+
+    jwtServiceMock.getPayload.mockResolvedValue({
+      email: stored!.email,
+      sid: 'sess-1',
+      exp: Math.floor(Date.now() / 1000) + 600,
+    });
+    redisServiceMock.raw.get.mockResolvedValue(
+      JSON.stringify({ user_id: stored!.id, permissions: [], active: true }),
+    );
     jwtServiceMock.refreshToken.mockResolvedValue({
       accessToken: 'next-access',
       refreshToken: 'next-refresh',
@@ -159,6 +216,11 @@ describe('UsersService (integration)', () => {
       accessToken: 'next-access',
       refreshToken: 'next-refresh',
     });
+    expect(redisServiceMock.raw.set).toHaveBeenCalledWith(
+      'auth_session:sess-1',
+      expect.stringContaining(`"user_id":"${stored!.id}"`),
+      { KEEPTTL: true },
+    );
     expect(jwtServiceMock.refreshToken).toHaveBeenCalledWith('refresh-token');
   });
 
