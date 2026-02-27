@@ -77,14 +77,6 @@ export class AuthGuard implements CanActivate {
           });
         }
 
-        if (request.headers['user-agent'] !== session.userAgent) {
-          throw new UnauthorizedException({
-            message: 'Session user agent mismatch',
-            code: 'SESSION_USER_AGENT_MISMATCH',
-            statusCode: 401,
-          })
-        }
-
         if(!sameSubnetCheck(session.ip, getClientIp(request))) {
           throw new UnauthorizedException({
             message: 'Session IP mismatch',
