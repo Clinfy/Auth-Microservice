@@ -20,11 +20,13 @@ import { RequestContextMiddleware } from 'src/middlewares/request-context.middle
 import { RequestContextModule } from 'src/common/context/request-context.module';
 import { RedisModule } from 'src/common/redis/redis.module';
 import { SessionsModule } from 'src/services/sessions/sessions.module';
+import { validate } from 'src/config/env-validation';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
+      validate
     }),
 
     TypeOrmModule.forRootAsync({
