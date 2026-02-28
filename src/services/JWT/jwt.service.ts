@@ -4,20 +4,18 @@ import { sign, verify, SignOptions, JsonWebTokenError, TokenExpiredError, NotBef
 import dayjs from 'dayjs';
 import { Payload } from 'src/interfaces/payload';
 
-type TokenType = 'refresh' | 'auth' | 'resetPassword';
+type TokenType = 'refresh' | 'auth';
 
 type TokenConfig = {
     secret: string;
     expiresIn: string;
 };
 
-type AuthJwtPayload = {email: string, sid: string};
-type ResetJwtPayload = {email: string};
+type JwtPayload = {email: string, sid: string};
 
 type TokenPayloadType = {
-  auth: AuthJwtPayload;
-  refresh: AuthJwtPayload;
-  resetPassword: ResetJwtPayload;
+  auth: JwtPayload;
+  refresh: JwtPayload;
 };
 
 @Injectable()
@@ -39,16 +37,6 @@ export class JwtService {
         expiresIn: this.configService.get<string>(
           'JWT_REFRESH_EXPIRES_IN',
           '1d',
-        ),
-      },
-      resetPassword: {
-        secret: this.configService.get<string>(
-          'JWT_RESET_PASSWORD_SECRET',
-          'refreshSecret',
-        ),
-        expiresIn: this.configService.get<string>(
-          'JWT_RESET_PASSWORD_EXPIRES_IN',
-          '5m',
         ),
       },
     };
