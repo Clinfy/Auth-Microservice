@@ -10,7 +10,7 @@ async function bootstrap() {
 
     //Trust Proxy
     const expressApp = app.getHttpAdapter().getInstance();
-    expressApp.set('trust proxy', true);
+    expressApp.set('trust proxy', 1);
 
     //Logs
     useContainer(app.select(AppModule), { fallbackOnErrors: true }); // <—
