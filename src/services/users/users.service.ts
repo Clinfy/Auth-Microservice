@@ -26,7 +26,7 @@ import { RedisService } from 'src/common/redis/redis.service';
 import type { Request } from 'express';
 import { UAParser } from 'ua-parser-js';
 import { getClientIp } from 'src/common/tools/get-client-ip';
-import { RefreshPasswordRedisPayload } from 'src/interfaces/payload';
+import { ResetPasswordRedisPayload } from 'src/interfaces/payload';
 
 @Injectable()
 export class UsersService {
@@ -196,7 +196,7 @@ export class UsersService {
     if (user) {
       const token = randomBytes(32).toString('hex');
       const redisIndex = `reset_password:${token}`;
-      const redisPayload: RefreshPasswordRedisPayload = { id: user.id };
+      const redisPayload: ResetPasswordRedisPayload = { id: user.id };
       await this.redis.raw.set(redisIndex, JSON.stringify(redisPayload), {PX: getTtlFromEnv('RESET_PASSWORD_EXPIRES_IN')});
       await this.emailService.sendResetPasswordMail(dto.email, token);
     }
@@ -207,7 +207,7 @@ export class UsersService {
   async resetPassword(token: string, dto: ResetPasswordDTO): Promise<{ message: string }> {
     const redisIndex = `reset_password:${token}`;
     const raw = await this.redis.raw.get(redisIndex);
-    const redisPayload = raw ? JSON.parse(raw) as RefreshPasswordRedisPayload : null;
+    const redisPayload = raw ? JSON.parse(raw) as ResetPasswordRedisPayload : null;
     if (!redisPayload) {
       throw new UnauthorizedException({
         message: 'Invalid or expired token',
@@ -215,13 +215,19 @@ export class UsersService {
         statusCode: 401,
       });
     }
-    const user = await this.findOne(redisPayload.id);
-    if (!user) {
-      throw new NotFoundException({
-        message: 'Invalid or expired token',
-        code: 'RESET_PASSWORD_USER_NOT_FOUND',
-        statusCode: 404,
-      });
+
+    let user: UserEntity
+    try {
+      user = await this.findOne(redisPayload.id);
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw new NotFoundException({
+          message: 'Invalid or expired token',
+          code: 'RESET_PASSWORD_USER_NOT_FOUND',
+          statusCode: 404,
+        });
+      }
+      throw error;
     }
 
     user.password = dto.password;
