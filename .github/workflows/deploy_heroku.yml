@@ -23,6 +23,6 @@ jobs:
         uses: akhileshns/heroku-deploy@v3.13.15
         with:
           heroku_api_key: ${{ secrets.HEROKU_API_KEY }}
-          heroku_app_name: "clinfy-auth"
+          heroku_app_name: "auth-ms"
           heroku_email: "agusliendo2004@gmail.com"
           usedocker: false
