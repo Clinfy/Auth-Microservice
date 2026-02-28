@@ -38,10 +38,6 @@ export class UserEntity extends BaseEntity implements UserI {
   @Column({type: "uuid", nullable: false})
   person_id: string;
 
-  @Exclude()
-  @Column({type: "varchar", default: null, nullable: true})
-  passResetToken:string|null = null
-
   @CreateDateColumn()
   created_at: Date;
 
