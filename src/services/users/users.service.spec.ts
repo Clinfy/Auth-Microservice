@@ -1,4 +1,4 @@
-import { ForbiddenException, InternalServerErrorException, UnauthorizedException } from '@nestjs/common';
+import { ForbiddenException, InternalServerErrorException, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { Repository, DataSource } from 'typeorm';
 import { UsersService } from './users.service';
 import { JwtService } from '../JWT/jwt.service';
@@ -21,7 +21,6 @@ describe('UsersService', () => {
   let jwtService: jest.Mocked<Partial<JwtService>>;
   let roleService: jest.Mocked<Partial<RolesService>>;
   let emailService: jest.Mocked<Partial<EmailService>>;
-  let originalTtlEnv: string | undefined;
 
   beforeEach(() => {
     userRepository = {
@@ -60,8 +59,8 @@ describe('UsersService', () => {
       confirmPasswordChange: jest.fn(),
     };
 
-    originalTtlEnv = process.env.JWT_REFRESH_EXPIRES_IN;
     process.env.JWT_REFRESH_EXPIRES_IN = '1000';
+    process.env.RESET_PASSWORD_EXPIRES_IN = '1000';
 
     service = new UsersService(
       userRepository as any,
@@ -74,7 +73,7 @@ describe('UsersService', () => {
   });
 
   afterEach(() => {
-    process.env.JWT_REFRESH_EXPIRES_IN = originalTtlEnv;
+    delete process.env.RESET_PASSWORD_EXPIRES_IN;
   });
 
   describe('canDo', () => {
@@ -215,19 +214,19 @@ describe('UsersService', () => {
 
   describe('forgotPassword', () => {
     it('stores reset token and sends email when user exists', async () => {
-      const storedUser: any = { email: 'user@example.com', passResetToken: null };
+      const storedUser: any = { id: 'user-1', email: 'user@example.com' };
       (userRepository.findOne as jest.Mock).mockResolvedValue(storedUser);
-      (jwtService.generateToken as jest.Mock).mockResolvedValue('reset-token');
 
       await expect(service.forgotPassword({ email: 'user@example.com' })).resolves.toEqual({
         message: expect.any(String),
       });
 
-      expect(jwtService.generateToken).toHaveBeenCalledWith({ email: 'user@example.com' }, 'resetPassword');
-      expect(userRepository.save).toHaveBeenCalledWith(
-        expect.objectContaining({ email: 'user@example.com', passResetToken: 'reset-token' }),
+      expect(redisService.raw.set).toHaveBeenCalledWith(
+        expect.stringMatching(/^reset_password:/),
+        JSON.stringify({ id: 'user-1' }),
+        { PX: expect.any(Number) },
       );
-      expect(emailService.sendResetPasswordMail).toHaveBeenCalledWith('user@example.com', 'reset-token');
+      expect(emailService.sendResetPasswordMail).toHaveBeenCalledWith('user@example.com', expect.any(String));
     });
 
     it('returns success message without side effects when user missing', async () => {
@@ -237,40 +236,39 @@ describe('UsersService', () => {
         message: expect.any(String),
       });
 
-      expect(jwtService.generateToken).not.toHaveBeenCalled();
-      expect(userRepository.save).not.toHaveBeenCalled();
+      expect(redisService.raw.set).not.toHaveBeenCalled();
       expect(emailService.sendResetPasswordMail).not.toHaveBeenCalled();
     });
   });
 
   describe('resetPassword', () => {
     it('updates password and clears token when payload valid', async () => {
-      (jwtService.getPayload as jest.Mock).mockResolvedValue({ email: 'user@example.com', exp: 123 });
-      const storedUser: any = { email: 'user@example.com', passResetToken: 'token-123' };
-      (userRepository.findOne as jest.Mock).mockResolvedValue(storedUser);
+      redisService.raw.get.mockResolvedValue(JSON.stringify({ id: 'user-1' }));
+      const storedUser: any = { id: 'user-1', email: 'user@example.com', password: 'old-password' };
+      (userRepository.findOneBy as jest.Mock).mockResolvedValue(storedUser);
 
       await expect(service.resetPassword('token-123', { password: 'new-password' })).resolves.toEqual({
         message: 'Password reset successfully',
       });
 
       expect(userRepository.save).toHaveBeenCalledWith(
-        expect.objectContaining({ email: 'user@example.com', password: 'new-password', passResetToken: null }),
+        expect.objectContaining({ email: 'user@example.com', password: 'new-password' }),
       );
+      expect(redisService.raw.del).toHaveBeenCalledWith('reset_password:token-123');
       expect(emailService.confirmPasswordChange).toHaveBeenCalledWith('user@example.com');
     });
 
-    it('throws UnauthorizedException when user missing', async () => {
-      (jwtService.getPayload as jest.Mock).mockResolvedValue({ email: 'missing@example.com', exp: 1 });
-      (userRepository.findOne as jest.Mock).mockResolvedValue(null);
+    it('throws UnauthorizedException when token invalid or expired', async () => {
+      redisService.raw.get.mockResolvedValue(null);
 
       await expect(service.resetPassword('token', { password: 'new' })).rejects.toBeInstanceOf(UnauthorizedException);
     });
 
-    it('throws ForbiddenException when stored token differs', async () => {
-      (jwtService.getPayload as jest.Mock).mockResolvedValue({ email: 'user@example.com', exp: 1 });
-      (userRepository.findOne as jest.Mock).mockResolvedValue({ email: 'user@example.com', passResetToken: 'other' });
+    it('throws NotFoundException when user missing', async () => {
+      redisService.raw.get.mockResolvedValue(JSON.stringify({ id: 'missing-id' }));
+      (userRepository.findOneBy as jest.Mock).mockResolvedValue(null);
 
-      await expect(service.resetPassword('token', { password: 'new' })).rejects.toBeInstanceOf(ForbiddenException);
+      await expect(service.resetPassword('token', { password: 'new' })).rejects.toBeInstanceOf(NotFoundException);
     });
   });
 
