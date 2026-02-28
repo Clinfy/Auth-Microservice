@@ -55,11 +55,6 @@ class EnvironmentVariables {
   JWT_REFRESH_SECRET: string;
 
   @IsString()
-  @MinLength(32)
-  @IsNotEmpty()
-  JWT_RESET_PASSWORD_SECRET: string;
-
-  @IsString()
   @IsNotEmpty()
   JWT_AUTH_EXPIRES_IN: string;
 
