@@ -20,12 +20,13 @@ import { EmailService } from 'src/clients/email/email.service';
 import { RequestWithUser } from 'src/interfaces/request-user';
 import { getTtlFromEnv } from 'src/common/tools/get-ttl';
 import { Session } from 'src/interfaces/session.interface';
-import { randomUUID } from 'crypto';
+import { randomBytes, randomUUID } from 'crypto';
 import { AuthUser } from 'src/interfaces/auth-user.interface';
 import { RedisService } from 'src/common/redis/redis.service';
 import type { Request } from 'express';
 import { UAParser } from 'ua-parser-js';
 import { getClientIp } from 'src/common/tools/get-client-ip';
+import { RefreshPasswordRedisPayload } from 'src/interfaces/payload';
 
 @Injectable()
 export class UsersService {
@@ -193,37 +194,39 @@ export class UsersService {
   async forgotPassword(dto: ForgotPasswordDTO): Promise<{ message: string }> {
     const user = await this.findByEmail(dto.email);
     if (user) {
-      const token = await this.jwtService.generateToken(
-        { email: dto.email },
-        'resetPassword',
-      );
-      user.passResetToken = token;
-      await this.userRepository.save(user);
+      const token = randomBytes(32).toString('hex');
+      const redisIndex = `reset_password:${token}`;
+      const redisPayload: RefreshPasswordRedisPayload = { id: user.id };
+      await this.redis.raw.set(redisIndex, JSON.stringify(redisPayload), {PX: getTtlFromEnv('RESET_PASSWORD_EXPIRES_IN')});
       await this.emailService.sendResetPasswordMail(dto.email, token);
     }
 
-    return {
-      message: 'If the email exists, a reset password link will be sent to it.',
-    };
+    return { message: 'If the email exists, a reset password link will be sent to it.' };
   }
 
-  async resetPassword(
-    token: string,
-    dto: ResetPasswordDTO,
-  ): Promise<{ message: string }> {
-    const payload = await this.jwtService.getPayload(token, 'resetPassword');
-    const user = await this.findByEmail(payload.email);
-    if (!user) {
-      throw new UnauthorizedException('Invalid or expired token');
+  async resetPassword(token: string, dto: ResetPasswordDTO): Promise<{ message: string }> {
+    const redisIndex = `reset_password:${token}`;
+    const raw = await this.redis.raw.get(redisIndex);
+    const redisPayload = raw ? JSON.parse(raw) as RefreshPasswordRedisPayload : null;
+    if (!redisPayload) {
+      throw new UnauthorizedException({
+        message: 'Invalid or expired token',
+        code: 'RESET_PASSWORD_INVALID_EXPIRED',
+        statusCode: 401,
+      });
     }
-
-    if (user.passResetToken != token) {
-      throw new ForbiddenException('Password already changed');
+    const user = await this.findOne(redisPayload.id);
+    if (!user) {
+      throw new NotFoundException({
+        message: 'Invalid or expired token',
+        code: 'RESET_PASSWORD_USER_NOT_FOUND',
+        statusCode: 404,
+      });
     }
 
     user.password = dto.password;
-    user.passResetToken = null;
     await this.userRepository.save(user);
+    await this.redis.raw.del(redisIndex);
     await this.emailService.confirmPasswordChange(user.email);
     return { message: 'Password reset successfully' };
   }
