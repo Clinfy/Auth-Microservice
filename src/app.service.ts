@@ -1,9 +1,9 @@
-import {Injectable} from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 
 @Injectable()
 export class AppService {
-    getStatus(): string {
-        return `
+  getStatus(): string {
+    return `
         status: ok | 
         name: ${process.env.npm_package_name} |
         version: ${process.env.npm_package_version} |
@@ -12,5 +12,5 @@ export class AppService {
         memory: ${Math.round(process.memoryUsage().heapUsed / 1024 / 1024)} MB |
         now: ${new Date().toISOString()}
         `;
-    }
+  }
 }

@@ -2,7 +2,15 @@ import {Body, Controller, Delete, Get, Param, Patch, Post, Req, UseGuards} from 
 import {RolesService} from "src/services/roles/roles.service";
 import {AuthGuard} from "src/middlewares/auth.middleware";
 import {Permissions} from "src/middlewares/decorators/permissions.decorator";
-import {ApiBearerAuth, ApiCreatedResponse, ApiNotFoundResponse, ApiOkResponse, ApiOperation} from "@nestjs/swagger";
+import {
+  ApiBearerAuth,
+  ApiCreatedResponse,
+  ApiForbiddenResponse,
+  ApiNotFoundResponse,
+  ApiOkResponse,
+  ApiOperation,
+  ApiUnauthorizedResponse,
+} from "@nestjs/swagger";
 import {RoleEntity} from "src/entities/role.entity";
 import {AssignPermissionDTO} from "src/interfaces/DTO/assign.dto";
 import {PatchRoleDTO} from "src/interfaces/DTO/patch.dto";
@@ -17,6 +25,8 @@ export class RolesController {
   @Permissions(['ROLES_CREATE'])
   @ApiOperation({ summary: 'Create a new role' })
   @ApiCreatedResponse({ type: RoleEntity })
+  @ApiUnauthorizedResponse({ description: 'Missing or invalid bearer token' })
+  @ApiForbiddenResponse({ description: 'Insufficient permissions' })
   @Post('new')
   create(@Req() request: requestUser.RequestWithUser, @Body() dto: any): Promise<RoleEntity> {
     return this.rolesService.create(dto, request);
@@ -27,6 +37,8 @@ export class RolesController {
   @ApiOperation({ summary: 'Update a role' })
   @ApiOkResponse({ type: RoleEntity })
   @ApiNotFoundResponse({ description: 'Role not found' })
+  @ApiUnauthorizedResponse({ description: 'Missing or invalid bearer token' })
+  @ApiForbiddenResponse({ description: 'Insufficient permissions' })
   @Patch('edit/:id')
   edit(@Body() dto: PatchRoleDTO, @Param('id') id: string): Promise<RoleEntity> {
     return this.rolesService.update(id, dto);
@@ -36,8 +48,9 @@ export class RolesController {
   @Permissions(['ROLES_UPDATE'])
   @ApiOperation({ summary: 'Assign permissions to a role' })
   @ApiOkResponse({ type: RoleEntity })
-  @ApiNotFoundResponse({ description: 'Role not found' })
-  @ApiNotFoundResponse({ description: 'Permission not found' })
+  @ApiNotFoundResponse({ description: 'Role or permission not found' })
+  @ApiUnauthorizedResponse({ description: 'Missing or invalid bearer token' })
+  @ApiForbiddenResponse({ description: 'Insufficient permissions' })
   @Patch('assign-permissions/:id')
   assignPermissions(@Param('id') id: string, @Body() dto: AssignPermissionDTO): Promise<RoleEntity> {
     return this.rolesService.assignPermissions(id, dto);
@@ -46,8 +59,10 @@ export class RolesController {
   @UseGuards(AuthGuard)
   @Permissions(['ROLES_DELETE'])
   @ApiOperation({ summary: 'Delete a role' })
-  @ApiOkResponse({ description: 'Role deleted' })
+  @ApiOkResponse({ schema: { type: 'object', properties: { message: { type: 'string' } } } })
   @ApiNotFoundResponse({ description: 'Role not found' })
+  @ApiUnauthorizedResponse({ description: 'Missing or invalid bearer token' })
+  @ApiForbiddenResponse({ description: 'Insufficient permissions' })
   @Delete('delete/:id')
   delete(@Param('id') id: string): Promise<{ message: string }> {
     return this.rolesService.delete(id);
@@ -58,6 +73,8 @@ export class RolesController {
   @ApiOperation({ summary: 'Find a role by id number' })
   @ApiOkResponse({ type: RoleEntity })
   @ApiNotFoundResponse({ description: 'Role not found' })
+  @ApiUnauthorizedResponse({ description: 'Missing or invalid bearer token' })
+  @ApiForbiddenResponse({ description: 'Insufficient permissions' })
   @Get('find/:id')
   findOne(@Param('id') id: string): Promise<RoleEntity> {
     return this.rolesService.findOne(id);
@@ -67,6 +84,8 @@ export class RolesController {
   @Permissions(['ROLES_READ'])
   @ApiOperation({ summary: 'Find all roles' })
   @ApiOkResponse({ type: [RoleEntity] })
+  @ApiUnauthorizedResponse({ description: 'Missing or invalid bearer token' })
+  @ApiForbiddenResponse({ description: 'Insufficient permissions' })
   @Get('all')
   findAll(): Promise<RoleEntity[]> {
     return this.rolesService.findAll();

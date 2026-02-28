@@ -5,6 +5,7 @@ import { JwtService } from '../JWT/jwt.service';
 import { RolesService } from '../roles/roles.service';
 import { EmailService } from 'src/clients/email/email.service';
 import { UserEntity } from 'src/entities/user.entity';
+import { RedisService } from 'src/common/redis/redis.service';
 
 jest.mock('bcrypt', () => ({
   compare: jest.fn(),
@@ -16,9 +17,11 @@ describe('UsersService', () => {
   let service: UsersService;
   let userRepository: jest.Mocked<Partial<Repository<UserEntity>>>;
   let dataSource: jest.Mocked<Partial<DataSource>>;
+  let redisService: { raw: any };
   let jwtService: jest.Mocked<Partial<JwtService>>;
   let roleService: jest.Mocked<Partial<RolesService>>;
   let emailService: jest.Mocked<Partial<EmailService>>;
+  let originalTtlEnv: string | undefined;
 
   beforeEach(() => {
     userRepository = {
@@ -29,6 +32,17 @@ describe('UsersService', () => {
 
     dataSource = {
       transaction: jest.fn(),
+    };
+
+    redisService = {
+      raw: {
+        get: jest.fn(),
+        set: jest.fn().mockResolvedValue('OK'),
+        sAdd: jest.fn().mockResolvedValue(1),
+        pExpire: jest.fn().mockResolvedValue(true),
+        del: jest.fn().mockResolvedValue(1),
+        sRem: jest.fn().mockResolvedValue(1),
+      },
     };
 
     jwtService = {
@@ -46,70 +60,135 @@ describe('UsersService', () => {
       confirmPasswordChange: jest.fn(),
     };
 
+    originalTtlEnv = process.env.JWT_REFRESH_EXPIRES_IN;
+    process.env.JWT_REFRESH_EXPIRES_IN = '1000';
+
     service = new UsersService(
       userRepository as any,
       dataSource as any,
+      redisService as unknown as RedisService,
       jwtService as any,
       roleService as any,
       emailService as any,
     );
   });
 
+  afterEach(() => {
+    process.env.JWT_REFRESH_EXPIRES_IN = originalTtlEnv;
+  });
+
   describe('canDo', () => {
     it('returns true when permission exists', async () => {
-      const user: any = { permissionCodes: ['CREATE_USER', 'EDIT_USER'] };
-      await expect(service.canDo(user, 'EDIT_USER')).resolves.toBe(true);
+      redisService.raw.get.mockResolvedValue(
+        JSON.stringify({ active: true, permissions: ['EDIT_USER'] }),
+      );
+
+      await expect(
+        service.canDo({ session_id: 'abc', id: '1', email: '', person_id: '' }, 'EDIT_USER'),
+      ).resolves.toBe(true);
+      expect(redisService.raw.get).toHaveBeenCalledWith('auth_session:abc');
     });
 
-    it('throws UnauthorizedException when permission missing', async () => {
-      const user: any = { permissionCodes: [] };
-      await expect(service.canDo(user, 'DELETE_USER')).rejects.toBeInstanceOf(UnauthorizedException);
+    it('throws UnauthorizedException when session missing', async () => {
+      redisService.raw.get.mockResolvedValue(null);
+      await expect(
+        service.canDo({ session_id: 'missing', id: '1', email: '', person_id: '' }, 'DELETE_USER'),
+      ).rejects.toBeInstanceOf(UnauthorizedException);
+    });
+
+    it('throws ForbiddenException when permission missing', async () => {
+      redisService.raw.get.mockResolvedValue(
+        JSON.stringify({ active: true, permissions: [] }),
+      );
+
+      await expect(
+        service.canDo({ session_id: 'abc', id: '1', email: '', person_id: '' }, 'DELETE_USER'),
+      ).rejects.toBeInstanceOf(ForbiddenException);
     });
   });
 
   describe('logIn', () => {
     const activeUser: UserEntity = Object.assign(new UserEntity(), {
+      id: 'user-1',
       email: 'john@example.com',
       password: 'hashed-password',
       active: true,
-    });
+    } as any);
+
+    const request: any = {
+      headers: {
+        'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)',
+        'x-forwarded-for': '203.0.113.5',
+      },
+      ip: '10.0.0.2',
+      socket: { remoteAddress: '10.0.0.2' },
+    };
 
     it('issues access and refresh tokens on success', async () => {
+      redisService.raw.set.mockResolvedValue('OK');
       (userRepository.findOne as jest.Mock).mockResolvedValue(activeUser);
       (compare as jest.Mock).mockResolvedValue(true);
       (jwtService.generateToken as jest.Mock)
         .mockResolvedValueOnce('access-token')
         .mockResolvedValueOnce('refresh-token');
 
-      await expect(service.logIn({ email: 'john@example.com', password: 'secret' })).resolves.toEqual({
+      await expect(
+        service.logIn({ email: 'john@example.com', password: 'secret' }, request),
+      ).resolves.toEqual({
         accessToken: 'access-token',
         refreshToken: 'refresh-token',
       });
+
+      expect(redisService.raw.set).toHaveBeenCalledWith(
+        expect.stringMatching(/^auth_session:/),
+        expect.any(String),
+        { PX: 1000 },
+      );
+      const [[cacheKey, rawSession]] = redisService.raw.set.mock.calls;
+      const sessionId = cacheKey.replace('auth_session:', '');
+      const session = JSON.parse(rawSession);
+      expect(session).toMatchObject({
+        user_id: activeUser.id,
+        email: activeUser.email,
+        ip: '203.0.113.5',
+        userAgent: request.headers['user-agent'],
+        device: expect.any(String),
+        permissions: [],
+        active: true,
+      });
+      expect(redisService.raw.sAdd).toHaveBeenCalledWith(
+        `user_sessions:${activeUser.id}`,
+        sessionId,
+      );
+      expect(redisService.raw.pExpire).toHaveBeenCalledWith(
+        `user_sessions:${activeUser.id}`,
+        1000,
+      );
     });
 
     it('throws UnauthorizedException when user not found', async () => {
       (userRepository.findOne as jest.Mock).mockResolvedValue(null);
 
-      await expect(service.logIn({ email: 'john@example.com', password: 'secret' })).rejects.toBeInstanceOf(
-        UnauthorizedException,
-      );
+      await expect(
+        service.logIn({ email: 'john@example.com', password: 'secret' }, request),
+      ).rejects.toBeInstanceOf(UnauthorizedException);
     });
 
     it('throws UnauthorizedException when user inactive', async () => {
       (userRepository.findOne as jest.Mock).mockResolvedValue({ ...activeUser, active: false });
 
-      await expect(service.logIn({ email: 'john@example.com', password: 'secret' })).rejects.toBeInstanceOf(
-        UnauthorizedException,
-      );
+      await expect(
+        service.logIn({ email: 'john@example.com', password: 'secret' }, request),
+      ).rejects.toBeInstanceOf(UnauthorizedException);
     });
 
     it('throws UnauthorizedException when password comparison fails', async () => {
       (userRepository.findOne as jest.Mock).mockResolvedValue(activeUser);
       (compare as jest.Mock).mockResolvedValue(false);
 
-      await expect(service.logIn({ email: 'john@example.com', password: 'wrong' })).rejects.toBeInstanceOf(
-        UnauthorizedException,
-      );
+      await expect(
+        service.logIn({ email: 'john@example.com', password: 'wrong' }, request),
+      ).rejects.toBeInstanceOf(UnauthorizedException);
     });
 
     it('throws InternalServerErrorException if token generation fails', async () => {
@@ -117,9 +196,20 @@ describe('UsersService', () => {
       (compare as jest.Mock).mockResolvedValue(true);
       (jwtService.generateToken as jest.Mock).mockRejectedValue(new Error('sign error'));
 
-      await expect(service.logIn({ email: 'john@example.com', password: 'secret' })).rejects.toBeInstanceOf(
-        InternalServerErrorException,
-      );
+      await expect(
+        service.logIn({ email: 'john@example.com', password: 'secret' }, request),
+      ).rejects.toBeInstanceOf(InternalServerErrorException);
+    });
+  });
+
+  describe('logOut', () => {
+    it('removes session data from redis', async () => {
+      await expect(
+        service.logOut({ id: '1', person_id: 'p1', email: 'john@example.com', session_id: 'sess' }),
+      ).resolves.toEqual({ message: 'Logged out successfully' });
+
+      expect(redisService.raw.del).toHaveBeenCalledWith('auth_session:sess');
+      expect(redisService.raw.sRem).toHaveBeenCalledWith('user_sessions:1', 'sess');
     });
   });
 
@@ -185,9 +275,59 @@ describe('UsersService', () => {
   });
 
   describe('refreshToken', () => {
-    it('delegates to jwtService', async () => {
-      (jwtService.refreshToken as jest.Mock).mockResolvedValue({ accessToken: 'a', refreshToken: 'b' });
-      await expect(service.refreshToken('refresh-token')).resolves.toEqual({ accessToken: 'a', refreshToken: 'b' });
+    it('updates session cache and delegates to jwtService', async () => {
+      (jwtService.getPayload as jest.Mock).mockResolvedValue({
+        email: 'user@example.com',
+        sid: 'sess-1',
+        exp: 123,
+      });
+      redisService.raw.get.mockResolvedValue(
+        JSON.stringify({ user_id: 'user-1', permissions: ['PERM1'], active: true }),
+      );
+      (userRepository.findOneBy as jest.Mock).mockResolvedValue({
+        id: 'user-1',
+        permissionCodes: ['PERM2'],
+      });
+      (jwtService.refreshToken as jest.Mock).mockResolvedValue({
+        accessToken: 'access',
+        refreshToken: 'refresh',
+      });
+
+      await expect(service.refreshToken('refresh-token')).resolves.toEqual({
+        accessToken: 'access',
+        refreshToken: 'refresh',
+      });
+
+      expect(redisService.raw.set).toHaveBeenCalledWith(
+        'auth_session:sess-1',
+        expect.stringContaining('"permissions":["PERM2"]'),
+        { KEEPTTL: true },
+      );
+      expect(jwtService.refreshToken).toHaveBeenCalledWith('refresh-token');
+    });
+
+    it('throws UnauthorizedException when session missing', async () => {
+      (jwtService.getPayload as jest.Mock).mockResolvedValue({
+        email: 'user@example.com',
+        sid: 'sess-1',
+        exp: 123,
+      });
+      redisService.raw.get.mockResolvedValue(null);
+
+      await expect(service.refreshToken('refresh-token')).rejects.toBeInstanceOf(UnauthorizedException);
+    });
+
+    it('throws UnauthorizedException when session inactive', async () => {
+      (jwtService.getPayload as jest.Mock).mockResolvedValue({
+        email: 'user@example.com',
+        sid: 'sess-1',
+        exp: 123,
+      });
+      redisService.raw.get.mockResolvedValue(
+        JSON.stringify({ user_id: 'user-1', active: false }),
+      );
+
+      await expect(service.refreshToken('refresh-token')).rejects.toBeInstanceOf(UnauthorizedException);
     });
   });
 });

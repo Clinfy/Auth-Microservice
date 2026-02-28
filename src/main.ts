@@ -8,6 +8,10 @@ import {writeFileSync} from "node:fs";
 async function bootstrap() {
     const app = await NestFactory.create(AppModule, {bufferLogs: true});
 
+    //Trust Proxy
+    const expressApp = app.getHttpAdapter().getInstance();
+    expressApp.set('trust proxy', true);
+
     //Logs
     useContainer(app.select(AppModule), { fallbackOnErrors: true }); // <—
     app.useGlobalPipes(new ValidationPipe({

@@ -6,7 +6,11 @@
     "deleteOutDir": true,
     "plugins": ["@nestjs/swagger"],
     "assets": [
-      { "include": "clients/email/templates/**/*", "outDir": "dist", "watchAssets": true }
+      {
+        "include": "clients/email/templates/**/*",
+        "outDir": "dist/src",
+        "watchAssets": true
+      }
     ]
   }
 }
