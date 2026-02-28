@@ -67,9 +67,10 @@ class EnvironmentVariables {
   @IsNotEmpty()
   JWT_REFRESH_EXPIRES_IN: string;
 
+  //---------- RESET PASSWORD CONFIGS -----------------
   @IsString()
   @IsNotEmpty()
-  JWT_RESET_PASSWORD_EXPIRES_IN: string;
+  RESET_PASSWORD_EXPIRES_IN: string;
 }
 
 export function validate(config: Record<string, unknown>) {
