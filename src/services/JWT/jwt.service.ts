@@ -75,9 +75,9 @@ export class JwtService {
         timeToExpire < this.refreshRenewThresholdMinutes;
 
       const [accessToken, nextRefreshToken] = await Promise.all([
-        this.generateToken({ email: payload.email, sid: payload.sid! }, 'auth'),
+        this.generateToken({ email: payload.email, sid: payload.sid }, 'auth'),
         shouldRotateRefresh
-          ? this.generateToken({ email: payload.email, sid: payload.sid! }, 'refresh')
+          ? this.generateToken({ email: payload.email, sid: payload.sid }, 'refresh')
           : Promise.resolve(refreshToken),
       ]);
 
