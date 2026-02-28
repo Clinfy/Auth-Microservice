@@ -6,6 +6,6 @@ export interface Payload extends JwtPayload {
     sid: string;
 }
 
-export interface RefreshPasswordRedisPayload {
+export interface ResetPasswordRedisPayload {
   id: string;
 }
