@@ -24,7 +24,6 @@ describe('UsersService (integration)', () => {
   let db: IMemoryDb;
   let backup: IBackup;
   const request = { user: null } as any;
-  let originalTtlEnv: string | undefined;
 
   const jwtServiceMock = {
     refreshToken: jest.fn(),
@@ -49,8 +48,8 @@ describe('UsersService (integration)', () => {
   };
 
   beforeAll(async () => {
-    originalTtlEnv = process.env.JWT_REFRESH_EXPIRES_IN;
     process.env.JWT_REFRESH_EXPIRES_IN = '1000';
+    process.env.RESET_PASSWORD_EXPIRES_IN = '1000';
 
     db = newDb();
 
@@ -127,7 +126,7 @@ describe('UsersService (integration)', () => {
   });
 
   afterAll(async () => {
-    process.env.JWT_REFRESH_EXPIRES_IN = originalTtlEnv;
+    delete process.env.RESET_PASSWORD_EXPIRES_IN;
     await dataSource.destroy();
   });
 
@@ -235,41 +234,43 @@ describe('UsersService (integration)', () => {
     expect(jwtServiceMock.refreshToken).toHaveBeenCalledWith('refresh-token');
   });
 
-  it('starts the forgot password flow and stores the generated token', async () => {
+  it('starts the forgot password flow and stores the generated token in redis', async () => {
     await usersService.register({ email: 'dave@example.com', password: 'Secret123', person_id: randomUUID() }, request);
-    jwtServiceMock.generateToken.mockResolvedValue('reset-token');
+    const stored = await userRepository.findOneBy({ email: 'dave@example.com' });
     emailServiceMock.sendResetPasswordMail.mockResolvedValue(undefined);
 
     const response = await usersService.forgotPassword({ email: 'dave@example.com' });
     expect(response).toEqual({
       message: 'If the email exists, a reset password link will be sent to it.',
     });
-    expect(jwtServiceMock.generateToken).toHaveBeenCalledWith({ email: 'dave@example.com' }, 'resetPassword');
-    expect(emailServiceMock.sendResetPasswordMail).toHaveBeenCalledWith('dave@example.com', 'reset-token');
 
-    const stored = await userRepository.findOneBy({ email: 'dave@example.com' });
-    expect(stored?.passResetToken).toBe('reset-token');
+    expect(redisServiceMock.raw.set).toHaveBeenCalledWith(
+      expect.stringMatching(/^reset_password:/),
+      JSON.stringify({ id: stored!.id }),
+      { PX: expect.any(Number) },
+    );
+    expect(emailServiceMock.sendResetPasswordMail).toHaveBeenCalledWith('dave@example.com', expect.any(String));
   });
 
-  it('resets the password, clears the token, and notifies the user', async () => {
+  it('resets the password, clears the token from redis, and notifies the user', async () => {
     await usersService.register({ email: 'erin@example.com', password: 'OldPassword1', person_id: randomUUID() }, request);
-    jwtServiceMock.generateToken.mockResolvedValue('reset-token');
     emailServiceMock.sendResetPasswordMail.mockResolvedValue(undefined);
     await usersService.forgotPassword({ email: 'erin@example.com' });
 
-    jwtServiceMock.getPayload.mockResolvedValue({
-      email: 'erin@example.com',
-      exp: Math.floor(Date.now() / 1000) + 300,
-    } as any);
-    emailServiceMock.confirmPasswordChange.mockResolvedValue(undefined);
-
-    const response = await usersService.resetPassword('reset-token', { password: 'NewPassword1' });
-    expect(response).toEqual({ message: 'Password reset successfully' });
-    expect(emailServiceMock.confirmPasswordChange).toHaveBeenCalledWith('erin@example.com');
+    const [[redisKey]] = redisServiceMock.raw.set.mock.calls.filter(call => call[0].startsWith('reset_password:'));
+    const token = redisKey.replace('reset_password:', '');
 
     const stored = await userRepository.findOneBy({ email: 'erin@example.com' });
-    expect(stored?.passResetToken).toBeNull();
-    expect(stored?.password).toMatch(/^\$2[aby]\$.+/);
-    expect(stored?.password).not.toBe('NewPassword1');
+
+    redisServiceMock.raw.get.mockResolvedValue(JSON.stringify({ id: stored!.id }));
+    emailServiceMock.confirmPasswordChange.mockResolvedValue(undefined);
+
+    const response = await usersService.resetPassword(token, { password: 'NewPassword1' });
+    expect(response).toEqual({ message: 'Password reset successfully' });
+    expect(emailServiceMock.confirmPasswordChange).toHaveBeenCalledWith('erin@example.com');
+    expect(redisServiceMock.raw.del).toHaveBeenCalledWith(redisKey);
+
+    const updated = await userRepository.findOneBy({ email: 'erin@example.com' });
+    expect(updated?.password).toMatch(/^\$2[aby]\$.+/);
   });
 });
