@@ -7,6 +7,7 @@ import { JwtModule } from 'src/services/JWT/jwt.module';
 import { IsUniqueEmailConstraint } from 'src/common/validators/unique-email.validator';
 import { RolesModule } from 'src/services/roles/roles.module';
 import { EmailModule } from 'src/clients/email/email.module';
+import { UsersRepository } from 'src/services/users/users.repository';
 
 @Module({
   imports: [
@@ -16,7 +17,7 @@ import { EmailModule } from 'src/clients/email/email.module';
     EmailModule,
   ],
   controllers: [UsersController],
-  providers: [UsersService, IsUniqueEmailConstraint],
+  providers: [UsersService, UsersRepository, IsUniqueEmailConstraint],
   exports: [UsersService]
 })
 

@@ -5,9 +5,8 @@ import {
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
-import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
 import { UserEntity } from 'src/entities/user.entity';
-import { DataSource, Repository } from 'typeorm';
+import { DataSource } from 'typeorm';
 import { JwtService } from 'src/services/JWT/jwt.service';
 import { RegisterUserDTO } from 'src/interfaces/DTO/register.dto';
 import { compare } from 'bcrypt';
@@ -27,14 +26,12 @@ import type { Request } from 'express';
 import { UAParser } from 'ua-parser-js';
 import { getClientIp } from 'src/common/tools/get-client-ip';
 import { ResetPasswordRedisPayload } from 'src/interfaces/payload';
+import { UsersRepository } from 'src/services/users/users.repository';
 
 @Injectable()
 export class UsersService {
   constructor(
-    @InjectRepository(UserEntity)
-    private readonly userRepository: Repository<UserEntity>,
-
-    @InjectDataSource()
+    private readonly userRepository: UsersRepository,
     private readonly dataSource: DataSource,
 
     private readonly redis: RedisService,
@@ -89,18 +86,13 @@ export class UsersService {
     return allowed;
   }
 
-  async register(
-    dto: RegisterUserDTO,
-    request: RequestWithUser,
-  ): Promise<{ message: string }> {
-    return this.dataSource.transaction(async (manager) => {
-      const transactionalRepository = manager.getRepository(UserEntity);
-      const user = await transactionalRepository.save(
-        transactionalRepository.create({
-          ...dto,
-          created_by: request.user,
-        }),
-      );
+  async register(dto: RegisterUserDTO, request: RequestWithUser): Promise<{ message: string }> {
+    return await this.dataSource.transaction(async (manager) => {
+      const newUser = {
+        ...dto,
+        created_by: await this.findOne(request.user.id),
+      }
+      const user = await this.userRepository.save(newUser,manager);
       return { message: `User ${user.email} created` };
     });
   }
@@ -180,7 +172,7 @@ export class UsersService {
   }
 
   async findByEmail(email: string): Promise<UserEntity | null> {
-    return this.userRepository.findOne({ where: { email } });
+    return await this.userRepository.findOneByEmail(email);
   }
 
   async assignRole(id: string, dto: AssignRoleDTO): Promise<UserEntity> {
@@ -188,7 +180,7 @@ export class UsersService {
     user.roles = await Promise.all(
       dto.rolesIds.map((roleId) => this.roleService.findOne(roleId)),
     );
-    return this.userRepository.save(user);
+    return await this.userRepository.save(user);
   }
 
   async forgotPassword(dto: ForgotPasswordDTO): Promise<{ message: string }> {
@@ -238,11 +230,11 @@ export class UsersService {
   }
 
   async findAll(): Promise<UserEntity[]> {
-    return this.userRepository.find({ relations: ['roles'] });
+    return await this.userRepository.findAll();
   }
 
   private async findOne(id: string): Promise<UserEntity> {
-    const user = await this.userRepository.findOneBy({ id });
+    const user = await this.userRepository.findOneById(id);
     if (!user) throw new NotFoundException('User not found');
     return user;
   }
