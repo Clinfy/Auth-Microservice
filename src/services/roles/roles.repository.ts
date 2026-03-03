@@ -7,9 +7,9 @@ import { Repository } from 'typeorm';
 export class RolesRepository {
   constructor(
     @InjectRepository(RoleEntity)
-    private readonly ormRepository: Repository<RoleEntity>
+    private readonly ormRepository: Repository<RoleEntity>,
   ) {}
-  
+
   async save(role: RoleEntity): Promise<RoleEntity> {
     return await this.ormRepository.save(role);
   }
@@ -17,20 +17,20 @@ export class RolesRepository {
   create(role: Partial<RoleEntity>): RoleEntity {
     return this.ormRepository.create(role);
   }
-  
-  async merge (id: string, changes: Partial<RoleEntity>): Promise<RoleEntity> {
-    return this.ormRepository.merge(<RoleEntity> await this.ormRepository.findOneBy({id}), changes);
+
+  async merge(role: RoleEntity, changes: Partial<RoleEntity>): Promise<RoleEntity> {
+    return this.ormRepository.merge(role, changes);
   }
-  
+
   async findOneById(id: string): Promise<RoleEntity | null> {
-    return await this.ormRepository.findOneBy({id});
+    return await this.ormRepository.findOneBy({ id });
   }
-  
+
   async findAll(): Promise<RoleEntity[]> {
     return await this.ormRepository.find();
   }
 
-  async remove (role: RoleEntity): Promise<void> {
+  async remove(role: RoleEntity): Promise<void> {
     await this.ormRepository.remove(role);
   }
 }

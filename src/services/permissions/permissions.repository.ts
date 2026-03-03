@@ -19,13 +19,10 @@ export class PermissionsRepository {
   }
 
   async merge(
-    id: string,
+    permission: PermissionEntity,
     changes: Partial<PermissionEntity>,
   ): Promise<PermissionEntity> {
-    return this.ormRepository.merge(
-      <PermissionEntity>await this.ormRepository.findOneBy({ id }),
-      changes,
-    );
+    return this.ormRepository.merge(permission, changes);
   }
 
   async findOneById(id: string): Promise<PermissionEntity | null> {

@@ -7,8 +7,8 @@ import { EntityManager, Repository } from 'typeorm';
 export class UsersRepository {
   constructor(
     @InjectRepository(UserEntity)
-    private readonly ormRepository: Repository<UserEntity>
-  ) { }
+    private readonly ormRepository: Repository<UserEntity>,
+  ) {}
 
   async save(user: UserEntity, manager?: EntityManager): Promise<UserEntity> {
     return await this.getManager(manager).save(user);
