@@ -9,7 +9,9 @@ describe('ApiKeysController', () => {
   const permissionIdOne = '11111111-1111-1111-1111-111111111111';
   const permissionIdTwo = '22222222-2222-2222-2222-222222222222';
   const apiKeyId = '33333333-3333-3333-3333-333333333333';
-  const request = { user: { id: '55555555-5555-5555-5555-555555555555' } } as any;
+  const request = {
+    user: { id: '55555555-5555-5555-5555-555555555555' },
+  } as any;
 
   beforeEach(() => {
     service = {
@@ -35,8 +37,15 @@ describe('ApiKeysController', () => {
   });
 
   it('should generate an api key through the service', async () => {
-    const dto: CreateApiKeyDTO = { client: 'test-client', permissionIds: [permissionIdOne, permissionIdTwo] };
-    const created = { apiKey: 'plain-key', id: apiKeyId, client: 'test-client' };
+    const dto: CreateApiKeyDTO = {
+      client: 'test-client',
+      permissionIds: [permissionIdOne, permissionIdTwo],
+    };
+    const created = {
+      apiKey: 'plain-key',
+      id: apiKeyId,
+      client: 'test-client',
+    };
     service.create.mockResolvedValue(created);
 
     await expect(controller.generate(request, dto)).resolves.toEqual(created);

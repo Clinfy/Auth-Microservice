@@ -7,13 +7,9 @@ import { ApiKeyEntity } from 'src/entities/api-key.entity';
 import { JwtModule } from 'src/services/JWT/jwt.module';
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([ApiKeyEntity]),
-    PermissionsModule,
-    JwtModule
-  ],
+  imports: [TypeOrmModule.forFeature([ApiKeyEntity]), PermissionsModule, JwtModule],
   controllers: [ApiKeysController],
   providers: [ApiKeysService],
-  exports: [ApiKeysService]
+  exports: [ApiKeysService],
 })
 export class ApiKeysModule {}

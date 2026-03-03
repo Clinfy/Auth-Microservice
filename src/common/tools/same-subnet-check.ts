@@ -1,4 +1,4 @@
-export function sameSubnetCheck (ip1: string, ip2: string) {
+export function sameSubnetCheck(ip1: string, ip2: string) {
   const ip1Array = ip1.split('.');
   const ip2Array = ip2.split('.');
 

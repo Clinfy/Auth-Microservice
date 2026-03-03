@@ -1,17 +1,24 @@
 import { Injectable, InternalServerErrorException, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { sign, verify, SignOptions, JsonWebTokenError, TokenExpiredError, NotBeforeError } from 'jsonwebtoken';
+import {
+  sign,
+  verify,
+  SignOptions,
+  JsonWebTokenError,
+  TokenExpiredError,
+  NotBeforeError,
+} from 'jsonwebtoken';
 import dayjs from 'dayjs';
 import { Payload } from 'src/interfaces/payload';
 
 type TokenType = 'refresh' | 'auth';
 
 type TokenConfig = {
-    secret: string;
-    expiresIn: string;
+  secret: string;
+  expiresIn: string;
 };
 
-type JwtPayload = {email: string, sid: string};
+type JwtPayload = { email: string; sid: string };
 
 type TokenPayloadType = {
   auth: JwtPayload;
@@ -30,27 +37,16 @@ export class JwtService {
         expiresIn: this.configService.get<string>('JWT_AUTH_EXPIRES_IN', '1d'),
       },
       refresh: {
-        secret: this.configService.get<string>(
-          'JWT_REFRESH_SECRET',
-          'refreshSecret',
-        ),
-        expiresIn: this.configService.get<string>(
-          'JWT_REFRESH_EXPIRES_IN',
-          '1d',
-        ),
+        secret: this.configService.get<string>('JWT_REFRESH_SECRET', 'refreshSecret'),
+        expiresIn: this.configService.get<string>('JWT_REFRESH_EXPIRES_IN', '1d'),
       },
     };
 
     const threshold = Number(
-      this.configService.get<string>(
-        'JWT_REFRESH_RENEW_THRESHOLD_MINUTES',
-        '20',
-      ),
+      this.configService.get<string>('JWT_REFRESH_RENEW_THRESHOLD_MINUTES', '20'),
     );
     this.refreshRenewThresholdMinutes =
-      Number.isFinite(threshold) && !Number.isNaN(threshold) && threshold >= 0
-        ? threshold
-        : 20;
+      Number.isFinite(threshold) && !Number.isNaN(threshold) && threshold >= 0 ? threshold : 20;
   }
 
   async generateToken<T extends TokenType>(
@@ -64,15 +60,12 @@ export class JwtService {
     }
   }
 
-  async refreshToken(
-    refreshToken: string,
-  ): Promise<{ accessToken: string; refreshToken: string }> {
+  async refreshToken(refreshToken: string): Promise<{ accessToken: string; refreshToken: string }> {
     try {
       const payload = await this.getPayload(refreshToken, 'refresh');
 
       const timeToExpire = dayjs.unix(payload.exp).diff(dayjs(), 'minute');
-      const shouldRotateRefresh =
-        timeToExpire < this.refreshRenewThresholdMinutes;
+      const shouldRotateRefresh = timeToExpire < this.refreshRenewThresholdMinutes;
 
       const [accessToken, nextRefreshToken] = await Promise.all([
         this.generateToken({ email: payload.email, sid: payload.sid }, 'auth'),
@@ -86,10 +79,7 @@ export class JwtService {
         refreshToken: nextRefreshToken,
       };
     } catch (error) {
-      if (
-        error instanceof UnauthorizedException ||
-        error instanceof InternalServerErrorException
-      ) {
+      if (error instanceof UnauthorizedException || error instanceof InternalServerErrorException) {
         throw error;
       }
       throw new UnauthorizedException('Invalid refresh token');
@@ -105,11 +95,11 @@ export class JwtService {
         throw new UnauthorizedException('Token payload is invalid');
       }
 
-      if ((type === 'refresh') && !decoded.sid) {
+      if (type === 'refresh' && !decoded.sid) {
         throw new UnauthorizedException({
           message: 'Token payload is missing data',
           code: 'TOKEN_PAYLOAD_MISSING_DATA',
-          statusCode: 401
+          statusCode: 401,
         });
       }
 
@@ -119,18 +109,15 @@ export class JwtService {
         throw new UnauthorizedException({
           message: 'Token has expired',
           code: 'TOKEN_EXPIRED',
-          statusCode: 401
+          statusCode: 401,
         });
       }
 
-      if (
-        error instanceof JsonWebTokenError ||
-        error instanceof NotBeforeError
-      ) {
+      if (error instanceof JsonWebTokenError || error instanceof NotBeforeError) {
         throw new UnauthorizedException({
           message: 'Token verification failed',
           code: 'TOKEN_VERIFICATION_FAILED',
-          statusCode: 401
+          statusCode: 401,
         });
       }
 
@@ -138,10 +125,7 @@ export class JwtService {
     }
   }
 
-  private signToken(
-    payload: TokenPayloadType[TokenType],
-    config: TokenConfig,
-  ): Promise<string> {
+  private signToken(payload: TokenPayloadType[TokenType], config: TokenConfig): Promise<string> {
     return new Promise((resolve, reject) => {
       const options: SignOptions = {
         expiresIn: config.expiresIn,

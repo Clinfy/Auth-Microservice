@@ -4,18 +4,18 @@ import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class RedisService implements OnModuleInit, OnModuleDestroy {
-  private client !: RedisClientType;
+  private client!: RedisClientType;
 
   constructor(private readonly config: ConfigService) {}
 
   async onModuleInit() {
     const url = this.config.get<string>('REDIS_URL');
 
-    if(!url) throw new Error('Missing REDIS_URL on .env file');
+    if (!url) throw new Error('Missing REDIS_URL on .env file');
 
-    this.client = createClient({url});
+    this.client = createClient({ url });
 
-    this.client.on('error', (err) => console.error('Redis error: ',err));
+    this.client.on('error', (err) => console.error('Redis error: ', err));
 
     await this.client.connect();
   }
@@ -25,6 +25,6 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
   }
 
   async onModuleDestroy() {
-    if(this.client) await this.client.quit();
+    if (this.client) await this.client.quit();
   }
 }

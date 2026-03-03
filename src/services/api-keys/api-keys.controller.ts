@@ -32,13 +32,18 @@ import * as requestUser from 'src/interfaces/request-user';
 export class ApiKeysController {
   constructor(private readonly apiKeysService: ApiKeysService) {}
 
-  @ApiOperation({ summary: 'Return if an API key have permissions to do something' })
+  @ApiOperation({
+    summary: 'Return if an API key have permissions to do something',
+  })
   @ApiHeader({ name: 'x-api-key', required: true })
   @ApiOkResponse({ schema: { type: 'boolean' } })
   @ApiUnauthorizedResponse({ description: 'API key header missing or invalid' })
   @ApiForbiddenResponse({ description: 'Invalid or inactive API key' })
   @Get('can-do/:permission')
-  canDo(@Req() request: requestWithApi.RequestWithApiKey, @Param('permission') permission: string): Promise<boolean> {
+  canDo(
+    @Req() request: requestWithApi.RequestWithApiKey,
+    @Param('permission') permission: string,
+  ): Promise<boolean> {
     return this.apiKeysService.canDo(request, permission);
   }
 
@@ -60,7 +65,10 @@ export class ApiKeysController {
   @ApiUnauthorizedResponse({ description: 'Missing or invalid bearer token' })
   @ApiForbiddenResponse({ description: 'Insufficient permissions' })
   @Post('generate')
-  generate(@Req() response: requestUser.RequestWithUser, @Body() dto: CreateApiKeyDTO,): Promise<{ apiKey: string; id: string; client: string }> {
+  generate(
+    @Req() response: requestUser.RequestWithUser,
+    @Body() dto: CreateApiKeyDTO,
+  ): Promise<{ apiKey: string; id: string; client: string }> {
     return this.apiKeysService.create(dto, response);
   }
 
@@ -81,7 +89,9 @@ export class ApiKeysController {
   @Permissions(['API_KEYS_DEACTIVATE'])
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Deactivate an API key' })
-  @ApiOkResponse({ schema: { type: 'object', properties: { message: { type: 'string' } } } })
+  @ApiOkResponse({
+    schema: { type: 'object', properties: { message: { type: 'string' } } },
+  })
   @ApiNotFoundResponse({ description: 'API key not found' })
   @ApiUnauthorizedResponse({ description: 'Missing or invalid bearer token' })
   @ApiForbiddenResponse({ description: 'Insufficient permissions' })

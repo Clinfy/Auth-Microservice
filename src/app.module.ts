@@ -1,9 +1,9 @@
 import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { ConfigModule, ConfigService } from "@nestjs/config";
-import { TypeOrmModule } from "@nestjs/typeorm";
-import { entities } from "./entities";
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { entities } from './entities';
 import { PermissionsModule } from './services/permissions/permissions.module';
 import { ApiKeysModule } from 'src/services/api-keys/api-keys.module';
 import { UsersModule } from 'src/services/users/users.module';
@@ -26,7 +26,7 @@ import { validate } from 'src/config/env-validation';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      validate
+      validate,
     }),
 
     TypeOrmModule.forRootAsync({

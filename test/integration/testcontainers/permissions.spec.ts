@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
 import { PermissionsService } from 'src/services/permissions/permissions.service';
+import { PermissionsRepository } from 'src/services/permissions/permissions.repository';
 import { PermissionEntity } from 'src/entities/permission.entity';
 import { entities } from 'src/entities';
 import { PostgreSqlContainer, StartedPostgreSqlContainer } from '@testcontainers/postgresql';
@@ -17,9 +18,8 @@ describe('PermissionsService (integration)', () => {
   jest.setTimeout(60000); // 1 minute timeout
 
   beforeAll(async () => {
-
     console.log('Starting PostgreSQL container...');
-    container = await new PostgreSqlContainer('postgres:17.6').start()
+    container = await new PostgreSqlContainer('postgres:17.6').start();
     console.log('PostgreSQL container started');
 
     dataSource = new DataSource({
@@ -30,8 +30,8 @@ describe('PermissionsService (integration)', () => {
       password: container.getPassword(),
       database: container.getDatabase(),
       entities: [...entities],
-      synchronize: true
-    })
+      synchronize: true,
+    });
 
     await dataSource.initialize();
 
@@ -39,6 +39,7 @@ describe('PermissionsService (integration)', () => {
       imports: [],
       providers: [
         PermissionsService,
+        PermissionsRepository,
         {
           provide: getRepositoryToken(PermissionEntity),
           useValue: dataSource.getRepository(PermissionEntity),
@@ -46,7 +47,7 @@ describe('PermissionsService (integration)', () => {
         {
           provide: DataSource,
           useValue: dataSource,
-        }
+        },
       ],
     }).compile();
 
@@ -60,7 +61,7 @@ describe('PermissionsService (integration)', () => {
   });
 
   beforeEach(async () => {
-    await dataSource.synchronize(true)
+    await dataSource.synchronize(true);
   });
 
   it('persists a new permission with the provided code', async () => {
@@ -79,7 +80,9 @@ describe('PermissionsService (integration)', () => {
   it('updates an existing permission code', async () => {
     const created = await service.create({ code: 'PERMISSIONS_UPDATE' }, request);
 
-    const updated = await service.update(created.id, { code: 'PERMISSIONS_EDIT' });
+    const updated = await service.update(created.id, {
+      code: 'PERMISSIONS_EDIT',
+    });
     expect(updated.code).toBe('PERMISSIONS_EDIT');
 
     const stored = await repository.findOneBy({ id: created.id });
