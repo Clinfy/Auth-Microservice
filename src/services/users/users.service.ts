@@ -244,6 +244,26 @@ export class UsersService {
     return { message: 'User activated successfully' };
   }
 
+  async activate(id:string): Promise <{message: string}> {
+    const user = await this.findOne(id);
+    if (user.status != UserStatus.INACTIVE) {
+      throw new ForbiddenException('User has been already activated');
+    }
+    user.status = UserStatus.ACTIVE;
+    await this.userRepository.save(user);
+    return { message: 'User activated successfully' };
+  }
+
+  async deactivate(id:string): Promise <{message: string}> {
+    const user = await this.findOne(id);
+    if (user.status != UserStatus.ACTIVE) {
+      throw new ForbiddenException('User is not active');
+    }
+    user.status = UserStatus.INACTIVE;
+    await this.userRepository.save(user);
+    return { message: 'User deactivated successfully' };
+  }
+
   async findAll(): Promise<UserEntity[]> {
     return await this.userRepository.findAll();
   }
