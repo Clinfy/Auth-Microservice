@@ -1,16 +1,14 @@
 import {Injectable, NotFoundException} from '@nestjs/common';
-import {InjectRepository} from "@nestjs/typeorm";
-import {Repository} from "typeorm";
 import {PermissionEntity} from "src/entities/permission.entity";
 import {CreatePermissionDTO} from "src/interfaces/DTO/create.dto";
 import {PatchPermissionDTO} from "src/interfaces/DTO/patch.dto";
 import { RequestWithUser } from 'src/interfaces/request-user';
+import { PermissionsRepository } from 'src/services/permissions/permissions.repository';
 
 @Injectable()
 export class PermissionsService {
     constructor(
-        @InjectRepository(PermissionEntity)
-        private readonly permissionRepository: Repository<PermissionEntity>,
+        private readonly permissionRepository: PermissionsRepository,
     ) {}
 
     async create(dto: CreatePermissionDTO, request: RequestWithUser): Promise<PermissionEntity> {
@@ -21,7 +19,7 @@ export class PermissionsService {
     }
 
     async update(id: string, dto: PatchPermissionDTO): Promise<PermissionEntity> {
-        return await this.permissionRepository.save(this.permissionRepository.merge(await this.findOne(id),dto));
+        return await this.permissionRepository.save(await this.permissionRepository.merge(id,dto));
     }
 
     async delete(id: string): Promise<{ message: string }> {
@@ -31,12 +29,12 @@ export class PermissionsService {
     }
 
     async findOne(id: string): Promise<PermissionEntity> {
-        const permission = await this.permissionRepository.findOneBy({id});
+        const permission = await this.permissionRepository.findOneById(id);
         if(!permission) throw new NotFoundException('Permission not found');
         return permission;
     }
 
     async findAll(): Promise<PermissionEntity[]> {
-        return await this.permissionRepository.find();
+        return await this.permissionRepository.findAll();
     }
 }
