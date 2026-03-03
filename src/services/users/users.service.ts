@@ -5,7 +5,7 @@ import {
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
-import { UserEntity } from 'src/entities/user.entity';
+import { UserEntity, UserStatus } from 'src/entities/user.entity';
 import { DataSource } from 'typeorm';
 import { JwtService } from 'src/services/JWT/jwt.service';
 import { RegisterUserDTO } from 'src/interfaces/DTO/register.dto';
@@ -27,6 +27,7 @@ import { UAParser } from 'ua-parser-js';
 import { getClientIp } from 'src/common/tools/get-client-ip';
 import { ResetPasswordRedisPayload } from 'src/interfaces/payload';
 import { UsersRepository } from 'src/services/users/users.repository';
+import { ActivateUserDTO } from 'src/interfaces/DTO/activate.dto';
 
 @Injectable()
 export class UsersService {
@@ -105,7 +106,7 @@ export class UsersService {
       throw new UnauthorizedException('Wrong email or password');
     }
 
-    if (!user.active) {
+    if (user.status != UserStatus.ACTIVE) {
       throw new UnauthorizedException('This user is not active');
     }
 
@@ -223,6 +224,24 @@ export class UsersService {
     await this.redis.raw.del(redisIndex);
     await this.emailService.confirmPasswordChange(user.email);
     return { message: 'Password reset successfully' };
+  }
+
+  async firstActivation(dto: ActivateUserDTO): Promise<{ message: string }> {
+    const user = await this.findByEmail(dto.email);
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+    if (user.status != UserStatus.PENDING) {
+      throw new ForbiddenException('User has been already activated');
+    }
+    const isPasswordValid = await compare(dto.password, user.password);
+    if (!isPasswordValid) {
+      throw new UnauthorizedException('Wrong email or password');
+    }
+    user.password = dto.new_password;
+    user.status = UserStatus.ACTIVE;
+    await this.userRepository.save(user);
+    return { message: 'User activated successfully' };
   }
 
   async findAll(): Promise<UserEntity[]> {

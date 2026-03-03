@@ -33,6 +33,7 @@ import { AssignRoleDTO } from 'src/interfaces/DTO/assign.dto';
 import { AuthInterface } from 'src/interfaces/auth.interface';
 import { ApiKeyGuard } from 'src/middlewares/api-key.middleware';
 import { ForgotPasswordDTO, ResetPasswordDTO } from 'src/interfaces/DTO/reset-password.dto';
+import { ActivateUserDTO } from 'src/interfaces/DTO/activate.dto';
 
 @Controller('users')
 export class UsersController {
@@ -48,11 +49,13 @@ export class UsersController {
     schema: { type: 'object', properties: { message: { type: 'string' } } },
   })
   @Post('register')
-  register(
-    @Req() request: requestUser.RequestWithUser,
-    @Body() dto: RegisterUserDTO,
-  ): Promise<{ message: string }> {
+  register(@Req() request: requestUser.RequestWithUser, @Body() dto: RegisterUserDTO,): Promise<{ message: string }> {
     return this.userService.register(dto, request);
+  }
+
+  @Post('activate')
+  activate (@Body() dto: ActivateUserDTO): Promise<{ message: string }> {
+    return this.userService.firstActivation(dto);
   }
 
   @ApiOperation({ summary: 'Log in a user' })
