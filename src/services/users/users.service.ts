@@ -90,7 +90,7 @@ export class UsersService {
     return await this.dataSource.transaction(async (manager) => {
       const newUser = {
         ...dto,
-        created_by: await this.findOne(request.user.id),
+        created_by: request.user
       }
       const user = await this.userRepository.save(newUser,manager);
       return { message: `User ${user.email} created` };
