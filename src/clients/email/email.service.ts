@@ -55,7 +55,7 @@ export class EmailService {
   private async sendMail(body: EmailBody) {
 
     try {
-      this.emailClient.emit('email_queue', body);
+      await this.emailClient.emit('email_queue', body);
     } catch (error) {
       console.error('Error sending email:', error);
       throw error;
