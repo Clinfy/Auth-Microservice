@@ -18,7 +18,7 @@ describe('RolesService', () => {
     roleRepository = {
       save: jest.fn(),
       create: jest.fn(),
-      merge: jest.fn((id, dto) => ({ id, name: 'OLD', ...dto }) as any),
+      merge: jest.fn((entity, dto) => ({ ...entity, ...dto }) as any),
       findOneById: jest.fn(),
       findAll: jest.fn(),
       remove: jest.fn(),
@@ -61,7 +61,7 @@ describe('RolesService', () => {
       id: roleId,
       name: 'NEW',
     });
-    expect(roleRepository.merge).toHaveBeenCalledWith(roleId, { name: 'NEW' });
+    expect(roleRepository.merge).toHaveBeenCalledWith({ id: roleId, name: 'OLD' }, { name: 'NEW' });
   });
 
   it('deletes a role and returns message', async () => {

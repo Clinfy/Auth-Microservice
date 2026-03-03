@@ -15,7 +15,7 @@ describe('PermissionsService', () => {
     permissionRepository = {
       save: jest.fn(),
       create: jest.fn(),
-      merge: jest.fn((id, dto) => ({ id, code: 'OLD', ...dto }) as any),
+      merge: jest.fn((entity, dto) => ({ ...entity, ...dto }) as any),
       findOneById: jest.fn(),
       findAll: jest.fn(),
       remove: jest.fn(),
@@ -54,7 +54,7 @@ describe('PermissionsService', () => {
       id: permissionId,
       code: 'NEW',
     });
-    expect(permissionRepository.merge).toHaveBeenCalledWith(permissionId, {
+    expect(permissionRepository.merge).toHaveBeenCalledWith({ id: permissionId, code: 'OLD' }, {
       code: 'NEW',
     });
   });
