@@ -49,13 +49,30 @@ export class UsersController {
     schema: { type: 'object', properties: { message: { type: 'string' } } },
   })
   @Post('register')
-  register(@Req() request: requestUser.RequestWithUser, @Body() dto: RegisterUserDTO,): Promise<{ message: string }> {
+  register(
+    @Req() request: requestUser.RequestWithUser,
+    @Body() dto: RegisterUserDTO,
+  ): Promise<{ message: string }> {
     return this.userService.register(dto, request);
   }
 
-  @Post('activate')
-  activate (@Body() dto: ActivateUserDTO): Promise<{ message: string }> {
+  @Post('first-activation')
+  firstActivation(@Body() dto: ActivateUserDTO): Promise<{ message: string }> {
     return this.userService.firstActivation(dto);
+  }
+
+  @UseGuards(AuthGuard)
+  @Permissions(['USERS_UPDATE'])
+  @Post('activate/:id')
+  activate(@Param('id') id: string): Promise<{ message: string }> {
+    return this.userService.activate(id);
+  }
+
+  @UseGuards(AuthGuard)
+  @Permissions(['USERS_UPDATE'])
+  @Post('deactivate/:id')
+  deactivate(@Param('id') id: string): Promise<{ message: string }> {
+    return this.userService.deactivate(id);
   }
 
   @ApiOperation({ summary: 'Log in a user' })
