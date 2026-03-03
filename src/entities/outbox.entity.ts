@@ -3,7 +3,7 @@ import { Column, CreateDateColumn, Entity, PrimaryGeneratedColumn } from 'typeor
 export enum OutboxStatus {
   PENDING = 'PENDING',
   SENT = 'SENT',
-  FAILED = 'FAILED'
+  FAILED = 'FAILED',
 }
 
 @Entity('outbox')
@@ -17,10 +17,10 @@ export class OutboxEntity {
   @Column()
   pattern: string;
 
-  @Column({type:'jsonb'})
+  @Column({ type: 'jsonb' })
   payload: Record<string, any>;
 
-  @Column({type: 'enum', enum: OutboxStatus, default: OutboxStatus.PENDING})
+  @Column({ type: 'enum', enum: OutboxStatus, default: OutboxStatus.PENDING })
   status: OutboxStatus;
 
   @CreateDateColumn()

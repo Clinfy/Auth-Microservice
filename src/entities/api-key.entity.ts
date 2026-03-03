@@ -6,13 +6,12 @@ import {
   Index,
   JoinTable,
   ManyToMany,
-  ManyToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
-import {PermissionEntity} from "src/entities/permission.entity";
-import { UserEntity } from 'src/entities/user.entity';
+import { PermissionEntity } from 'src/entities/permission.entity';
 import { Exclude } from 'class-transformer';
+import type { AuthUser } from 'src/interfaces/auth-user.interface';
 
 @Entity('api_key')
 export class ApiKeyEntity extends BaseEntity {
@@ -20,14 +19,14 @@ export class ApiKeyEntity extends BaseEntity {
   id: string;
 
   @Exclude()
-  @Index({unique: true})
+  @Index({ unique: true })
   @Column()
   key_hash: string;
 
   @Column()
   client: string;
 
-  @Column({ default: true})
+  @Column({ default: true })
   active: boolean;
 
   @CreateDateColumn()
@@ -36,14 +35,14 @@ export class ApiKeyEntity extends BaseEntity {
   @UpdateDateColumn()
   updated_at: Date;
 
-  @ManyToOne(()=> UserEntity, { nullable: true })
-  created_by: UserEntity;
+  @Column({ type: 'jsonb', nullable: true })
+  created_by?: AuthUser;
 
-  @ManyToMany(()=>PermissionEntity, permission => permission.api_keys)
+  @ManyToMany(() => PermissionEntity, (permission) => permission.api_keys)
   @JoinTable()
   permissions: PermissionEntity[];
 
   get permissionCodes(): string[] {
-      return this.permissions?.map(permission => permission.code) || [];
+    return this.permissions?.map((permission) => permission.code) || [];
   }
 }

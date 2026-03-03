@@ -33,10 +33,16 @@ describe('UsersController', () => {
   });
 
   it('should register a user', async () => {
-    const dto: RegisterUserDTO = { email: 'user@example.com', password: 'secret', person_id: '55555555-5555-5555-5555-555555555555' };
+    const dto: RegisterUserDTO = {
+      email: 'user@example.com',
+      password: 'secret',
+      person_id: '55555555-5555-5555-5555-555555555555',
+    };
     const response = { message: 'User user@example.com created' };
     service.register.mockResolvedValue(response);
-    const request = { user: { id: '44444444-4444-4444-4444-444444444444' } } as any;
+    const request = {
+      user: { id: '44444444-4444-4444-4444-444444444444' },
+    } as any;
 
     await expect(controller.register(request, dto)).resolves.toEqual(response);
     expect(service.register).toHaveBeenCalledWith(dto, request);
@@ -44,7 +50,10 @@ describe('UsersController', () => {
 
   it('should log in a user', async () => {
     const dto: LoginDTO = { email: 'user@example.com', password: 'secret' };
-    const tokens: AuthInterface = { accessToken: 'access', refreshToken: 'refresh' };
+    const tokens: AuthInterface = {
+      accessToken: 'access',
+      refreshToken: 'refresh',
+    };
     service.logIn.mockResolvedValue(tokens);
     const request = { ip: '127.0.0.1' } as any;
 
@@ -53,9 +62,14 @@ describe('UsersController', () => {
   });
 
   it('should refresh a token using the header', async () => {
-    const auth: AuthInterface = { accessToken: 'newAccess', refreshToken: 'newRefresh' };
+    const auth: AuthInterface = {
+      accessToken: 'newAccess',
+      refreshToken: 'newRefresh',
+    };
     service.refreshToken.mockResolvedValue(auth);
-    const request = { headers: { 'refresh-token': 'refresh-token-value' } } as any;
+    const request = {
+      headers: { 'refresh-token': 'refresh-token-value' },
+    } as any;
 
     await expect(controller.refreshToken(request)).resolves.toEqual(auth);
     expect(service.refreshToken).toHaveBeenCalledWith('refresh-token-value');
@@ -89,7 +103,13 @@ describe('UsersController', () => {
   });
 
   it('should return all users', async () => {
-    const users = [{ id: userId, email: 'user@example.com', person_id: '77777777-7777-7777-7777-777777777777' }] as any;
+    const users = [
+      {
+        id: userId,
+        email: 'user@example.com',
+        person_id: '77777777-7777-7777-7777-777777777777',
+      },
+    ] as any;
     service.findAll.mockResolvedValue(users);
 
     await expect(controller.findAll()).resolves.toEqual(users);
@@ -107,7 +127,9 @@ describe('UsersController', () => {
 
   it('should trigger forgot password flow', async () => {
     const dto: ForgotPasswordDTO = { email: 'user@example.com' };
-    const response = { message: 'If the email exists, a reset password link will be sent to it.' };
+    const response = {
+      message: 'If the email exists, a reset password link will be sent to it.',
+    };
     service.forgotPassword.mockResolvedValue(response);
 
     await expect(controller.forgotPassword(dto)).resolves.toEqual(response);

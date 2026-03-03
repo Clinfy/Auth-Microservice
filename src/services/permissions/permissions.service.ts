@@ -1,42 +1,42 @@
-import {Injectable, NotFoundException} from '@nestjs/common';
-import {InjectRepository} from "@nestjs/typeorm";
-import {Repository} from "typeorm";
-import {PermissionEntity} from "src/entities/permission.entity";
-import {CreatePermissionDTO} from "src/interfaces/DTO/create.dto";
-import {PatchPermissionDTO} from "src/interfaces/DTO/patch.dto";
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { PermissionEntity } from 'src/entities/permission.entity';
+import { CreatePermissionDTO } from 'src/interfaces/DTO/create.dto';
+import { PatchPermissionDTO } from 'src/interfaces/DTO/patch.dto';
 import { RequestWithUser } from 'src/interfaces/request-user';
+import { PermissionsRepository } from 'src/services/permissions/permissions.repository';
 
 @Injectable()
 export class PermissionsService {
-    constructor(
-        @InjectRepository(PermissionEntity)
-        private readonly permissionRepository: Repository<PermissionEntity>,
-    ) {}
+  constructor(private readonly permissionRepository: PermissionsRepository) {}
 
-    async create(dto: CreatePermissionDTO, request: RequestWithUser): Promise<PermissionEntity> {
-        return await this.permissionRepository.save(this.permissionRepository.create({
-          ...dto,
-          created_by: request.user,
-        }));
-    }
+  async create(dto: CreatePermissionDTO, request: RequestWithUser): Promise<PermissionEntity> {
+    return await this.permissionRepository.save(
+      this.permissionRepository.create({
+        ...dto,
+        created_by: request.user,
+      }),
+    );
+  }
 
-    async update(id: string, dto: PatchPermissionDTO): Promise<PermissionEntity> {
-        return await this.permissionRepository.save(this.permissionRepository.merge(await this.findOne(id),dto));
-    }
+  async update(id: string, dto: PatchPermissionDTO): Promise<PermissionEntity> {
+    return await this.permissionRepository.save(
+      await this.permissionRepository.merge(await this.findOne(id), dto),
+    );
+  }
 
-    async delete(id: string): Promise<{ message: string }> {
-        const permission = await this.findOne(id);
-        await this.permissionRepository.remove(permission);
-        return {message: `Permission ${permission.code} deleted`};
-    }
+  async delete(id: string): Promise<{ message: string }> {
+    const permission = await this.findOne(id);
+    await this.permissionRepository.remove(permission);
+    return { message: `Permission ${permission.code} deleted` };
+  }
 
-    async findOne(id: string): Promise<PermissionEntity> {
-        const permission = await this.permissionRepository.findOneBy({id});
-        if(!permission) throw new NotFoundException('Permission not found');
-        return permission;
-    }
+  async findOne(id: string): Promise<PermissionEntity> {
+    const permission = await this.permissionRepository.findOneById(id);
+    if (!permission) throw new NotFoundException('Permission not found');
+    return permission;
+  }
 
-    async findAll(): Promise<PermissionEntity[]> {
-        return await this.permissionRepository.find();
-    }
+  async findAll(): Promise<PermissionEntity[]> {
+    return await this.permissionRepository.findAll();
+  }
 }

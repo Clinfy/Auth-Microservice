@@ -7,7 +7,5 @@ import { SessionsService } from 'src/services/sessions/sessions.service';
   imports: [JwtModule],
   controllers: [SessionsController],
   providers: [SessionsService],
-  exports: [SessionsService]
 })
-
 export class SessionsModule {}

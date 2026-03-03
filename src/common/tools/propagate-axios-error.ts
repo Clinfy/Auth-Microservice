@@ -1,5 +1,5 @@
-import {isAxiosError} from "axios";
-import {BadGatewayException, GatewayTimeoutException, HttpException} from "@nestjs/common";
+import { isAxiosError } from 'axios';
+import { BadGatewayException, GatewayTimeoutException, HttpException } from '@nestjs/common';
 
 export function propagateAxiosError(e: unknown): never {
   if (isAxiosError(e)) {
