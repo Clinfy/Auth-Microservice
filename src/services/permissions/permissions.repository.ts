@@ -10,16 +10,22 @@ export class PermissionsRepository {
     private readonly ormRepository: Repository<PermissionEntity>,
   ) {}
 
-  async save(role: PermissionEntity): Promise<PermissionEntity> {
-    return await this.ormRepository.save(role);
+  async save(permission: PermissionEntity): Promise<PermissionEntity> {
+    return await this.ormRepository.save(permission);
   }
 
-  create(role: Partial<PermissionEntity>): PermissionEntity {
-    return this.ormRepository.create(role);
+  create(permission: Partial<PermissionEntity>): PermissionEntity {
+    return this.ormRepository.create(permission);
   }
 
-  async merge(id: string, changes: Partial<PermissionEntity>): Promise<PermissionEntity> {
-    return this.ormRepository.merge(<PermissionEntity> await this.ormRepository.findOneBy({ id }), changes);
+  async merge(
+    id: string,
+    changes: Partial<PermissionEntity>,
+  ): Promise<PermissionEntity> {
+    return this.ormRepository.merge(
+      <PermissionEntity>await this.ormRepository.findOneBy({ id }),
+      changes,
+    );
   }
 
   async findOneById(id: string): Promise<PermissionEntity | null> {
@@ -30,7 +36,7 @@ export class PermissionsRepository {
     return await this.ormRepository.find();
   }
 
-  async remove(role: PermissionEntity): Promise<void> {
-    await this.ormRepository.remove(role);
+  async remove(permission: PermissionEntity): Promise<void> {
+    await this.ormRepository.remove(permission);
   }
 }
