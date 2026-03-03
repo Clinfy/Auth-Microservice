@@ -10,15 +10,9 @@ import { EmailModule } from 'src/clients/email/email.module';
 import { UsersRepository } from 'src/services/users/users.repository';
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([UserEntity]),
-    RolesModule,
-    JwtModule,
-    EmailModule,
-  ],
+  imports: [TypeOrmModule.forFeature([UserEntity]), RolesModule, JwtModule, EmailModule],
   controllers: [UsersController],
   providers: [UsersService, UsersRepository, IsUniqueEmailConstraint],
-  exports: [UsersService]
+  exports: [UsersService],
 })
-
 export class UsersModule {}

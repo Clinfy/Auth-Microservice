@@ -17,14 +17,14 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
             urls: [configService.get<string>('RABBITMQ_URL') as string],
             queue: 'email_queue',
             queueOptions: {
-              durable: true
-            }
-          }
-        })
-      }
+              durable: true,
+            },
+          },
+        }),
+      },
     ]),
   ],
   providers: [EmailService, TemplateService],
-  exports: [EmailService]
+  exports: [EmailService],
 })
 export class EmailModule {}

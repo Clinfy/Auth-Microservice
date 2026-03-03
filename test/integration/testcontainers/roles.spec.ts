@@ -8,7 +8,7 @@ import { PermissionsRepository } from 'src/services/permissions/permissions.repo
 import { RoleEntity } from 'src/entities/role.entity';
 import { PermissionEntity } from 'src/entities/permission.entity';
 import { entities } from 'src/entities';
-import { PostgreSqlContainer, StartedPostgreSqlContainer, } from '@testcontainers/postgresql';
+import { PostgreSqlContainer, StartedPostgreSqlContainer } from '@testcontainers/postgresql';
 
 describe('RolesService (integration)', () => {
   let moduleRef: TestingModule;
@@ -23,7 +23,7 @@ describe('RolesService (integration)', () => {
 
   beforeAll(async () => {
     console.log('Starting PostgreSQL container...');
-    container = await new PostgreSqlContainer('postgres:17.6').start()
+    container = await new PostgreSqlContainer('postgres:17.6').start();
     console.log('PostgreSQL container started');
 
     dataSource = new DataSource({
@@ -34,16 +34,18 @@ describe('RolesService (integration)', () => {
       password: container.getPassword(),
       database: container.getDatabase(),
       entities: [...entities],
-      synchronize: true
-    })
+      synchronize: true,
+    });
 
-    await dataSource.initialize()
+    await dataSource.initialize();
 
     moduleRef = await Test.createTestingModule({
       imports: [],
       providers: [
-        RolesService, PermissionsService,
-        RolesRepository, PermissionsRepository,
+        RolesService,
+        PermissionsService,
+        RolesRepository,
+        PermissionsRepository,
         {
           provide: getRepositoryToken(RoleEntity),
           useValue: dataSource.getRepository(RoleEntity),
@@ -55,7 +57,7 @@ describe('RolesService (integration)', () => {
         {
           provide: DataSource,
           useValue: dataSource,
-        }
+        },
       ],
     }).compile();
 
@@ -70,7 +72,7 @@ describe('RolesService (integration)', () => {
   });
 
   beforeEach(async () => {
-    await dataSource.synchronize(true)
+    await dataSource.synchronize(true);
   });
 
   it('creates a role with the given name', async () => {
@@ -91,9 +93,11 @@ describe('RolesService (integration)', () => {
     const write = await permissionsService.create({ code: 'PERMISSIONS_WRITE' }, request);
     const role = await service.create({ name: 'editor' }, request);
 
-    const updated = await service.assignPermissions(role.id, { permissionsIds: [read.id, write.id] } as any);
+    const updated = await service.assignPermissions(role.id, {
+      permissionsIds: [read.id, write.id],
+    } as any);
 
-    expect(updated.permissions.map(permission => permission.code).sort()).toEqual([
+    expect(updated.permissions.map((permission) => permission.code).sort()).toEqual([
       'PERMISSIONS_READ',
       'PERMISSIONS_WRITE',
     ]);

@@ -15,7 +15,7 @@ describe('PermissionsService', () => {
     permissionRepository = {
       save: jest.fn(),
       create: jest.fn(),
-      merge: jest.fn((id, dto) => ({ id, code: 'OLD', ...dto } as any)),
+      merge: jest.fn((id, dto) => ({ id, code: 'OLD', ...dto }) as any),
       findOneById: jest.fn(),
       findAll: jest.fn(),
       remove: jest.fn(),
@@ -25,26 +25,54 @@ describe('PermissionsService', () => {
   });
 
   it('creates a permission', async () => {
-    (permissionRepository.save as jest.Mock).mockResolvedValue({ id: permissionId, code: 'PERM_CREATE' });
+    (permissionRepository.save as jest.Mock).mockResolvedValue({
+      id: permissionId,
+      code: 'PERM_CREATE',
+    });
 
-    await expect(service.create({ code: 'PERM_CREATE' }, request)).resolves.toEqual({ id: permissionId, code: 'PERM_CREATE' });
-    expect(permissionRepository.create).toHaveBeenCalledWith({ code: 'PERM_CREATE', created_by: actingUser });
+    await expect(service.create({ code: 'PERM_CREATE' }, request)).resolves.toEqual({
+      id: permissionId,
+      code: 'PERM_CREATE',
+    });
+    expect(permissionRepository.create).toHaveBeenCalledWith({
+      code: 'PERM_CREATE',
+      created_by: actingUser,
+    });
   });
 
   it('updates a permission', async () => {
-    (permissionRepository.findOneById as jest.Mock).mockResolvedValue({ id: permissionId, code: 'OLD' });
-    (permissionRepository.save as jest.Mock).mockResolvedValue({ id: permissionId, code: 'NEW' });
+    (permissionRepository.findOneById as jest.Mock).mockResolvedValue({
+      id: permissionId,
+      code: 'OLD',
+    });
+    (permissionRepository.save as jest.Mock).mockResolvedValue({
+      id: permissionId,
+      code: 'NEW',
+    });
 
-    await expect(service.update(permissionId, { code: 'NEW' })).resolves.toEqual({ id: permissionId, code: 'NEW' });
-    expect(permissionRepository.merge).toHaveBeenCalledWith(permissionId, { code: 'NEW' });
+    await expect(service.update(permissionId, { code: 'NEW' })).resolves.toEqual({
+      id: permissionId,
+      code: 'NEW',
+    });
+    expect(permissionRepository.merge).toHaveBeenCalledWith(permissionId, {
+      code: 'NEW',
+    });
   });
 
   it('deletes a permission and returns message', async () => {
-    (permissionRepository.findOneById as jest.Mock).mockResolvedValue({ id: otherPermissionId, code: 'TO_DELETE' });
+    (permissionRepository.findOneById as jest.Mock).mockResolvedValue({
+      id: otherPermissionId,
+      code: 'TO_DELETE',
+    });
     (permissionRepository.remove as jest.Mock).mockResolvedValue(undefined);
 
-    await expect(service.delete(otherPermissionId)).resolves.toEqual({ message: 'Permission TO_DELETE deleted' });
-    expect(permissionRepository.remove).toHaveBeenCalledWith({ id: otherPermissionId, code: 'TO_DELETE' });
+    await expect(service.delete(otherPermissionId)).resolves.toEqual({
+      message: 'Permission TO_DELETE deleted',
+    });
+    expect(permissionRepository.remove).toHaveBeenCalledWith({
+      id: otherPermissionId,
+      code: 'TO_DELETE',
+    });
   });
 
   it('findOne throws NotFoundException when missing', async () => {
@@ -54,7 +82,9 @@ describe('PermissionsService', () => {
   });
 
   it('findAll returns list of permissions', async () => {
-    (permissionRepository.findAll as jest.Mock).mockResolvedValue([{ id: permissionId, code: 'PERM' }]);
+    (permissionRepository.findAll as jest.Mock).mockResolvedValue([
+      { id: permissionId, code: 'PERM' },
+    ]);
 
     await expect(service.findAll()).resolves.toEqual([{ id: permissionId, code: 'PERM' }]);
   });

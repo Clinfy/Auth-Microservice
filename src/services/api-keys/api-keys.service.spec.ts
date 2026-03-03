@@ -51,20 +51,25 @@ describe('ApiKeysService', () => {
 
     transactionManager = {
       create: jest.fn((_entity, data) => ({ ...data })),
-      save: jest.fn(async entity => Object.assign(entity, { id: apiKeyId })),
+      save: jest.fn(async (entity) => Object.assign(entity, { id: apiKeyId })),
     };
 
     dataSource = {
-      transaction: jest.fn(async callback => callback(transactionManager as any)),
+      transaction: jest.fn(async (callback) => callback(transactionManager as any)),
     };
 
     service = new ApiKeysService(repository as any, dataSource as any, permissionsService as any);
   });
 
   it('creates API key and returns plaintext key', async () => {
-    (permissionsService.findOne as jest.Mock).mockResolvedValue({ id: permissionId, code: 'PERM' });
+    (permissionsService.findOne as jest.Mock).mockResolvedValue({
+      id: permissionId,
+      code: 'PERM',
+    });
 
-    await expect(service.create({ client: 'client-app', permissionIds: [permissionId] }, request)).resolves.toEqual({
+    await expect(
+      service.create({ client: 'client-app', permissionIds: [permissionId] }, request),
+    ).resolves.toEqual({
       apiKey: 'PLAINTEXT_KEY',
       id: apiKeyId,
       client: 'client-app',
@@ -78,7 +83,9 @@ describe('ApiKeysService', () => {
       permissions: [{ id: permissionId, code: 'PERM' }],
       created_by: actingUser,
     });
-    expect(transactionManager.save).toHaveBeenCalledWith(expect.objectContaining({ client: 'client-app' }));
+    expect(transactionManager.save).toHaveBeenCalledWith(
+      expect.objectContaining({ client: 'client-app' }),
+    );
     expect(dataSource.transaction).toHaveBeenCalledTimes(1);
   });
 
@@ -86,7 +93,9 @@ describe('ApiKeysService', () => {
     (repository.find as jest.Mock).mockResolvedValue([{ id: apiKeyId }]);
 
     await expect(service.findAll()).resolves.toEqual([{ id: apiKeyId }]);
-    expect(repository.find).toHaveBeenCalledWith({ relations: ['permissions'] });
+    expect(repository.find).toHaveBeenCalledWith({
+      relations: ['permissions'],
+    });
   });
 
   it('findOne returns key when present or throws', async () => {
@@ -103,8 +112,12 @@ describe('ApiKeysService', () => {
     (repository.findOne as jest.Mock).mockResolvedValue(activeKey);
     (repository.save as jest.Mock).mockResolvedValue(undefined);
 
-    await expect(service.deactivate(apiKeyId)).resolves.toEqual({ message: `API key ${apiKeyId} client deactivated` });
-    expect(repository.save).toHaveBeenCalledWith(expect.objectContaining({ id: apiKeyId, active: false }));
+    await expect(service.deactivate(apiKeyId)).resolves.toEqual({
+      message: `API key ${apiKeyId} client deactivated`,
+    });
+    expect(repository.save).toHaveBeenCalledWith(
+      expect.objectContaining({ id: apiKeyId, active: false }),
+    );
   });
 
   it('findActiveByPlainKey returns matching active key', async () => {
@@ -121,28 +134,38 @@ describe('ApiKeysService', () => {
   });
 
   it('findActiveByPlainKey throws when no key matches', async () => {
-    (repository.find as jest.Mock).mockResolvedValue([{ id: apiKeyId, key_hash: 'HASH', active: true }]);
+    (repository.find as jest.Mock).mockResolvedValue([
+      { id: apiKeyId, key_hash: 'HASH', active: true },
+    ]);
     compareMock.mockResolvedValue(false);
 
-    await expect(service.findActiveByPlainKey('PLAINTEXT')).rejects.toBeInstanceOf(ForbiddenException);
+    await expect(service.findActiveByPlainKey('PLAINTEXT')).rejects.toBeInstanceOf(
+      ForbiddenException,
+    );
   });
 
   it('canDo returns true when permission exists', async () => {
-    jest.spyOn(service, 'findActiveByPlainKey').mockResolvedValue({ permissionCodes: ['READ'] } as any);
+    jest
+      .spyOn(service, 'findActiveByPlainKey')
+      .mockResolvedValue({ permissionCodes: ['READ'] } as any);
     const request: any = { headers: { 'x-api-key': 'PLAINTEXT' } };
 
     await expect(service.canDo(request, 'READ')).resolves.toBe(true);
   });
 
   it('canDo returns false when permission missing', async () => {
-    jest.spyOn(service, 'findActiveByPlainKey').mockResolvedValue({ permissionCodes: ['WRITE'] } as any);
+    jest
+      .spyOn(service, 'findActiveByPlainKey')
+      .mockResolvedValue({ permissionCodes: ['WRITE'] } as any);
     const request: any = { headers: { 'x-api-key': 'PLAINTEXT' } };
 
     await expect(service.canDo(request, 'READ')).resolves.toBe(false);
   });
 
   it('canDo propagates exception when API key invalid', async () => {
-    jest.spyOn(service, 'findActiveByPlainKey').mockRejectedValue(new ForbiddenException('Invalid'));
+    jest
+      .spyOn(service, 'findActiveByPlainKey')
+      .mockRejectedValue(new ForbiddenException('Invalid'));
     const request: any = { headers: { 'x-api-key': 'PLAINTEXT' } };
 
     await expect(service.canDo(request, 'READ')).rejects.toBeInstanceOf(ForbiddenException);

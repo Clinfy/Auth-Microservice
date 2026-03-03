@@ -10,8 +10,8 @@ import {
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
-import {AuthGuard} from "src/middlewares/auth.middleware";
-import {Permissions} from "src/middlewares/decorators/permissions.decorator";
+import { AuthGuard } from 'src/middlewares/auth.middleware';
+import { Permissions } from 'src/middlewares/decorators/permissions.decorator';
 import type { Request } from 'express';
 import {
   ApiBearerAuth,
@@ -24,18 +24,15 @@ import {
   ApiQuery,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
-import * as requestUser from "src/interfaces/request-user";
-import {UsersService} from "src/services/users/users.service";
-import {UserEntity} from "src/entities/user.entity";
-import {RegisterUserDTO} from "src/interfaces/DTO/register.dto";
-import {LoginDTO} from "src/interfaces/DTO/login.dto";
-import {AssignRoleDTO} from "src/interfaces/DTO/assign.dto";
-import {AuthInterface} from "src/interfaces/auth.interface";
+import * as requestUser from 'src/interfaces/request-user';
+import { UsersService } from 'src/services/users/users.service';
+import { UserEntity } from 'src/entities/user.entity';
+import { RegisterUserDTO } from 'src/interfaces/DTO/register.dto';
+import { LoginDTO } from 'src/interfaces/DTO/login.dto';
+import { AssignRoleDTO } from 'src/interfaces/DTO/assign.dto';
+import { AuthInterface } from 'src/interfaces/auth.interface';
 import { ApiKeyGuard } from 'src/middlewares/api-key.middleware';
-import {
-  ForgotPasswordDTO,
-  ResetPasswordDTO,
-} from 'src/interfaces/DTO/reset-password.dto';
+import { ForgotPasswordDTO, ResetPasswordDTO } from 'src/interfaces/DTO/reset-password.dto';
 
 @Controller('users')
 export class UsersController {
@@ -82,9 +79,7 @@ export class UsersController {
   })
   @ApiUnauthorizedResponse({ description: 'Missing or invalid bearer token' })
   @Post('logout')
-  logOut(
-    @Req() request: requestUser.RequestWithUser,
-  ): Promise<{ message: string }> {
+  logOut(@Req() request: requestUser.RequestWithUser): Promise<{ message: string }> {
     return this.userService.logOut(request.user);
   }
 
@@ -102,9 +97,7 @@ export class UsersController {
   @ApiUnauthorizedResponse({ description: 'Invalid refresh token' })
   @Get('refresh-token')
   refreshToken(@Req() request: Request): Promise<AuthInterface> {
-    return this.userService.refreshToken(
-      request.headers['refresh-token'] as string,
-    );
+    return this.userService.refreshToken(request.headers['refresh-token'] as string);
   }
 
   @UseGuards(AuthGuard)
@@ -131,12 +124,17 @@ export class UsersController {
   })
   @ApiUnauthorizedResponse({ description: 'Missing or invalid bearer token' })
   @Get('me')
-  me(@Req() request: requestUser.RequestWithUser): { id: string; email: string; person_id: string; session_id: string; } {
+  me(@Req() request: requestUser.RequestWithUser): {
+    id: string;
+    email: string;
+    person_id: string;
+    session_id: string;
+  } {
     return {
       id: request.user.id,
       email: request.user.email,
       person_id: request.user.person_id,
-      session_id: request.user.session_id
+      session_id: request.user.session_id,
     };
   }
 
@@ -150,10 +148,7 @@ export class UsersController {
   @ApiForbiddenResponse({ description: 'Insufficient permissions' })
   @ApiNotFoundResponse({ description: 'User or role not found' })
   @Post('assign-role/:id')
-  assignRole(
-    @Param('id') id: string,
-    @Body() dto: AssignRoleDTO,
-  ): Promise<UserEntity> {
+  assignRole(@Param('id') id: string, @Body() dto: AssignRoleDTO): Promise<UserEntity> {
     return this.userService.assignRole(id, dto);
   }
 

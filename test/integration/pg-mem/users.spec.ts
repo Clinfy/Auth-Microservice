@@ -58,31 +58,31 @@ describe('UsersService (integration)', () => {
 
     db.public.registerFunction({
       name: 'current_database',
-      implementation: () => 'users_test'
-    })
+      implementation: () => 'users_test',
+    });
 
     db.public.registerFunction({
       name: 'version',
-      implementation: () => 'PostgreSQL 17.6'
-    })
+      implementation: () => 'PostgreSQL 17.6',
+    });
 
     db.public.registerFunction({
       name: 'uuid_generate_v4',
-      implementation: () => randomUUID()
-    })
+      implementation: () => randomUUID(),
+    });
 
     db.public.registerFunction({
       name: 'gen_random_uuid',
-      implementation: () => randomUUID()
-    })
+      implementation: () => randomUUID(),
+    });
 
     dataSource = await db.adapters.createTypeormDataSource({
       type: 'postgres',
       entities: [...entities],
-      synchronize: true
-    })
+      synchronize: true,
+    });
 
-    await dataSource.initialize()
+    await dataSource.initialize();
 
     moduleRef = await Test.createTestingModule({
       imports: [],
@@ -90,7 +90,9 @@ describe('UsersService (integration)', () => {
         UsersService,
         RolesService,
         PermissionsService,
-        UsersRepository, RolesRepository, PermissionsRepository,
+        UsersRepository,
+        RolesRepository,
+        PermissionsRepository,
         {
           provide: JwtService,
           useValue: jwtServiceMock,
@@ -118,7 +120,7 @@ describe('UsersService (integration)', () => {
         {
           provide: DataSource,
           useValue: dataSource,
-        }
+        },
       ],
     }).compile();
 
@@ -141,23 +143,37 @@ describe('UsersService (integration)', () => {
   });
 
   it('registers a user and stores a hashed password', async () => {
-    const response = await usersService.register({
-      email: 'alice@example.com',
-      password: 'P@ssword123',
-      person_id: randomUUID(),
-    }, request);
+    const response = await usersService.register(
+      {
+        email: 'alice@example.com',
+        password: 'P@ssword123',
+        person_id: randomUUID(),
+      },
+      request,
+    );
 
     expect(response).toEqual({ message: 'User alice@example.com created' });
 
-    const stored = await userRepository.findOneBy({ email: 'alice@example.com' });
+    const stored = await userRepository.findOneBy({
+      email: 'alice@example.com',
+    });
     expect(stored).toBeDefined();
     expect(stored?.password).toMatch(/^\$2[aby]\$.+/);
   });
 
   it('logs in a user, stores a session in redis and returns tokens', async () => {
-    await usersService.register({ email: 'bob@example.com', password: 'Secret123', person_id: randomUUID() }, request);
+    await usersService.register(
+      {
+        email: 'bob@example.com',
+        password: 'Secret123',
+        person_id: randomUUID(),
+      },
+      request,
+    );
 
-    jwtServiceMock.generateToken.mockImplementation(async (_payload: any, type: string) => `${type}-token`);
+    jwtServiceMock.generateToken.mockImplementation(
+      async (_payload: any, type: string) => `${type}-token`,
+    );
 
     const httpRequest: any = {
       headers: {
@@ -168,7 +184,10 @@ describe('UsersService (integration)', () => {
       socket: { remoteAddress: '127.0.0.1' },
     };
 
-    const tokens = await usersService.logIn({ email: 'bob@example.com', password: 'Secret123' }, httpRequest);
+    const tokens = await usersService.logIn(
+      { email: 'bob@example.com', password: 'Secret123' },
+      httpRequest,
+    );
 
     expect(tokens).toEqual({
       accessToken: 'auth-token',
@@ -185,15 +204,28 @@ describe('UsersService (integration)', () => {
   });
 
   it('assigns roles to a user and allows permission checks', async () => {
-    await usersService.register({ email: 'carol@example.com', password: 'Secret123', person_id: randomUUID() }, request);
-    const user = await userRepository.findOne({ where: { email: 'carol@example.com' } });
+    await usersService.register(
+      {
+        email: 'carol@example.com',
+        password: 'Secret123',
+        person_id: randomUUID(),
+      },
+      request,
+    );
+    const user = await userRepository.findOne({
+      where: { email: 'carol@example.com' },
+    });
     expect(user).toBeDefined();
 
     const permission = await permissionsService.create({ code: 'USERS_ASSIGN' }, request);
     const role = await rolesService.create({ name: 'manager' }, request);
-    await rolesService.assignPermissions(role.id, { permissionsIds: [permission.id] } as any);
+    await rolesService.assignPermissions(role.id, {
+      permissionsIds: [permission.id],
+    } as any);
 
-    const updated = await usersService.assignRole(user!.id, { rolesIds: [role.id] });
+    const updated = await usersService.assignRole(user!.id, {
+      rolesIds: [role.id],
+    });
 
     expect(updated.roles).toHaveLength(1);
     expect(updated.roles[0].name).toBe('manager');
@@ -202,15 +234,29 @@ describe('UsersService (integration)', () => {
       JSON.stringify({ active: true, permissions: ['USERS_ASSIGN'] }),
     );
     const canDo = await usersService.canDo(
-      { id: updated.id, email: updated.email, person_id: updated.person_id, session_id: 'sess-1' } as any,
+      {
+        id: updated.id,
+        email: updated.email,
+        person_id: updated.person_id,
+        session_id: 'sess-1',
+      } as any,
       'USERS_ASSIGN',
     );
     expect(canDo).toBe(true);
   });
 
   it('refreshes an active session and returns new tokens', async () => {
-    await usersService.register({ email: 'frank@example.com', password: 'Secret123', person_id: randomUUID() }, request);
-    const stored = await userRepository.findOneBy({ email: 'frank@example.com' });
+    await usersService.register(
+      {
+        email: 'frank@example.com',
+        password: 'Secret123',
+        person_id: randomUUID(),
+      },
+      request,
+    );
+    const stored = await userRepository.findOneBy({
+      email: 'frank@example.com',
+    });
     expect(stored).toBeDefined();
 
     jwtServiceMock.getPayload.mockResolvedValue({
@@ -239,11 +285,22 @@ describe('UsersService (integration)', () => {
   });
 
   it('starts the forgot password flow and stores the generated token in redis', async () => {
-    await usersService.register({ email: 'dave@example.com', password: 'Secret123', person_id: randomUUID() }, request);
-    const stored = await userRepository.findOneBy({ email: 'dave@example.com' });
+    await usersService.register(
+      {
+        email: 'dave@example.com',
+        password: 'Secret123',
+        person_id: randomUUID(),
+      },
+      request,
+    );
+    const stored = await userRepository.findOneBy({
+      email: 'dave@example.com',
+    });
     emailServiceMock.sendResetPasswordMail.mockResolvedValue(undefined);
 
-    const response = await usersService.forgotPassword({ email: 'dave@example.com' });
+    const response = await usersService.forgotPassword({
+      email: 'dave@example.com',
+    });
     expect(response).toEqual({
       message: 'If the email exists, a reset password link will be sent to it.',
     });
@@ -253,28 +310,46 @@ describe('UsersService (integration)', () => {
       JSON.stringify({ id: stored!.id }),
       { PX: expect.any(Number) },
     );
-    expect(emailServiceMock.sendResetPasswordMail).toHaveBeenCalledWith('dave@example.com', expect.any(String));
+    expect(emailServiceMock.sendResetPasswordMail).toHaveBeenCalledWith(
+      'dave@example.com',
+      expect.any(String),
+    );
   });
 
   it('resets the password, clears the token from redis, and notifies the user', async () => {
-    await usersService.register({ email: 'erin@example.com', password: 'OldPassword1', person_id: randomUUID() }, request);
+    await usersService.register(
+      {
+        email: 'erin@example.com',
+        password: 'OldPassword1',
+        person_id: randomUUID(),
+      },
+      request,
+    );
     emailServiceMock.sendResetPasswordMail.mockResolvedValue(undefined);
     await usersService.forgotPassword({ email: 'erin@example.com' });
 
-    const [[redisKey]] = redisServiceMock.raw.set.mock.calls.filter(call => call[0].startsWith('reset_password:'));
+    const [[redisKey]] = redisServiceMock.raw.set.mock.calls.filter((call) =>
+      call[0].startsWith('reset_password:'),
+    );
     const token = redisKey.replace('reset_password:', '');
 
-    const stored = await userRepository.findOneBy({ email: 'erin@example.com' });
+    const stored = await userRepository.findOneBy({
+      email: 'erin@example.com',
+    });
 
     redisServiceMock.raw.get.mockResolvedValue(JSON.stringify({ id: stored!.id }));
     emailServiceMock.confirmPasswordChange.mockResolvedValue(undefined);
 
-    const response = await usersService.resetPassword(token, { password: 'NewPassword1' });
+    const response = await usersService.resetPassword(token, {
+      password: 'NewPassword1',
+    });
     expect(response).toEqual({ message: 'Password reset successfully' });
     expect(emailServiceMock.confirmPasswordChange).toHaveBeenCalledWith('erin@example.com');
     expect(redisServiceMock.raw.del).toHaveBeenCalledWith(redisKey);
 
-    const updated = await userRepository.findOneBy({ email: 'erin@example.com' });
+    const updated = await userRepository.findOneBy({
+      email: 'erin@example.com',
+    });
     expect(updated?.password).toMatch(/^\$2[aby]\$.+/);
   });
 });

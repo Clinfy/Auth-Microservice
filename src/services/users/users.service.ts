@@ -14,7 +14,7 @@ import { LoginDTO } from 'src/interfaces/DTO/login.dto';
 import { AuthInterface } from 'src/interfaces/auth.interface';
 import { AssignRoleDTO } from 'src/interfaces/DTO/assign.dto';
 import { RolesService } from 'src/services/roles/roles.service';
-import { ForgotPasswordDTO, ResetPasswordDTO, } from 'src/interfaces/DTO/reset-password.dto';
+import { ForgotPasswordDTO, ResetPasswordDTO } from 'src/interfaces/DTO/reset-password.dto';
 import { EmailService } from 'src/clients/email/email.service';
 import { RequestWithUser } from 'src/interfaces/request-user';
 import { getTtlFromEnv } from 'src/common/tools/get-ttl';
@@ -38,14 +38,14 @@ export class UsersService {
     private readonly jwtService: JwtService,
     private readonly roleService: RolesService,
     private readonly emailService: EmailService,
-  ) { }
+  ) {}
 
   async refreshToken(refreshToken: string): Promise<AuthInterface> {
     const payload = await this.jwtService.getPayload(refreshToken, 'refresh');
     const cacheKey = `auth_session:${payload.sid}`;
 
     const raw = await this.redis.raw.get(cacheKey);
-    const session = raw ? JSON.parse(raw) as Session : null;
+    const session = raw ? (JSON.parse(raw) as Session) : null;
 
     if (!session || !session.active) {
       throw new UnauthorizedException({
@@ -55,7 +55,7 @@ export class UsersService {
       });
     }
 
-    const user = await this.findOne(session.user_id)
+    const user = await this.findOne(session.user_id);
 
     const newSession: Session = {
       ...session,
@@ -63,7 +63,9 @@ export class UsersService {
       last_refresh_at: new Date().toISOString(),
     };
 
-    await this.redis.raw.set(cacheKey, JSON.stringify(newSession), { KEEPTTL: true })
+    await this.redis.raw.set(cacheKey, JSON.stringify(newSession), {
+      KEEPTTL: true,
+    });
 
     return this.jwtService.refreshToken(refreshToken);
   }
@@ -71,7 +73,7 @@ export class UsersService {
   async canDo(user: AuthUser, permissionCode: string): Promise<boolean> {
     const cacheKey = `auth_session:${user.session_id}`;
     const raw = await this.redis.raw.get(cacheKey);
-    const session = raw ? JSON.parse(raw) as Session : null;
+    const session = raw ? (JSON.parse(raw) as Session) : null;
 
     if (!session || !session.active) {
       throw new UnauthorizedException('Session expired or invalid');
@@ -90,7 +92,7 @@ export class UsersService {
     return await this.dataSource.transaction(async (manager) => {
       const newUser = this.userRepository.create({
         ...dto,
-        created_by: request.user
+        created_by: request.user,
       });
       const user = await this.userRepository.save(newUser, manager);
       return { message: `User ${user.email} created` };
@@ -113,13 +115,13 @@ export class UsersService {
     }
 
     try {
-      const sessionId = randomUUID()
+      const sessionId = randomUUID();
       const [accessToken, refreshToken] = await Promise.all([
         this.jwtService.generateToken({ email: user.email, sid: sessionId }, 'auth'),
         this.jwtService.generateToken({ email: user.email, sid: sessionId }, 'refresh'),
       ]);
 
-      const requestData = this.getRequestData(req)
+      const requestData = this.getRequestData(req);
 
       const sessionData: Session = {
         user_id: user.id,
@@ -136,29 +138,21 @@ export class UsersService {
 
       const cacheKey = `auth_session:${sessionId}`;
 
-      await this.redis.raw.set(
-        cacheKey,
-        JSON.stringify(sessionData),
-        { PX: getTtlFromEnv('JWT_REFRESH_EXPIRES_IN') }
-      );
-
+      await this.redis.raw.set(cacheKey, JSON.stringify(sessionData), {
+        PX: getTtlFromEnv('JWT_REFRESH_EXPIRES_IN'),
+      });
 
       //Add user sessions index
       const userIndex = `user_sessions:${user.id}`;
       await this.redis.raw.sAdd(userIndex, sessionId);
-      await this.redis.raw.pExpire(
-        userIndex,
-        getTtlFromEnv('JWT_REFRESH_EXPIRES_IN'),
-      );
+      await this.redis.raw.pExpire(userIndex, getTtlFromEnv('JWT_REFRESH_EXPIRES_IN'));
 
       return {
         accessToken,
         refreshToken,
       };
     } catch (error) {
-      throw new InternalServerErrorException(
-        'Unable to issue authentication tokens',
-      );
+      throw new InternalServerErrorException('Unable to issue authentication tokens');
     }
   }
 
@@ -177,9 +171,7 @@ export class UsersService {
 
   async assignRole(id: string, dto: AssignRoleDTO): Promise<UserEntity> {
     const user = await this.findOne(id);
-    user.roles = await Promise.all(
-      dto.rolesIds.map((roleId) => this.roleService.findOne(roleId)),
-    );
+    user.roles = await Promise.all(dto.rolesIds.map((roleId) => this.roleService.findOne(roleId)));
     return await this.userRepository.save(user);
   }
 
@@ -189,17 +181,21 @@ export class UsersService {
       const token = randomBytes(32).toString('hex');
       const redisIndex = `reset_password:${token}`;
       const redisPayload: ResetPasswordRedisPayload = { id: user.id };
-      await this.redis.raw.set(redisIndex, JSON.stringify(redisPayload), { PX: getTtlFromEnv('RESET_PASSWORD_EXPIRES_IN') });
+      await this.redis.raw.set(redisIndex, JSON.stringify(redisPayload), {
+        PX: getTtlFromEnv('RESET_PASSWORD_EXPIRES_IN'),
+      });
       await this.emailService.sendResetPasswordMail(dto.email, token);
     }
 
-    return { message: 'If the email exists, a reset password link will be sent to it.' };
+    return {
+      message: 'If the email exists, a reset password link will be sent to it.',
+    };
   }
 
   async resetPassword(token: string, dto: ResetPasswordDTO): Promise<{ message: string }> {
     const redisIndex = `reset_password:${token}`;
     const raw = await this.redis.raw.get(redisIndex);
-    const redisPayload = raw ? JSON.parse(raw) as ResetPasswordRedisPayload : null;
+    const redisPayload = raw ? (JSON.parse(raw) as ResetPasswordRedisPayload) : null;
     if (!redisPayload) {
       throw new UnauthorizedException({
         message: 'Invalid or expired token',
@@ -208,7 +204,7 @@ export class UsersService {
       });
     }
 
-    let user: UserEntity
+    let user: UserEntity;
     try {
       user = await this.findOne(redisPayload.id);
     } catch (error) {

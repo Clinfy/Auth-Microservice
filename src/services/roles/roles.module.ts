@@ -8,13 +8,9 @@ import { JwtModule } from 'src/services/JWT/jwt.module';
 import { RolesRepository } from 'src/services/roles/roles.repository';
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([RoleEntity]),
-    PermissionsModule,
-    JwtModule
-  ],
+  imports: [TypeOrmModule.forFeature([RoleEntity]), PermissionsModule, JwtModule],
   controllers: [RolesController],
   providers: [RolesService, RolesRepository],
-  exports: [RolesService]
+  exports: [RolesService],
 })
 export class RolesModule {}

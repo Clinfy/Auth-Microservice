@@ -1,4 +1,9 @@
-import { ForbiddenException, InternalServerErrorException, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  InternalServerErrorException,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { DataSource } from 'typeorm';
 import { UsersRepository } from './users.repository';
 import { UsersService } from './users.service';
@@ -28,7 +33,7 @@ describe('UsersService', () => {
       findOneByEmail: jest.fn(),
       findOneById: jest.fn(),
       save: jest.fn(),
-      create: jest.fn((dto) => ({ id: 'mock-id', ...dto } as UserEntity)),
+      create: jest.fn((dto) => ({ id: 'mock-id', ...dto }) as UserEntity),
     };
 
     dataSource = {
@@ -98,9 +103,7 @@ describe('UsersService', () => {
     });
 
     it('throws ForbiddenException when permission missing', async () => {
-      redisService.raw.get.mockResolvedValue(
-        JSON.stringify({ active: true, permissions: [] }),
-      );
+      redisService.raw.get.mockResolvedValue(JSON.stringify({ active: true, permissions: [] }));
 
       await expect(
         service.canDo({ session_id: 'abc', id: '1', email: '', person_id: '' }, 'DELETE_USER'),
@@ -161,10 +164,7 @@ describe('UsersService', () => {
         `user_sessions:${activeUser.id}`,
         sessionId,
       );
-      expect(redisService.raw.pExpire).toHaveBeenCalledWith(
-        `user_sessions:${activeUser.id}`,
-        1000,
-      );
+      expect(redisService.raw.pExpire).toHaveBeenCalledWith(`user_sessions:${activeUser.id}`, 1000);
     });
 
     it('throws UnauthorizedException when user not found', async () => {
@@ -176,7 +176,10 @@ describe('UsersService', () => {
     });
 
     it('throws UnauthorizedException when user inactive', async () => {
-      (userRepository.findOneByEmail as jest.Mock).mockResolvedValue({ ...activeUser, active: false });
+      (userRepository.findOneByEmail as jest.Mock).mockResolvedValue({
+        ...activeUser,
+        active: false,
+      });
 
       await expect(
         service.logIn({ email: 'john@example.com', password: 'secret' }, request),
@@ -206,7 +209,12 @@ describe('UsersService', () => {
   describe('logOut', () => {
     it('removes session data from redis', async () => {
       await expect(
-        service.logOut({ id: '1', person_id: 'p1', email: 'john@example.com', session_id: 'sess' }),
+        service.logOut({
+          id: '1',
+          person_id: 'p1',
+          email: 'john@example.com',
+          session_id: 'sess',
+        }),
       ).resolves.toEqual({ message: 'Logged out successfully' });
 
       expect(redisService.raw.del).toHaveBeenCalledWith('auth_session:sess');
@@ -228,7 +236,10 @@ describe('UsersService', () => {
         JSON.stringify({ id: 'user-1' }),
         { PX: expect.any(Number) },
       );
-      expect(emailService.sendResetPasswordMail).toHaveBeenCalledWith('user@example.com', expect.any(String));
+      expect(emailService.sendResetPasswordMail).toHaveBeenCalledWith(
+        'user@example.com',
+        expect.any(String),
+      );
     });
 
     it('returns success message without side effects when user missing', async () => {
@@ -246,15 +257,24 @@ describe('UsersService', () => {
   describe('resetPassword', () => {
     it('updates password and clears token when payload valid', async () => {
       redisService.raw.get.mockResolvedValue(JSON.stringify({ id: 'user-1' }));
-      const storedUser: any = { id: 'user-1', email: 'user@example.com', password: 'old-password' };
+      const storedUser: any = {
+        id: 'user-1',
+        email: 'user@example.com',
+        password: 'old-password',
+      };
       (userRepository.findOneById as jest.Mock).mockResolvedValue(storedUser);
 
-      await expect(service.resetPassword('token-123', { password: 'new-password' })).resolves.toEqual({
+      await expect(
+        service.resetPassword('token-123', { password: 'new-password' }),
+      ).resolves.toEqual({
         message: 'Password reset successfully',
       });
 
       expect(userRepository.save).toHaveBeenCalledWith(
-        expect.objectContaining({ email: 'user@example.com', password: 'new-password' }),
+        expect.objectContaining({
+          email: 'user@example.com',
+          password: 'new-password',
+        }),
       );
       expect(redisService.raw.del).toHaveBeenCalledWith('reset_password:token-123');
       expect(emailService.confirmPasswordChange).toHaveBeenCalledWith('user@example.com');
@@ -263,14 +283,18 @@ describe('UsersService', () => {
     it('throws UnauthorizedException when token invalid or expired', async () => {
       redisService.raw.get.mockResolvedValue(null);
 
-      await expect(service.resetPassword('token', { password: 'new' })).rejects.toBeInstanceOf(UnauthorizedException);
+      await expect(service.resetPassword('token', { password: 'new' })).rejects.toBeInstanceOf(
+        UnauthorizedException,
+      );
     });
 
     it('throws NotFoundException when user missing', async () => {
       redisService.raw.get.mockResolvedValue(JSON.stringify({ id: 'missing-id' }));
       (userRepository.findOneById as jest.Mock).mockResolvedValue(null);
 
-      await expect(service.resetPassword('token', { password: 'new' })).rejects.toBeInstanceOf(NotFoundException);
+      await expect(service.resetPassword('token', { password: 'new' })).rejects.toBeInstanceOf(
+        NotFoundException,
+      );
     });
   });
 
@@ -282,7 +306,11 @@ describe('UsersService', () => {
         exp: 123,
       });
       redisService.raw.get.mockResolvedValue(
-        JSON.stringify({ user_id: 'user-1', permissions: ['PERM1'], active: true }),
+        JSON.stringify({
+          user_id: 'user-1',
+          permissions: ['PERM1'],
+          active: true,
+        }),
       );
       (userRepository.findOneById as jest.Mock).mockResolvedValue({
         id: 'user-1',
@@ -314,7 +342,9 @@ describe('UsersService', () => {
       });
       redisService.raw.get.mockResolvedValue(null);
 
-      await expect(service.refreshToken('refresh-token')).rejects.toBeInstanceOf(UnauthorizedException);
+      await expect(service.refreshToken('refresh-token')).rejects.toBeInstanceOf(
+        UnauthorizedException,
+      );
     });
 
     it('throws UnauthorizedException when session inactive', async () => {
@@ -323,11 +353,11 @@ describe('UsersService', () => {
         sid: 'sess-1',
         exp: 123,
       });
-      redisService.raw.get.mockResolvedValue(
-        JSON.stringify({ user_id: 'user-1', active: false }),
-      );
+      redisService.raw.get.mockResolvedValue(JSON.stringify({ user_id: 'user-1', active: false }));
 
-      await expect(service.refreshToken('refresh-token')).rejects.toBeInstanceOf(UnauthorizedException);
+      await expect(service.refreshToken('refresh-token')).rejects.toBeInstanceOf(
+        UnauthorizedException,
+      );
     });
   });
 });

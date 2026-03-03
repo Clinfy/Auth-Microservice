@@ -123,12 +123,7 @@ export class OutboxSubscriberService implements EntitySubscriberInterface {
     metadata: EntityMetadata | undefined,
     entity: Record<string, unknown>,
   ): string {
-    return (
-      metadata?.targetName ??
-      metadata?.name ??
-      entity.constructor?.name ??
-      'UnknownEntity'
-    );
+    return metadata?.targetName ?? metadata?.name ?? entity.constructor?.name ?? 'UnknownEntity';
   }
 
   private extractPrimaryKeys(
@@ -136,14 +131,11 @@ export class OutboxSubscriberService implements EntitySubscriberInterface {
     entity: Record<string, unknown>,
   ): Record<string, unknown> {
     return (
-      metadata?.primaryColumns.reduce<Record<string, unknown>>(
-        (acc, column) => {
-          const key = column.propertyName;
-          acc[key] = entity[key];
-          return acc;
-        },
-        {},
-      ) ?? {}
+      metadata?.primaryColumns.reduce<Record<string, unknown>>((acc, column) => {
+        const key = column.propertyName;
+        acc[key] = entity[key];
+        return acc;
+      }, {}) ?? {}
     );
   }
 

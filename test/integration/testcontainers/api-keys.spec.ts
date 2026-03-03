@@ -25,7 +25,7 @@ describe('ApiKeysService (integration)', () => {
 
   beforeAll(async () => {
     console.log('Starting PostgreSQL container...');
-    container = await new PostgreSqlContainer('postgres:17.6').start()
+    container = await new PostgreSqlContainer('postgres:17.6').start();
     console.log('PostgreSQL container started');
 
     dataSource = new DataSource({
@@ -36,8 +36,8 @@ describe('ApiKeysService (integration)', () => {
       password: container.getPassword(),
       database: container.getDatabase(),
       entities: [...entities],
-      synchronize: true
-    })
+      synchronize: true,
+    });
 
     await dataSource.initialize();
 
@@ -58,7 +58,7 @@ describe('ApiKeysService (integration)', () => {
         {
           provide: getRepositoryToken(PermissionEntity),
           useValue: dataSource.getRepository(PermissionEntity),
-        }
+        },
       ],
     }).compile();
 
@@ -75,7 +75,7 @@ describe('ApiKeysService (integration)', () => {
   });
 
   beforeEach(async () => {
-    await dataSource.synchronize(true)
+    await dataSource.synchronize(true);
   });
 
   it('creates an API key with the requested permissions', async () => {
@@ -101,17 +101,20 @@ describe('ApiKeysService (integration)', () => {
     expect(stored).toBeDefined();
     expect(stored?.client).toBe('billing-app');
     expect(stored?.active).toBe(true);
-    expect(stored?.permissions.map(p => p.id)).toEqual([permission.id]);
+    expect(stored?.permissions.map((p) => p.id)).toEqual([permission.id]);
     expect(stored?.key_hash).not.toBe(result.apiKey);
     expect(await compare(result.apiKey, stored!.key_hash)).toBe(true);
   });
 
   it('deactivates an API key and persists the change', async () => {
     const permission = await permissionsService.create({ code: 'API_KEYS_DEACTIVATE' }, request);
-    const { id } = await service.create({
-      client: 'internal-tool',
-      permissionIds: [permission.id],
-    }, request);
+    const { id } = await service.create(
+      {
+        client: 'internal-tool',
+        permissionIds: [permission.id],
+      },
+      request,
+    );
 
     const response = await service.deactivate(id);
     expect(response.message).toContain(`API key ${id}`);
@@ -122,15 +125,15 @@ describe('ApiKeysService (integration)', () => {
 
   it('validates permissions through canDo using the plain API key', async () => {
     const permission = await permissionsService.create({ code: 'API_KEYS_READ' }, request);
-    const { apiKey } = await service.create({
-      client: 'reporting-dashboard',
-      permissionIds: [permission.id],
-    }, request);
-
-    const canDo = await service.canDo(
-      { headers: { 'x-api-key': apiKey } } as any,
-      permission.code,
+    const { apiKey } = await service.create(
+      {
+        client: 'reporting-dashboard',
+        permissionIds: [permission.id],
+      },
+      request,
     );
+
+    const canDo = await service.canDo({ headers: { 'x-api-key': apiKey } } as any, permission.code);
 
     expect(canDo).toBe(true);
   });

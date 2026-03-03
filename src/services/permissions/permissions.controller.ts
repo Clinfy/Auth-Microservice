@@ -11,9 +11,9 @@ import {
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
-import {PermissionsService} from "src/services/permissions/permissions.service";
-import {AuthGuard} from "src/middlewares/auth.middleware";
-import {Permissions} from "src/middlewares/decorators/permissions.decorator";
+import { PermissionsService } from 'src/services/permissions/permissions.service';
+import { AuthGuard } from 'src/middlewares/auth.middleware';
+import { Permissions } from 'src/middlewares/decorators/permissions.decorator';
 import {
   ApiBearerAuth,
   ApiCreatedResponse,
@@ -22,9 +22,9 @@ import {
   ApiOkResponse,
   ApiOperation,
   ApiUnauthorizedResponse,
-} from "@nestjs/swagger";
-import {PermissionEntity} from "src/entities/permission.entity";
-import {CreatePermissionDTO} from "src/interfaces/DTO/create.dto";
+} from '@nestjs/swagger';
+import { PermissionEntity } from 'src/entities/permission.entity';
+import { CreatePermissionDTO } from 'src/interfaces/DTO/create.dto';
 import * as requestUser from 'src/interfaces/request-user';
 
 @ApiBearerAuth()
@@ -40,7 +40,10 @@ export class PermissionsController {
   @ApiUnauthorizedResponse({ description: 'Missing or invalid bearer token' })
   @ApiForbiddenResponse({ description: 'Insufficient permissions' })
   @Post('new')
-  create(@Req() request: requestUser.RequestWithUser, @Body() dto: CreatePermissionDTO): Promise<PermissionEntity> {
+  create(
+    @Req() request: requestUser.RequestWithUser,
+    @Body() dto: CreatePermissionDTO,
+  ): Promise<PermissionEntity> {
     return this.permissionService.create(dto, request);
   }
 
@@ -61,7 +64,9 @@ export class PermissionsController {
   @Permissions(['PERMISSIONS_DELETE'])
   @UseInterceptors(ClassSerializerInterceptor)
   @ApiOperation({ summary: 'Delete a permission' })
-  @ApiOkResponse({ schema: { type: 'object', properties: { message: { type: 'string' } } } })
+  @ApiOkResponse({
+    schema: { type: 'object', properties: { message: { type: 'string' } } },
+  })
   @ApiNotFoundResponse({ description: 'Permission not found' })
   @ApiUnauthorizedResponse({ description: 'Missing or invalid bearer token' })
   @ApiForbiddenResponse({ description: 'Insufficient permissions' })

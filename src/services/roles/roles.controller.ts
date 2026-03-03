@@ -1,7 +1,7 @@
-import {Body, Controller, Delete, Get, Param, Patch, Post, Req, UseGuards} from '@nestjs/common';
-import {RolesService} from "src/services/roles/roles.service";
-import {AuthGuard} from "src/middlewares/auth.middleware";
-import {Permissions} from "src/middlewares/decorators/permissions.decorator";
+import { Body, Controller, Delete, Get, Param, Patch, Post, Req, UseGuards } from '@nestjs/common';
+import { RolesService } from 'src/services/roles/roles.service';
+import { AuthGuard } from 'src/middlewares/auth.middleware';
+import { Permissions } from 'src/middlewares/decorators/permissions.decorator';
 import {
   ApiBearerAuth,
   ApiCreatedResponse,
@@ -10,10 +10,10 @@ import {
   ApiOkResponse,
   ApiOperation,
   ApiUnauthorizedResponse,
-} from "@nestjs/swagger";
-import {RoleEntity} from "src/entities/role.entity";
-import {AssignPermissionDTO} from "src/interfaces/DTO/assign.dto";
-import {PatchRoleDTO} from "src/interfaces/DTO/patch.dto";
+} from '@nestjs/swagger';
+import { RoleEntity } from 'src/entities/role.entity';
+import { AssignPermissionDTO } from 'src/interfaces/DTO/assign.dto';
+import { PatchRoleDTO } from 'src/interfaces/DTO/patch.dto';
 import * as requestUser from 'src/interfaces/request-user';
 
 @ApiBearerAuth()
@@ -52,14 +52,19 @@ export class RolesController {
   @ApiUnauthorizedResponse({ description: 'Missing or invalid bearer token' })
   @ApiForbiddenResponse({ description: 'Insufficient permissions' })
   @Patch('assign-permissions/:id')
-  assignPermissions(@Param('id') id: string, @Body() dto: AssignPermissionDTO): Promise<RoleEntity> {
+  assignPermissions(
+    @Param('id') id: string,
+    @Body() dto: AssignPermissionDTO,
+  ): Promise<RoleEntity> {
     return this.rolesService.assignPermissions(id, dto);
   }
 
   @UseGuards(AuthGuard)
   @Permissions(['ROLES_DELETE'])
   @ApiOperation({ summary: 'Delete a role' })
-  @ApiOkResponse({ schema: { type: 'object', properties: { message: { type: 'string' } } } })
+  @ApiOkResponse({
+    schema: { type: 'object', properties: { message: { type: 'string' } } },
+  })
   @ApiNotFoundResponse({ description: 'Role not found' })
   @ApiUnauthorizedResponse({ description: 'Missing or invalid bearer token' })
   @ApiForbiddenResponse({ description: 'Insufficient permissions' })

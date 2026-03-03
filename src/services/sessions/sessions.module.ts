@@ -6,7 +6,6 @@ import { SessionsService } from 'src/services/sessions/sessions.service';
 @Module({
   imports: [JwtModule],
   controllers: [SessionsController],
-  providers: [SessionsService]
+  providers: [SessionsService],
 })
-
 export class SessionsModule {}

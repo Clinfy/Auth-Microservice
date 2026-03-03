@@ -27,37 +27,39 @@ describe('RolesService (integration)', () => {
 
     db.public.registerFunction({
       name: 'current_database',
-      implementation: () => 'roles_test'
-    })
+      implementation: () => 'roles_test',
+    });
 
     db.public.registerFunction({
       name: 'version',
-      implementation: () => 'PostgreSQL 17.6'
-    })
+      implementation: () => 'PostgreSQL 17.6',
+    });
 
     db.public.registerFunction({
       name: 'uuid_generate_v4',
-      implementation: () => randomUUID()
-    })
+      implementation: () => randomUUID(),
+    });
 
     db.public.registerFunction({
       name: 'gen_random_uuid',
-      implementation: () => randomUUID()
-    })
+      implementation: () => randomUUID(),
+    });
 
     dataSource = await db.adapters.createTypeormDataSource({
       type: 'postgres',
       entities: [...entities],
-      synchronize: true
-    })
+      synchronize: true,
+    });
 
-    await dataSource.initialize()
+    await dataSource.initialize();
 
     moduleRef = await Test.createTestingModule({
       imports: [],
       providers: [
-        RolesService, PermissionsService,
-        RolesRepository, PermissionsRepository,
+        RolesService,
+        PermissionsService,
+        RolesRepository,
+        PermissionsRepository,
         {
           provide: getRepositoryToken(RoleEntity),
           useValue: dataSource.getRepository(RoleEntity),
@@ -69,7 +71,7 @@ describe('RolesService (integration)', () => {
         {
           provide: DataSource,
           useValue: dataSource,
-        }
+        },
       ],
     }).compile();
 
@@ -109,9 +111,11 @@ describe('RolesService (integration)', () => {
     const write = await createPermission('PERMISSIONS_WRITE');
     const role = await service.create({ name: 'editor' }, request);
 
-    const updated = await service.assignPermissions(role.id, { permissionsIds: [read.id, write.id] } as any);
+    const updated = await service.assignPermissions(role.id, {
+      permissionsIds: [read.id, write.id],
+    } as any);
 
-    expect(updated.permissions.map(permission => permission.code).sort()).toEqual([
+    expect(updated.permissions.map((permission) => permission.code).sort()).toEqual([
       'PERMISSIONS_READ',
       'PERMISSIONS_WRITE',
     ]);

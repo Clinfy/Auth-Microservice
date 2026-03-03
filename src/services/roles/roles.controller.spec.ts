@@ -12,7 +12,9 @@ describe('RolesController', () => {
   const anotherRoleId = '22222222-2222-2222-2222-222222222222';
   const permissionIdA = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa';
   const permissionIdB = 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb';
-  const request = { user: { id: '99999999-9999-9999-9999-999999999999' } } as any;
+  const request = {
+    user: { id: '99999999-9999-9999-9999-999999999999' },
+  } as any;
 
   beforeEach(() => {
     service = {
@@ -50,7 +52,9 @@ describe('RolesController', () => {
   });
 
   it('should assign permissions to a role', async () => {
-    const dto = { permissionsIds: [permissionIdA, permissionIdB] } as AssignPermissionDTO;
+    const dto = {
+      permissionsIds: [permissionIdA, permissionIdB],
+    } as AssignPermissionDTO;
     const role = { id: roleId, name: 'with-perms' } as RoleEntity;
     service.assignPermissions.mockResolvedValue(role);
 

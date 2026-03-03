@@ -7,12 +7,9 @@ import { JwtModule } from 'src/services/JWT/jwt.module';
 import { PermissionsRepository } from 'src/services/permissions/permissions.repository';
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([PermissionEntity]),
-    JwtModule
-  ],
+  imports: [TypeOrmModule.forFeature([PermissionEntity]), JwtModule],
   controllers: [PermissionsController],
   providers: [PermissionsService, PermissionsRepository],
-  exports: [PermissionsService]
+  exports: [PermissionsService],
 })
 export class PermissionsModule {}

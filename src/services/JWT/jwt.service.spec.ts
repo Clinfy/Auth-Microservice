@@ -87,7 +87,9 @@ describe('JwtService', () => {
   it('generates JWT tokens via jsonwebtoken.sign', async () => {
     signMock.mockImplementation((_payload, _secret, _options, callback) => callback(null, 'TOKEN'));
 
-    await expect(service.generateToken({ email: 'user@example.com',sid: '1111' }, 'auth')).resolves.toBe('TOKEN');
+    await expect(
+      service.generateToken({ email: 'user@example.com', sid: '1111' }, 'auth'),
+    ).resolves.toBe('TOKEN');
     expect(signMock).toHaveBeenCalledWith(
       { email: 'user@example.com', sid: '1111' },
       'auth-secret',
@@ -97,11 +99,13 @@ describe('JwtService', () => {
   });
 
   it('wraps signing errors in InternalServerErrorException', async () => {
-    signMock.mockImplementation((_payload, _secret, _options, callback) => callback(new Error('fail')));
-
-    await expect(service.generateToken({ email: 'user@example.com', sid: '111' }, 'auth')).rejects.toBeInstanceOf(
-      InternalServerErrorException,
+    signMock.mockImplementation((_payload, _secret, _options, callback) =>
+      callback(new Error('fail')),
     );
+
+    await expect(
+      service.generateToken({ email: 'user@example.com', sid: '111' }, 'auth'),
+    ).rejects.toBeInstanceOf(InternalServerErrorException);
   });
 
   it('getPayload returns decoded payload', async () => {
@@ -109,7 +113,10 @@ describe('JwtService', () => {
       callback(null, { email: 'user@example.com', exp: 1 }),
     );
 
-    await expect(service.getPayload('token', 'auth')).resolves.toEqual({ email: 'user@example.com', exp: 1 });
+    await expect(service.getPayload('token', 'auth')).resolves.toEqual({
+      email: 'user@example.com',
+      exp: 1,
+    });
   });
 
   it('getPayload enforces sid presence for refresh token', async () => {
@@ -117,11 +124,15 @@ describe('JwtService', () => {
       callback(null, { email: 'user@example.com', exp: 1 }),
     );
 
-    await expect(service.getPayload('token', 'refresh')).rejects.toBeInstanceOf(UnauthorizedException);
+    await expect(service.getPayload('token', 'refresh')).rejects.toBeInstanceOf(
+      UnauthorizedException,
+    );
   });
 
   it('getPayload maps token errors to UnauthorizedException', async () => {
-    verifyMock.mockImplementation((_token, _secret, callback) => callback(new TokenExpiredError('expired'), undefined));
+    verifyMock.mockImplementation((_token, _secret, callback) =>
+      callback(new TokenExpiredError('expired'), undefined),
+    );
     await expect(service.getPayload('token', 'auth')).rejects.toBeInstanceOf(UnauthorizedException);
 
     verifyMock.mockImplementation((_token, _secret, callback) =>
@@ -129,7 +140,9 @@ describe('JwtService', () => {
     );
     await expect(service.getPayload('token', 'auth')).rejects.toBeInstanceOf(UnauthorizedException);
 
-    verifyMock.mockImplementation((_token, _secret, callback) => callback(new NotBeforeError('nbf'), undefined));
+    verifyMock.mockImplementation((_token, _secret, callback) =>
+      callback(new NotBeforeError('nbf'), undefined),
+    );
     await expect(service.getPayload('token', 'auth')).rejects.toBeInstanceOf(UnauthorizedException);
   });
 
@@ -139,7 +152,9 @@ describe('JwtService', () => {
     );
     signMock
       .mockImplementationOnce((_payload, _secret, _options, callback) => callback(null, 'ACCESS'))
-      .mockImplementationOnce((_payload, _secret, _options, callback) => callback(null, 'NEW_REFRESH'));
+      .mockImplementationOnce((_payload, _secret, _options, callback) =>
+        callback(null, 'NEW_REFRESH'),
+      );
 
     await expect(service.refreshToken('old-refresh')).resolves.toEqual({
       accessToken: 'ACCESS',
@@ -152,7 +167,9 @@ describe('JwtService', () => {
     verifyMock.mockImplementation((_token, _secret, callback) =>
       callback(null, { email: 'user@example.com', exp: 1, sid: 'session-1' }),
     );
-    signMock.mockImplementation((_payload, _secret, _options, callback) => callback(null, 'ACCESS'));
+    signMock.mockImplementation((_payload, _secret, _options, callback) =>
+      callback(null, 'ACCESS'),
+    );
 
     await expect(service.refreshToken('same-refresh')).resolves.toEqual({
       accessToken: 'ACCESS',
@@ -161,7 +178,9 @@ describe('JwtService', () => {
   });
 
   it('refreshToken throws UnauthorizedException on verification error', async () => {
-    verifyMock.mockImplementation((_token, _secret, callback) => callback(new Error('boom'), undefined));
+    verifyMock.mockImplementation((_token, _secret, callback) =>
+      callback(new Error('boom'), undefined),
+    );
 
     await expect(service.refreshToken('bad-token')).rejects.toBeInstanceOf(UnauthorizedException);
   });

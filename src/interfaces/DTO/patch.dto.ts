@@ -1,4 +1,4 @@
-import {CreatePermissionDTO, CreateRoleDTO} from "src/interfaces/DTO/create.dto";
+import { CreatePermissionDTO, CreateRoleDTO } from 'src/interfaces/DTO/create.dto';
 
 export class PatchPermissionDTO extends CreatePermissionDTO {}
 

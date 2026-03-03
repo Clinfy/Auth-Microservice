@@ -3,6 +3,6 @@ import { RequestContextService } from './request-context.service';
 
 @Module({
   providers: [RequestContextService],
-  exports: [RequestContextService]
+  exports: [RequestContextService],
 })
 export class RequestContextModule {}

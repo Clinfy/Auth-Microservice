@@ -17,34 +17,33 @@ describe('PermissionsService (integration)', () => {
   let backup: IBackup;
 
   beforeAll(async () => {
-
     db = newDb();
 
     db.public.registerFunction({
       name: 'current_database',
-      implementation: () => 'permissions_test'
-    })
+      implementation: () => 'permissions_test',
+    });
 
     db.public.registerFunction({
       name: 'version',
-      implementation: () => 'PostgreSQL 17.6'
-    })
+      implementation: () => 'PostgreSQL 17.6',
+    });
 
     db.public.registerFunction({
       name: 'uuid_generate_v4',
-      implementation: () => randomUUID()
-    })
+      implementation: () => randomUUID(),
+    });
 
     db.public.registerFunction({
       name: 'gen_random_uuid',
-      implementation: () => randomUUID()
-    })
+      implementation: () => randomUUID(),
+    });
 
     dataSource = await db.adapters.createTypeormDataSource({
       type: 'postgres',
       entities: [...entities],
-      synchronize: true
-    })
+      synchronize: true,
+    });
 
     await dataSource.initialize();
 
@@ -60,7 +59,7 @@ describe('PermissionsService (integration)', () => {
         {
           provide: DataSource,
           useValue: dataSource,
-        }
+        },
       ],
     }).compile();
 
@@ -93,7 +92,9 @@ describe('PermissionsService (integration)', () => {
   it('updates an existing permission code', async () => {
     const created = await service.create({ code: 'PERMISSIONS_UPDATE' }, request);
 
-    const updated = await service.update(created.id, { code: 'PERMISSIONS_EDIT' });
+    const updated = await service.update(created.id, {
+      code: 'PERMISSIONS_EDIT',
+    });
     expect(updated.code).toBe('PERMISSIONS_EDIT');
 
     const stored = await repository.findOneBy({ id: created.id });
