@@ -1,7 +1,6 @@
 import { NotFoundException } from '@nestjs/common';
 import { RolesRepository } from './roles.repository';
 import { RolesService } from './roles.service';
-import { RoleEntity } from 'src/entities/role.entity';
 import { PermissionsService } from '../permissions/permissions.service';
 
 describe('RolesService', () => {

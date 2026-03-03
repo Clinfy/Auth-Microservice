@@ -1,7 +1,6 @@
 import { NotFoundException } from '@nestjs/common';
 import { PermissionsRepository } from './permissions.repository';
 import { PermissionsService } from './permissions.service';
-import { PermissionEntity } from 'src/entities/permission.entity';
 
 describe('PermissionsService', () => {
   let permissionRepository: jest.Mocked<Partial<PermissionsRepository>>;
