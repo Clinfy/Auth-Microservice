@@ -1,43 +1,48 @@
 import {
-    registerDecorator, ValidationArguments, ValidationOptions,
-    ValidatorConstraint, ValidatorConstraintInterface,
+  registerDecorator,
+  ValidationArguments,
+  ValidationOptions,
+  ValidatorConstraint,
+  ValidatorConstraintInterface,
 } from 'class-validator';
 import { DataSource, Not } from 'typeorm';
 import { UserEntity } from 'src/entities/user.entity';
+import { Injectable } from '@nestjs/common';
 
 @ValidatorConstraint({ name: 'IsUniqueEmail', async: true })
+@Injectable()
 export class IsUniqueEmailConstraint implements ValidatorConstraintInterface {
-    constructor(private readonly dataSource: DataSource) {}
+  constructor(private readonly dataSource: DataSource) {}
 
-    async validate(value: string, args: ValidationArguments) {
-        if (!value) return true;
-        const ignoreIdField = (args.constraints?.[0]?.ignoreIdField as string) || 'id';
-        const ignoreId = (args.object as any)?.[ignoreIdField];
+  async validate(value: string, args: ValidationArguments) {
+    if (!value) return true;
+    const ignoreIdField = (args.constraints?.[0]?.ignoreIdField as string) || 'id';
+    const ignoreId = (args.object as any)?.[ignoreIdField];
 
-        const where: any = { email: value };
-        if (ignoreId) where.id = Not(ignoreId);
+    const where: any = { email: value };
+    if (ignoreId) where.id = Not(ignoreId);
 
-        const repo = this.dataSource.getRepository(UserEntity);
-        const exists = await repo.exist({ where });
-        return !exists;
-    }
+    const repo = this.dataSource.getRepository(UserEntity);
+    const exists = await repo.exist({ where });
+    return !exists;
+  }
 
-    defaultMessage() {
-        return 'This email is already in use. Please choose another one.';
-    }
+  defaultMessage() {
+    return 'This email is already in use. Please choose another one.';
+  }
 }
 
 export function IsUniqueEmail(
-    options?: { ignoreIdField?: string },
-    validationOptions?: ValidationOptions,
+  options?: { ignoreIdField?: string },
+  validationOptions?: ValidationOptions,
 ) {
-    return function (object: any, propertyName: string) {
-        registerDecorator({
-            target: object.constructor,
-            propertyName,
-            constraints: [options || {}],
-            options: validationOptions,
-            validator: IsUniqueEmailConstraint,
-        });
-    };
+  return function (object: any, propertyName: string) {
+    registerDecorator({
+      target: object.constructor,
+      propertyName,
+      constraints: [options || {}],
+      options: validationOptions,
+      validator: IsUniqueEmailConstraint,
+    });
+  };
 }
