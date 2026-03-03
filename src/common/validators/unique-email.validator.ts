@@ -1,4 +1,3 @@
-import { Injectable } from '@nestjs/common';
 import {
     registerDecorator, ValidationArguments, ValidationOptions,
     ValidatorConstraint, ValidatorConstraintInterface,
@@ -7,7 +6,6 @@ import { DataSource, Not } from 'typeorm';
 import { UserEntity } from 'src/entities/user.entity';
 
 @ValidatorConstraint({ name: 'IsUniqueEmail', async: true })
-@Injectable()
 export class IsUniqueEmailConstraint implements ValidatorConstraintInterface {
     constructor(private readonly dataSource: DataSource) {}
 
