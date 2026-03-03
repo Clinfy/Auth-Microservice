@@ -17,6 +17,12 @@ import { RoleEntity } from './role.entity';
 import { Exclude } from 'class-transformer';
 import type { AuthUser } from 'src/interfaces/auth-user.interface';
 
+export enum UserStatus {
+  ACTIVE = 'ACTIVE',
+  INACTIVE = 'INACTIVE',
+  PENDING = 'PENDING',
+}
+
 @Unique('UQ_users_email', ['email'])
 @Unique('UQ_users_personId', ['person_id'])
 @Entity('users')
@@ -31,8 +37,8 @@ export class UserEntity extends BaseEntity implements UserI {
   @Column({ nullable: false })
   password: string;
 
-  @Column({ default: true, nullable: false })
-  active: boolean;
+  @Column({ type: 'enum', enum: UserStatus, default: UserStatus.PENDING, nullable: false })
+  status: UserStatus;
 
   @Column({ type: 'uuid', nullable: false })
   person_id: string;
