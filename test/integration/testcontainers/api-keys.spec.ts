@@ -3,6 +3,7 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
 import { ApiKeysService } from 'src/services/api-keys/api-keys.service';
 import { PermissionsService } from 'src/services/permissions/permissions.service';
+import { PermissionsRepository } from 'src/services/permissions/permissions.repository';
 import { ApiKeyEntity } from 'src/entities/api-key.entity';
 import { PermissionEntity } from 'src/entities/permission.entity';
 import { CreateApiKeyDTO } from 'src/interfaces/DTO/api-key.dto';
@@ -45,6 +46,7 @@ describe('ApiKeysService (integration)', () => {
       providers: [
         ApiKeysService,
         PermissionsService,
+        PermissionsRepository,
         {
           provide: DataSource,
           useValue: dataSource,

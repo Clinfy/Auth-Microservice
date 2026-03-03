@@ -3,6 +3,8 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
 import { RolesService } from 'src/services/roles/roles.service';
 import { PermissionsService } from 'src/services/permissions/permissions.service';
+import { RolesRepository } from 'src/services/roles/roles.repository';
+import { PermissionsRepository } from 'src/services/permissions/permissions.repository';
 import { RoleEntity } from 'src/entities/role.entity';
 import { PermissionEntity } from 'src/entities/permission.entity';
 import { IBackup, IMemoryDb, newDb } from 'pg-mem';
@@ -55,6 +57,7 @@ describe('RolesService (integration)', () => {
       imports: [],
       providers: [
         RolesService, PermissionsService,
+        RolesRepository, PermissionsRepository,
         {
           provide: getRepositoryToken(RoleEntity),
           useValue: dataSource.getRepository(RoleEntity),

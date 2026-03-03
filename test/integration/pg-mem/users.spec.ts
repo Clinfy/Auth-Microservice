@@ -4,6 +4,9 @@ import { DataSource, Repository } from 'typeorm';
 import { UsersService } from 'src/services/users/users.service';
 import { RolesService } from 'src/services/roles/roles.service';
 import { PermissionsService } from 'src/services/permissions/permissions.service';
+import { UsersRepository } from 'src/services/users/users.repository';
+import { RolesRepository } from 'src/services/roles/roles.repository';
+import { PermissionsRepository } from 'src/services/permissions/permissions.repository';
 import { UserEntity } from 'src/entities/user.entity';
 import { RoleEntity } from 'src/entities/role.entity';
 import { PermissionEntity } from 'src/entities/permission.entity';
@@ -87,6 +90,7 @@ describe('UsersService (integration)', () => {
         UsersService,
         RolesService,
         PermissionsService,
+        UsersRepository, RolesRepository, PermissionsRepository,
         {
           provide: JwtService,
           useValue: jwtServiceMock,

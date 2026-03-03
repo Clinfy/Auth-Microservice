@@ -1,11 +1,11 @@
 import { NotFoundException } from '@nestjs/common';
-import { Repository } from 'typeorm';
+import { RolesRepository } from './roles.repository';
 import { RolesService } from './roles.service';
 import { RoleEntity } from 'src/entities/role.entity';
 import { PermissionsService } from '../permissions/permissions.service';
 
 describe('RolesService', () => {
-  let roleRepository: jest.Mocked<Partial<Repository<RoleEntity>>>;
+  let roleRepository: jest.Mocked<Partial<RolesRepository>>;
   let permissionsService: jest.Mocked<Partial<PermissionsService>>;
   let service: RolesService;
   const roleId = '11111111-1111-1111-1111-111111111111';
@@ -19,9 +19,9 @@ describe('RolesService', () => {
     roleRepository = {
       save: jest.fn(),
       create: jest.fn(),
-      merge: jest.fn((entity, dto) => ({ ...entity, ...dto } as any)),
-      findOneBy: jest.fn(),
-      find: jest.fn(),
+      merge: jest.fn((id, dto) => ({ id, name: 'OLD', ...dto } as any)),
+      findOneById: jest.fn(),
+      findAll: jest.fn(),
       remove: jest.fn(),
     };
 
@@ -40,15 +40,15 @@ describe('RolesService', () => {
   });
 
   it('updates a role with merged data', async () => {
-    (roleRepository.findOneBy as jest.Mock).mockResolvedValue({ id: roleId, name: 'OLD' });
+    (roleRepository.findOneById as jest.Mock).mockResolvedValue({ id: roleId, name: 'OLD' });
     (roleRepository.save as jest.Mock).mockResolvedValue({ id: roleId, name: 'NEW' });
 
     await expect(service.update(roleId, { name: 'NEW' })).resolves.toEqual({ id: roleId, name: 'NEW' });
-    expect(roleRepository.merge).toHaveBeenCalledWith({ id: roleId, name: 'OLD' }, { name: 'NEW' });
+    expect(roleRepository.merge).toHaveBeenCalledWith(roleId, { name: 'NEW' });
   });
 
   it('deletes a role and returns message', async () => {
-    (roleRepository.findOneBy as jest.Mock).mockResolvedValue({ id: otherRoleId, name: 'TO_DELETE' });
+    (roleRepository.findOneById as jest.Mock).mockResolvedValue({ id: otherRoleId, name: 'TO_DELETE' });
     (roleRepository.remove as jest.Mock).mockResolvedValue(undefined);
 
     await expect(service.delete(otherRoleId)).resolves.toEqual({ message: 'Role TO_DELETE deleted' });
@@ -56,19 +56,19 @@ describe('RolesService', () => {
   });
 
   it('findOne throws NotFoundException when role missing', async () => {
-    (roleRepository.findOneBy as jest.Mock).mockResolvedValue(null);
+    (roleRepository.findOneById as jest.Mock).mockResolvedValue(null);
 
     await expect(service.findOne(otherRoleId)).rejects.toBeInstanceOf(NotFoundException);
   });
 
   it('findAll returns all roles', async () => {
-    (roleRepository.find as jest.Mock).mockResolvedValue([{ id: roleId, name: 'ADMIN' }]);
+    (roleRepository.findAll as jest.Mock).mockResolvedValue([{ id: roleId, name: 'ADMIN' }]);
 
     await expect(service.findAll()).resolves.toEqual([{ id: roleId, name: 'ADMIN' }]);
   });
 
   it('assignPermissions loads permissions and saves role', async () => {
-    (roleRepository.findOneBy as jest.Mock).mockResolvedValue({ id: roleId, name: 'ADMIN', permissions: [] });
+    (roleRepository.findOneById as jest.Mock).mockResolvedValue({ id: roleId, name: 'ADMIN', permissions: [] });
     (permissionsService.findOne as jest.Mock)
       .mockResolvedValueOnce({ id: permissionIdA, code: 'PERM_A' })
       .mockResolvedValueOnce({ id: permissionIdB, code: 'PERM_B' });

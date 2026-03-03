@@ -1,5 +1,6 @@
 import { ForbiddenException, InternalServerErrorException, NotFoundException, UnauthorizedException } from '@nestjs/common';
-import { Repository, DataSource } from 'typeorm';
+import { DataSource } from 'typeorm';
+import { UsersRepository } from './users.repository';
 import { UsersService } from './users.service';
 import { JwtService } from '../JWT/jwt.service';
 import { RolesService } from '../roles/roles.service';
@@ -15,7 +16,7 @@ import { compare } from 'bcrypt';
 
 describe('UsersService', () => {
   let service: UsersService;
-  let userRepository: jest.Mocked<Partial<Repository<UserEntity>>>;
+  let userRepository: jest.Mocked<Partial<UsersRepository>>;
   let dataSource: jest.Mocked<Partial<DataSource>>;
   let redisService: { raw: any };
   let jwtService: jest.Mocked<Partial<JwtService>>;
@@ -24,9 +25,10 @@ describe('UsersService', () => {
 
   beforeEach(() => {
     userRepository = {
-      findOne: jest.fn(),
-      findOneBy: jest.fn(),
+      findOneByEmail: jest.fn(),
+      findOneById: jest.fn(),
       save: jest.fn(),
+      create: jest.fn((dto) => ({ id: 'mock-id', ...dto } as UserEntity)),
     };
 
     dataSource = {
@@ -125,7 +127,7 @@ describe('UsersService', () => {
 
     it('issues access and refresh tokens on success', async () => {
       redisService.raw.set.mockResolvedValue('OK');
-      (userRepository.findOne as jest.Mock).mockResolvedValue(activeUser);
+      (userRepository.findOneByEmail as jest.Mock).mockResolvedValue(activeUser);
       (compare as jest.Mock).mockResolvedValue(true);
       (jwtService.generateToken as jest.Mock)
         .mockResolvedValueOnce('access-token')
@@ -166,7 +168,7 @@ describe('UsersService', () => {
     });
 
     it('throws UnauthorizedException when user not found', async () => {
-      (userRepository.findOne as jest.Mock).mockResolvedValue(null);
+      (userRepository.findOneByEmail as jest.Mock).mockResolvedValue(null);
 
       await expect(
         service.logIn({ email: 'john@example.com', password: 'secret' }, request),
@@ -174,7 +176,7 @@ describe('UsersService', () => {
     });
 
     it('throws UnauthorizedException when user inactive', async () => {
-      (userRepository.findOne as jest.Mock).mockResolvedValue({ ...activeUser, active: false });
+      (userRepository.findOneByEmail as jest.Mock).mockResolvedValue({ ...activeUser, active: false });
 
       await expect(
         service.logIn({ email: 'john@example.com', password: 'secret' }, request),
@@ -182,7 +184,7 @@ describe('UsersService', () => {
     });
 
     it('throws UnauthorizedException when password comparison fails', async () => {
-      (userRepository.findOne as jest.Mock).mockResolvedValue(activeUser);
+      (userRepository.findOneByEmail as jest.Mock).mockResolvedValue(activeUser);
       (compare as jest.Mock).mockResolvedValue(false);
 
       await expect(
@@ -191,7 +193,7 @@ describe('UsersService', () => {
     });
 
     it('throws InternalServerErrorException if token generation fails', async () => {
-      (userRepository.findOne as jest.Mock).mockResolvedValue(activeUser);
+      (userRepository.findOneByEmail as jest.Mock).mockResolvedValue(activeUser);
       (compare as jest.Mock).mockResolvedValue(true);
       (jwtService.generateToken as jest.Mock).mockRejectedValue(new Error('sign error'));
 
@@ -215,7 +217,7 @@ describe('UsersService', () => {
   describe('forgotPassword', () => {
     it('stores reset token and sends email when user exists', async () => {
       const storedUser: any = { id: 'user-1', email: 'user@example.com' };
-      (userRepository.findOne as jest.Mock).mockResolvedValue(storedUser);
+      (userRepository.findOneByEmail as jest.Mock).mockResolvedValue(storedUser);
 
       await expect(service.forgotPassword({ email: 'user@example.com' })).resolves.toEqual({
         message: expect.any(String),
@@ -230,7 +232,7 @@ describe('UsersService', () => {
     });
 
     it('returns success message without side effects when user missing', async () => {
-      (userRepository.findOne as jest.Mock).mockResolvedValue(null);
+      (userRepository.findOneByEmail as jest.Mock).mockResolvedValue(null);
 
       await expect(service.forgotPassword({ email: 'missing@example.com' })).resolves.toEqual({
         message: expect.any(String),
@@ -245,7 +247,7 @@ describe('UsersService', () => {
     it('updates password and clears token when payload valid', async () => {
       redisService.raw.get.mockResolvedValue(JSON.stringify({ id: 'user-1' }));
       const storedUser: any = { id: 'user-1', email: 'user@example.com', password: 'old-password' };
-      (userRepository.findOneBy as jest.Mock).mockResolvedValue(storedUser);
+      (userRepository.findOneById as jest.Mock).mockResolvedValue(storedUser);
 
       await expect(service.resetPassword('token-123', { password: 'new-password' })).resolves.toEqual({
         message: 'Password reset successfully',
@@ -266,7 +268,7 @@ describe('UsersService', () => {
 
     it('throws NotFoundException when user missing', async () => {
       redisService.raw.get.mockResolvedValue(JSON.stringify({ id: 'missing-id' }));
-      (userRepository.findOneBy as jest.Mock).mockResolvedValue(null);
+      (userRepository.findOneById as jest.Mock).mockResolvedValue(null);
 
       await expect(service.resetPassword('token', { password: 'new' })).rejects.toBeInstanceOf(NotFoundException);
     });
@@ -282,7 +284,7 @@ describe('UsersService', () => {
       redisService.raw.get.mockResolvedValue(
         JSON.stringify({ user_id: 'user-1', permissions: ['PERM1'], active: true }),
       );
-      (userRepository.findOneBy as jest.Mock).mockResolvedValue({
+      (userRepository.findOneById as jest.Mock).mockResolvedValue({
         id: 'user-1',
         permissionCodes: ['PERM2'],
       });

@@ -1,10 +1,10 @@
 import { NotFoundException } from '@nestjs/common';
-import { Repository } from 'typeorm';
+import { PermissionsRepository } from './permissions.repository';
 import { PermissionsService } from './permissions.service';
 import { PermissionEntity } from 'src/entities/permission.entity';
 
 describe('PermissionsService', () => {
-  let permissionRepository: jest.Mocked<Partial<Repository<PermissionEntity>>>;
+  let permissionRepository: jest.Mocked<Partial<PermissionsRepository>>;
   let service: PermissionsService;
   const permissionId = '11111111-1111-1111-1111-111111111111';
   const otherPermissionId = '22222222-2222-2222-2222-222222222222';
@@ -16,9 +16,9 @@ describe('PermissionsService', () => {
     permissionRepository = {
       save: jest.fn(),
       create: jest.fn(),
-      merge: jest.fn((entity, dto) => ({ ...entity, ...dto } as any)),
-      findOneBy: jest.fn(),
-      find: jest.fn(),
+      merge: jest.fn((id, dto) => ({ id, code: 'OLD', ...dto } as any)),
+      findOneById: jest.fn(),
+      findAll: jest.fn(),
       remove: jest.fn(),
     };
 
@@ -33,15 +33,15 @@ describe('PermissionsService', () => {
   });
 
   it('updates a permission', async () => {
-    (permissionRepository.findOneBy as jest.Mock).mockResolvedValue({ id: permissionId, code: 'OLD' });
+    (permissionRepository.findOneById as jest.Mock).mockResolvedValue({ id: permissionId, code: 'OLD' });
     (permissionRepository.save as jest.Mock).mockResolvedValue({ id: permissionId, code: 'NEW' });
 
     await expect(service.update(permissionId, { code: 'NEW' })).resolves.toEqual({ id: permissionId, code: 'NEW' });
-    expect(permissionRepository.merge).toHaveBeenCalledWith({ id: permissionId, code: 'OLD' }, { code: 'NEW' });
+    expect(permissionRepository.merge).toHaveBeenCalledWith(permissionId, { code: 'NEW' });
   });
 
   it('deletes a permission and returns message', async () => {
-    (permissionRepository.findOneBy as jest.Mock).mockResolvedValue({ id: otherPermissionId, code: 'TO_DELETE' });
+    (permissionRepository.findOneById as jest.Mock).mockResolvedValue({ id: otherPermissionId, code: 'TO_DELETE' });
     (permissionRepository.remove as jest.Mock).mockResolvedValue(undefined);
 
     await expect(service.delete(otherPermissionId)).resolves.toEqual({ message: 'Permission TO_DELETE deleted' });
@@ -49,13 +49,13 @@ describe('PermissionsService', () => {
   });
 
   it('findOne throws NotFoundException when missing', async () => {
-    (permissionRepository.findOneBy as jest.Mock).mockResolvedValue(null);
+    (permissionRepository.findOneById as jest.Mock).mockResolvedValue(null);
 
     await expect(service.findOne(missingPermissionId)).rejects.toBeInstanceOf(NotFoundException);
   });
 
   it('findAll returns list of permissions', async () => {
-    (permissionRepository.find as jest.Mock).mockResolvedValue([{ id: permissionId, code: 'PERM' }]);
+    (permissionRepository.findAll as jest.Mock).mockResolvedValue([{ id: permissionId, code: 'PERM' }]);
 
     await expect(service.findAll()).resolves.toEqual([{ id: permissionId, code: 'PERM' }]);
   });

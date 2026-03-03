@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
 import { PermissionsService } from 'src/services/permissions/permissions.service';
+import { PermissionsRepository } from 'src/services/permissions/permissions.repository';
 import { PermissionEntity } from 'src/entities/permission.entity';
 import { entities } from 'src/entities';
 import { PostgreSqlContainer, StartedPostgreSqlContainer } from '@testcontainers/postgresql';
@@ -39,6 +40,7 @@ describe('PermissionsService (integration)', () => {
       imports: [],
       providers: [
         PermissionsService,
+        PermissionsRepository,
         {
           provide: getRepositoryToken(PermissionEntity),
           useValue: dataSource.getRepository(PermissionEntity),
