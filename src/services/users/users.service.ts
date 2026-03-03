@@ -38,7 +38,7 @@ export class UsersService {
     private readonly jwtService: JwtService,
     private readonly roleService: RolesService,
     private readonly emailService: EmailService,
-  ) {}
+  ) { }
 
   async refreshToken(refreshToken: string): Promise<AuthInterface> {
     const payload = await this.jwtService.getPayload(refreshToken, 'refresh');
@@ -47,7 +47,7 @@ export class UsersService {
     const raw = await this.redis.raw.get(cacheKey);
     const session = raw ? JSON.parse(raw) as Session : null;
 
-    if(!session || !session.active) {
+    if (!session || !session.active) {
       throw new UnauthorizedException({
         message: 'Session expired or invalid',
         code: 'SESSION_INVALID',
@@ -63,7 +63,7 @@ export class UsersService {
       last_refresh_at: new Date().toISOString(),
     };
 
-    await this.redis.raw.set(cacheKey, JSON.stringify(newSession), {KEEPTTL: true})
+    await this.redis.raw.set(cacheKey, JSON.stringify(newSession), { KEEPTTL: true })
 
     return this.jwtService.refreshToken(refreshToken);
   }
@@ -73,13 +73,13 @@ export class UsersService {
     const raw = await this.redis.raw.get(cacheKey);
     const session = raw ? JSON.parse(raw) as Session : null;
 
-    if(!session || !session.active) {
+    if (!session || !session.active) {
       throw new UnauthorizedException('Session expired or invalid');
     }
 
     const allowed = session.permissions.includes(permissionCode);
 
-    if(!allowed) {
+    if (!allowed) {
       throw new ForbiddenException('Insufficient permissions');
     }
 
@@ -88,11 +88,11 @@ export class UsersService {
 
   async register(dto: RegisterUserDTO, request: RequestWithUser): Promise<{ message: string }> {
     return await this.dataSource.transaction(async (manager) => {
-      const newUser = {
+      const newUser = this.userRepository.create({
         ...dto,
         created_by: request.user
-      }
-      const user = await this.userRepository.save(newUser,manager);
+      });
+      const user = await this.userRepository.save(newUser, manager);
       return { message: `User ${user.email} created` };
     });
   }
@@ -139,7 +139,7 @@ export class UsersService {
       await this.redis.raw.set(
         cacheKey,
         JSON.stringify(sessionData),
-        { PX: getTtlFromEnv('JWT_REFRESH_EXPIRES_IN')}
+        { PX: getTtlFromEnv('JWT_REFRESH_EXPIRES_IN') }
       );
 
 
@@ -189,7 +189,7 @@ export class UsersService {
       const token = randomBytes(32).toString('hex');
       const redisIndex = `reset_password:${token}`;
       const redisPayload: ResetPasswordRedisPayload = { id: user.id };
-      await this.redis.raw.set(redisIndex, JSON.stringify(redisPayload), {PX: getTtlFromEnv('RESET_PASSWORD_EXPIRES_IN')});
+      await this.redis.raw.set(redisIndex, JSON.stringify(redisPayload), { PX: getTtlFromEnv('RESET_PASSWORD_EXPIRES_IN') });
       await this.emailService.sendResetPasswordMail(dto.email, token);
     }
 
@@ -239,15 +239,15 @@ export class UsersService {
     return user;
   }
 
-  private getRequestData(req: Request)  {
+  private getRequestData(req: Request) {
     const ip = getClientIp(req);
 
     const userAgent = req.headers['user-agent'] || 'unknown';
 
-    return {ip, userAgent };
+    return { ip, userAgent };
   }
 
-  private getDevice (userAgent: string): string {
+  private getDevice(userAgent: string): string {
     const parser = new UAParser(userAgent);
     const ua = parser.getResult();
 
