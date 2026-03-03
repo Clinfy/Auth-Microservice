@@ -1,31 +1,28 @@
 import {Injectable, NotFoundException} from '@nestjs/common';
-import {InjectRepository} from "@nestjs/typeorm";
-import {Repository} from "typeorm";
 import {RoleEntity} from "src/entities/role.entity";
 import {PermissionsService} from "src/services/permissions/permissions.service";
 import {CreateRoleDTO} from "src/interfaces/DTO/create.dto";
 import {AssignPermissionDTO} from "src/interfaces/DTO/assign.dto";
 import {PatchRoleDTO} from "src/interfaces/DTO/patch.dto";
 import { RequestWithUser } from 'src/interfaces/request-user';
+import { RolesRepository } from 'src/services/roles/roles.repository';
 
 @Injectable()
 export class RolesService {
     constructor(
-        @InjectRepository(RoleEntity)
-        private readonly roleRepository: Repository<RoleEntity>,
-
+        private readonly roleRepository: RolesRepository,
         private readonly permissionService: PermissionsService,
     ) {}
 
     async create(dto: CreateRoleDTO, request: RequestWithUser): Promise<RoleEntity> {
-        return await this.roleRepository.save(this.roleRepository.create({
+        return await this.roleRepository.save({
           ...dto,
           created_by: request.user
-        }));
+        });
     }
 
     async update(id: string, dto: PatchRoleDTO): Promise<RoleEntity> {
-        return await this.roleRepository.save(this.roleRepository.merge(await this.findOne(id),dto));
+        return await this.roleRepository.save(await this.roleRepository.merge(id,dto));
     }
 
     async delete(id: string): Promise<{ message: string }> {
@@ -35,13 +32,13 @@ export class RolesService {
     }
 
     async findOne(id: string): Promise<RoleEntity> {
-        const role = await this.roleRepository.findOneBy({id});
+        const role = await this.roleRepository.findOneById(id);
         if(!role) throw new NotFoundException('Role not found');
         return role;
     }
 
     async findAll(): Promise<RoleEntity[]> {
-        return await this.roleRepository.find();
+        return await this.roleRepository.findAll();
     }
 
     async assignPermissions(roleId: string, dto: AssignPermissionDTO): Promise<RoleEntity> {
