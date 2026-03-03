@@ -5,13 +5,13 @@ import {
   Entity,
   JoinTable,
   ManyToMany,
-  ManyToOne,
   PrimaryGeneratedColumn,
   Unique,
   UpdateDateColumn,
 } from 'typeorm';
 import {PermissionEntity} from "./permission.entity";
 import {UserEntity} from "./user.entity";
+import type { AuthUser } from 'src/interfaces/auth-user.interface';
 
 @Unique('UQ_role_name',['name'])
 
@@ -29,8 +29,8 @@ export class RoleEntity extends BaseEntity {
   @UpdateDateColumn()
   updated_at: Date;
 
-  @ManyToOne(()=> UserEntity, { nullable: true })
-  created_by: UserEntity;
+  @Column({type: 'jsonb', nullable: true})
+  created_by?: AuthUser;
 
   @ManyToMany(()=> PermissionEntity, permission => permission.roles,
       {nullable: true, eager: true, onDelete: "RESTRICT", onUpdate: "CASCADE"})

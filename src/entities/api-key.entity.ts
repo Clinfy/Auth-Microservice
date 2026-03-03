@@ -6,13 +6,12 @@ import {
   Index,
   JoinTable,
   ManyToMany,
-  ManyToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
 import {PermissionEntity} from "src/entities/permission.entity";
-import { UserEntity } from 'src/entities/user.entity';
 import { Exclude } from 'class-transformer';
+import type { AuthUser } from 'src/interfaces/auth-user.interface';
 
 @Entity('api_key')
 export class ApiKeyEntity extends BaseEntity {
@@ -36,8 +35,8 @@ export class ApiKeyEntity extends BaseEntity {
   @UpdateDateColumn()
   updated_at: Date;
 
-  @ManyToOne(()=> UserEntity, { nullable: true })
-  created_by: UserEntity;
+  @Column({type: 'jsonb', nullable: true})
+  created_by?: AuthUser;
 
   @ManyToMany(()=>PermissionEntity, permission => permission.api_keys)
   @JoinTable()

@@ -4,14 +4,13 @@ import {
   CreateDateColumn,
   Entity,
   ManyToMany,
-  ManyToOne,
   PrimaryGeneratedColumn,
   Unique,
   UpdateDateColumn,
 } from 'typeorm';
 import { RoleEntity } from "./role.entity";
 import { ApiKeyEntity } from "./api-key.entity";
-import { UserEntity } from 'src/entities/user.entity';
+import type { AuthUser } from 'src/interfaces/auth-user.interface';
 
 @Unique('UQ_permission_code',['code'])
 
@@ -29,8 +28,8 @@ export class PermissionEntity extends BaseEntity {
   @UpdateDateColumn()
   updated_at: Date;
 
-  @ManyToOne(()=> UserEntity, { nullable: true })
-  created_by: UserEntity;
+  @Column({type: 'jsonb', nullable: true})
+  created_by?: AuthUser;
 
   @ManyToMany(() => RoleEntity, role => role.permissions)
   roles: RoleEntity[];

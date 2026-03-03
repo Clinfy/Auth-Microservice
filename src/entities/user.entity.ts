@@ -7,7 +7,6 @@ import {
   Entity,
   JoinTable,
   ManyToMany,
-  ManyToOne,
   PrimaryGeneratedColumn,
   Unique,
   UpdateDateColumn,
@@ -16,6 +15,7 @@ import {UserI} from "../interfaces/user.interface";
 import { hashSync } from 'bcrypt';
 import {RoleEntity} from "./role.entity";
 import { Exclude } from 'class-transformer';
+import type { AuthUser } from 'src/interfaces/auth-user.interface';
 
 @Unique('UQ_users_email',['email'])
 @Unique('UQ_users_personId',['person_id'])
@@ -44,8 +44,8 @@ export class UserEntity extends BaseEntity implements UserI {
   @UpdateDateColumn()
   updated_at: Date;
 
-  @ManyToOne(()=> UserEntity, { nullable: true })
-  created_by: UserEntity;
+  @Column({type: 'jsonb', nullable: true})
+  created_by?: AuthUser;
 
   @ManyToMany(()=> RoleEntity, role => role.users,
       {nullable: true, eager: true, onDelete: "RESTRICT", onUpdate: "CASCADE"})
