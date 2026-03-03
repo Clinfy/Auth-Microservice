@@ -10,8 +10,12 @@ export class RolesRepository {
     private readonly ormRepository: Repository<RoleEntity>
   ) {}
   
-  async save(role: Partial<RoleEntity>): Promise<RoleEntity> {
+  async save(role: RoleEntity): Promise<RoleEntity> {
     return await this.ormRepository.save(role);
+  }
+
+  create(role: Partial<RoleEntity>): RoleEntity {
+    return this.ormRepository.create(role);
   }
   
   async merge (id: string, changes: Partial<RoleEntity>): Promise<RoleEntity> {
