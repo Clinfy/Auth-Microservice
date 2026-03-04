@@ -232,7 +232,7 @@ export class UsersService {
       throw new NotFoundException('User not found');
     }
     if (user.status != UserStatus.PENDING) {
-      throw new ForbiddenException('User has been already activated');
+      throw new ForbiddenException('User has already been activated');
     }
     const isPasswordValid = await compare(dto.password, user.password);
     if (!isPasswordValid) {
@@ -247,7 +247,7 @@ export class UsersService {
   async activate(id:string): Promise <{message: string}> {
     const user = await this.findOne(id);
     if (user.status != UserStatus.INACTIVE) {
-      throw new ForbiddenException('User has been already activated');
+      throw new ForbiddenException(`User must be ${UserStatus.INACTIVE} to be activated, but current status is ${user.status}`);
     }
     user.status = UserStatus.ACTIVE;
     await this.userRepository.save(user);
@@ -257,7 +257,7 @@ export class UsersService {
   async deactivate(id:string): Promise <{message: string}> {
     const user = await this.findOne(id);
     if (user.status != UserStatus.ACTIVE) {
-      throw new ForbiddenException('User is not active');
+      throw new ForbiddenException(`User must be ${UserStatus.ACTIVE} to be deactivated, but current status is ${user.status}`);
     }
     user.status = UserStatus.INACTIVE;
     await this.userRepository.save(user);
