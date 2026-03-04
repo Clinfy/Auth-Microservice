@@ -16,7 +16,7 @@ export class AssignApiPermissionDTO {
 export class CreateApiKeyDTO extends AssignApiPermissionDTO {
   @ApiProperty({ description: 'Client name for the API key', example: 'my-app' })
   @IsNotEmpty({ message: 'client is required' })
-  @IsString({ message: 'client must be a number' })
+  @IsString({ message: 'client must be a string' })
   client: string;
 }
 
