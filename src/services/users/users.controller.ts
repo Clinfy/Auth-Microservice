@@ -22,6 +22,7 @@ import {
   ApiOkResponse,
   ApiOperation,
   ApiQuery,
+  ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import * as requestUser from 'src/interfaces/request-user';
@@ -35,9 +36,10 @@ import { ApiKeyGuard } from 'src/middlewares/api-key.middleware';
 import { ForgotPasswordDTO, ResetPasswordDTO } from 'src/interfaces/DTO/reset-password.dto';
 import { ActivateUserDTO } from 'src/interfaces/DTO/activate.dto';
 
+@ApiTags('Users')
 @Controller('users')
 export class UsersController {
-  constructor(private readonly userService: UsersService) {}
+  constructor(private readonly userService: UsersService) { }
 
   @UseGuards(ApiKeyGuard)
   @Permissions(['USERS_CREATE'])
@@ -56,6 +58,10 @@ export class UsersController {
     return this.userService.register(dto, request);
   }
 
+  @ApiOperation({ summary: 'Activate a user for the first time' })
+  @ApiOkResponse({
+    schema: { type: 'object', properties: { message: { type: 'string' } } },
+  })
   @Post('first-activation')
   firstActivation(@Body() dto: ActivateUserDTO): Promise<{ message: string }> {
     return this.userService.firstActivation(dto);
@@ -63,6 +69,14 @@ export class UsersController {
 
   @UseGuards(AuthGuard)
   @Permissions(['USERS_UPDATE'])
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Activate a user' })
+  @ApiOkResponse({
+    schema: { type: 'object', properties: { message: { type: 'string' } } },
+  })
+  @ApiUnauthorizedResponse({ description: 'Missing or invalid bearer token' })
+  @ApiForbiddenResponse({ description: 'Insufficient permissions' })
+  @ApiNotFoundResponse({ description: 'User not found' })
   @Post('activate/:id')
   activate(@Param('id') id: string): Promise<{ message: string }> {
     return this.userService.activate(id);
@@ -70,6 +84,14 @@ export class UsersController {
 
   @UseGuards(AuthGuard)
   @Permissions(['USERS_UPDATE'])
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Deactivate a user' })
+  @ApiOkResponse({
+    schema: { type: 'object', properties: { message: { type: 'string' } } },
+  })
+  @ApiUnauthorizedResponse({ description: 'Missing or invalid bearer token' })
+  @ApiForbiddenResponse({ description: 'Insufficient permissions' })
+  @ApiNotFoundResponse({ description: 'User not found' })
   @Post('deactivate/:id')
   deactivate(@Param('id') id: string): Promise<{ message: string }> {
     return this.userService.deactivate(id);
@@ -138,9 +160,17 @@ export class UsersController {
 
   @UseGuards(AuthGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Return the email of the user logged in' })
+  @ApiOperation({ summary: 'Return the authenticated user info' })
   @ApiOkResponse({
-    schema: { type: 'object', properties: { email: { type: 'string' } } },
+    schema: {
+      type: 'object',
+      properties: {
+        id: { type: 'string' },
+        email: { type: 'string' },
+        person_id: { type: 'string' },
+        session_id: { type: 'string' },
+      },
+    },
   })
   @ApiUnauthorizedResponse({ description: 'Missing or invalid bearer token' })
   @Get('me')

@@ -21,16 +21,18 @@ import {
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
+  ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { PermissionEntity } from 'src/entities/permission.entity';
 import { CreatePermissionDTO } from 'src/interfaces/DTO/create.dto';
 import * as requestUser from 'src/interfaces/request-user';
 
+@ApiTags('Permissions')
 @ApiBearerAuth()
 @Controller('permissions')
 export class PermissionsController {
-  constructor(private readonly permissionService: PermissionsService) {}
+  constructor(private readonly permissionService: PermissionsService) { }
 
   @UseGuards(AuthGuard)
   @Permissions(['PERMISSIONS_CREATE'])
