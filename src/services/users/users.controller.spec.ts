@@ -5,6 +5,7 @@ import { LoginDTO } from 'src/interfaces/DTO/login.dto';
 import { AuthInterface } from 'src/interfaces/auth.interface';
 import { AssignRoleDTO } from 'src/interfaces/DTO/assign.dto';
 import { ForgotPasswordDTO, ResetPasswordDTO } from 'src/interfaces/DTO/reset-password.dto';
+import { ActivateUserDTO } from 'src/interfaces/DTO/activate.dto';
 
 describe('UsersController', () => {
   let controller: UsersController;
@@ -17,11 +18,15 @@ describe('UsersController', () => {
     service = {
       register: jest.fn(),
       logIn: jest.fn(),
+      logOut: jest.fn(),
       refreshToken: jest.fn(),
       canDo: jest.fn(),
       assignRole: jest.fn(),
       forgotPassword: jest.fn(),
       resetPassword: jest.fn(),
+      firstActivation: jest.fn(),
+      activate: jest.fn(),
+      deactivate: jest.fn(),
       findAll: jest.fn(),
     } as unknown as jest.Mocked<UsersService>;
 
@@ -143,5 +148,49 @@ describe('UsersController', () => {
 
     await expect(controller.resetPassword('token-123', dto)).resolves.toEqual(response);
     expect(service.resetPassword).toHaveBeenCalledWith('token-123', dto);
+  });
+
+  it('should log out a user', async () => {
+    const user = {
+      id: userId,
+      email: 'user@example.com',
+      person_id: '66666666-6666-6666-6666-666666666666',
+      session_id: 'abcd',
+    };
+    const request = { user } as any;
+    const response = { message: 'Logged out successfully' };
+    service.logOut.mockResolvedValue(response);
+
+    await expect(controller.logOut(request)).resolves.toEqual(response);
+    expect(service.logOut).toHaveBeenCalledWith(user);
+  });
+
+  it('should activate a user for the first time', async () => {
+    const dto: ActivateUserDTO = {
+      email: 'user@example.com',
+      password: 'TempPass1!',
+      new_password: 'N3wP@ssw0rd!',
+    };
+    const response = { message: 'User activated successfully' };
+    service.firstActivation.mockResolvedValue(response);
+
+    await expect(controller.firstActivation(dto)).resolves.toEqual(response);
+    expect(service.firstActivation).toHaveBeenCalledWith(dto);
+  });
+
+  it('should activate a user', async () => {
+    const response = { message: 'User activated successfully' };
+    service.activate.mockResolvedValue(response);
+
+    await expect(controller.activate(userId)).resolves.toEqual(response);
+    expect(service.activate).toHaveBeenCalledWith(userId);
+  });
+
+  it('should deactivate a user', async () => {
+    const response = { message: 'User deactivated successfully' };
+    service.deactivate.mockResolvedValue(response);
+
+    await expect(controller.deactivate(userId)).resolves.toEqual(response);
+    expect(service.deactivate).toHaveBeenCalledWith(userId);
   });
 });
