@@ -39,7 +39,7 @@ import { ActivateUserDTO } from 'src/interfaces/DTO/activate.dto';
 @ApiTags('Users')
 @Controller('users')
 export class UsersController {
-  constructor(private readonly userService: UsersService) { }
+  constructor(private readonly userService: UsersService) {}
 
   @UseGuards(ApiKeyGuard)
   @Permissions(['USERS_CREATE'])

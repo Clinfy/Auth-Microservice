@@ -32,7 +32,7 @@ import * as requestUser from 'src/interfaces/request-user';
 @ApiTags('API Keys')
 @Controller('api-keys')
 export class ApiKeysController {
-  constructor(private readonly apiKeysService: ApiKeysService) { }
+  constructor(private readonly apiKeysService: ApiKeysService) {}
 
   @ApiOperation({
     summary: 'Return if an API key have permissions to do something',

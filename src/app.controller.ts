@@ -5,7 +5,7 @@ import { AppService } from './app.service';
 @ApiTags('Status')
 @Controller()
 export class AppController {
-  constructor(private readonly appService: AppService) { }
+  constructor(private readonly appService: AppService) {}
 
   @ApiOperation({ summary: 'Get service status' })
   @ApiOkResponse({ schema: { type: 'string' } })

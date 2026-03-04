@@ -17,7 +17,7 @@ import {
 @ApiBearerAuth()
 @Controller('sessions')
 export class SessionsController {
-  constructor(private readonly sessionsService: SessionsService) { }
+  constructor(private readonly sessionsService: SessionsService) {}
 
   @UseGuards(AuthGuard)
   @Permissions(['SESSIONS_READ'])

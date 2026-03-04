@@ -32,7 +32,7 @@ import * as requestUser from 'src/interfaces/request-user';
 @ApiBearerAuth()
 @Controller('permissions')
 export class PermissionsController {
-  constructor(private readonly permissionService: PermissionsService) { }
+  constructor(private readonly permissionService: PermissionsService) {}
 
   @UseGuards(AuthGuard)
   @Permissions(['PERMISSIONS_CREATE'])

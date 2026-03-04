@@ -21,7 +21,7 @@ import * as requestUser from 'src/interfaces/request-user';
 @ApiBearerAuth()
 @Controller('roles')
 export class RolesController {
-  constructor(private readonly rolesService: RolesService) { }
+  constructor(private readonly rolesService: RolesService) {}
 
   @UseGuards(AuthGuard)
   @Permissions(['ROLES_CREATE'])
