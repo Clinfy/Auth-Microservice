@@ -11,33 +11,42 @@ import {
 } from 'typeorm';
 import { PermissionEntity } from 'src/entities/permission.entity';
 import { Exclude } from 'class-transformer';
+import { ApiHideProperty, ApiProperty } from '@nestjs/swagger';
 import type { AuthUser } from 'src/interfaces/auth-user.interface';
 
 @Entity('api_key')
 export class ApiKeyEntity extends BaseEntity {
+  @ApiProperty({ description: 'API key UUID' })
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
+  @ApiHideProperty()
   @Exclude()
   @Index({ unique: true })
   @Column()
   key_hash: string;
 
+  @ApiProperty({ description: 'Client name', example: 'my-app' })
   @Column()
   client: string;
 
+  @ApiProperty({ description: 'Whether the API key is active', example: true })
   @Column({ default: true })
   active: boolean;
 
+  @ApiProperty({ description: 'Creation timestamp' })
   @CreateDateColumn()
   created_at: Date;
 
+  @ApiProperty({ description: 'Last update timestamp' })
   @UpdateDateColumn()
   updated_at: Date;
 
+  @ApiProperty({ description: 'User who created this API key', required: false })
   @Column({ type: 'jsonb', nullable: true })
   created_by?: AuthUser;
 
+  @ApiProperty({ description: 'Permissions assigned to the API key', type: () => [PermissionEntity] })
   @ManyToMany(() => PermissionEntity, (permission) => permission.api_keys)
   @JoinTable()
   permissions: PermissionEntity[];
