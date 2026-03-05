@@ -8,6 +8,7 @@ import {
 import { DataSource, Not } from 'typeorm';
 import { RoleEntity } from 'src/entities/role.entity';
 import { Injectable } from '@nestjs/common';
+import { RolesErrorCodes } from 'src/services/roles/roles.exception.handler';
 
 @ValidatorConstraint({ name: 'IsUniqueRoleName', async: true })
 @Injectable()
@@ -19,16 +20,16 @@ export class IsUniqueRoleNameConstraint implements ValidatorConstraintInterface 
     const ignoreIdField = (args.constraints?.[0]?.ignoreIdField as string) || 'id';
     const ignoreId = (args.object as any)?.[ignoreIdField];
 
-    const where: any = { code: value };
+    const where: any = { name: value };
     if (ignoreId) where.id = Not(ignoreId);
 
     const repo = this.dataSource.getRepository(RoleEntity);
-    const exists = await repo.exist({ where });
+    const exists = await repo.exists({ where });
     return !exists;
   }
 
-  defaultMessage() {
-    return 'This role name is already register. Please choose another one.';
+  defaultMessage(args: ValidationArguments) {
+    return `This role name ${args.value} is already register.`;
   }
 }
 
@@ -41,7 +42,13 @@ export function IsUniqueRoleName(
       target: object.constructor,
       propertyName,
       constraints: [options || {}],
-      options: validationOptions,
+      options: {
+        ...validationOptions,
+        context: {
+          errorCode: RolesErrorCodes.ROLES_ALREADY_EXISTS,
+            ... validationOptions?.context,
+        },
+      },
       validator: IsUniqueRoleNameConstraint,
     });
   };
