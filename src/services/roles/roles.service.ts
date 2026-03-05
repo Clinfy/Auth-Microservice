@@ -41,9 +41,18 @@ export class RolesService {
   }
 
   async delete(id: string): Promise<{ message: string }> {
-    const role = await this.findOne(id);
-    await this.roleRepository.remove(role);
-    return { message: `Role ${role.name} deleted` };
+    try {
+      const role = await this.findOne(id);
+      await this.roleRepository.remove(role);
+      return { message: `Role ${role.name} deleted` };
+    } catch (error) {
+      throw new RolesException(
+        'Role not deleted',
+        RolesErrorCodes.ROLES_NOT_DELETED,
+        error.status ?? HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+
   }
 
   async findOne(id: string): Promise<RoleEntity> {
@@ -59,12 +68,29 @@ export class RolesService {
   }
 
   async findAll(): Promise<RoleEntity[]> {
-    return await this.roleRepository.findAll();
+    try {
+      return await this.roleRepository.findAll();
+    } catch (error) {
+      throw new RolesException(
+        'Roles not found',
+        RolesErrorCodes.ROLES_NOT_FOUND,
+        error.status ?? HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
   }
 
   async assignPermissions(roleId: string, dto: AssignPermissionDTO): Promise<RoleEntity> {
-    const role = await this.findOne(roleId);
-    role.permissions = await Promise.all(dto.permissionsIds.map((id) => this.permissionService.findOne(id)));
-    return await this.roleRepository.save(role);
+    try {
+      const role = await this.findOne(roleId);
+      role.permissions = await Promise.all(dto.permissionsIds.map((id) => this.permissionService.findOne(id)));
+      return await this.roleRepository.save(role);
+    } catch (error) {
+      throw new RolesException(
+        'Role not deleted',
+        RolesErrorCodes.ROLES_ASSIGN_ERROR,
+        error.status ?? HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+
   }
 }
