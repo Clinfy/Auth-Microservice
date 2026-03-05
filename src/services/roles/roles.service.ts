@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { HttpStatus, Injectable } from '@nestjs/common';
 import { RoleEntity } from 'src/entities/role.entity';
 import { PermissionsService } from 'src/services/permissions/permissions.service';
 import { CreateRoleDTO } from 'src/interfaces/DTO/create.dto';
@@ -6,6 +6,7 @@ import { AssignPermissionDTO } from 'src/interfaces/DTO/assign.dto';
 import { PatchRoleDTO } from 'src/interfaces/DTO/patch.dto';
 import { RequestWithUser } from 'src/interfaces/request-user';
 import { RolesRepository } from 'src/services/roles/roles.repository';
+import { RolesErrorCodes, RolesException } from 'src/services/roles/roles.exception.handler';
 
 @Injectable()
 export class RolesService {
@@ -15,15 +16,28 @@ export class RolesService {
   ) {}
 
   async create(dto: CreateRoleDTO, request: RequestWithUser): Promise<RoleEntity> {
-    return await this.roleRepository.save(
-      this.roleRepository.create({ ...dto, created_by: request.user }),
-    );
+    try {
+      return await this.roleRepository.save(this.roleRepository.create({ ...dto, created_by: request.user }));
+    } catch (error) {
+      throw new RolesException(
+        'Role not created',
+        RolesErrorCodes.ROLES_NOT_CREATED,
+        error.status ?? HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+
   }
 
   async update(id: string, dto: PatchRoleDTO): Promise<RoleEntity> {
-    return await this.roleRepository.save(
-      await this.roleRepository.merge(await this.findOne(id), dto),
-    );
+    try {
+      return await this.roleRepository.save(await this.roleRepository.merge(await this.findOne(id), dto));
+    } catch (error) {
+      throw new RolesException(
+        'Role not updated',
+        RolesErrorCodes.ROLES_NOT_UPDATED,
+        error.status ?? HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
   }
 
   async delete(id: string): Promise<{ message: string }> {
@@ -34,7 +48,13 @@ export class RolesService {
 
   async findOne(id: string): Promise<RoleEntity> {
     const role = await this.roleRepository.findOneById(id);
-    if (!role) throw new NotFoundException('Role not found');
+    if (!role) {
+      throw new RolesException(
+        `Role with id: ${id} not found`,
+        RolesErrorCodes.ROLES_NOT_FOUND,
+        HttpStatus.NOT_FOUND,
+      );
+    }
     return role;
   }
 
@@ -44,9 +64,7 @@ export class RolesService {
 
   async assignPermissions(roleId: string, dto: AssignPermissionDTO): Promise<RoleEntity> {
     const role = await this.findOne(roleId);
-    role.permissions = await Promise.all(
-      dto.permissionsIds.map((id) => this.permissionService.findOne(id)),
-    );
+    role.permissions = await Promise.all(dto.permissionsIds.map((id) => this.permissionService.findOne(id)));
     return await this.roleRepository.save(role);
   }
 }
