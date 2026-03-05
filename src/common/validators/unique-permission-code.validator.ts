@@ -23,7 +23,7 @@ export class IsUniquePermissionCodeConstraint implements ValidatorConstraintInte
     if (ignoreId) where.id = Not(ignoreId);
 
     const repo = this.dataSource.getRepository(PermissionEntity);
-    const exists = await repo.exist({ where });
+    const exists = await repo.exists({ where });
     return !exists;
   }
 
