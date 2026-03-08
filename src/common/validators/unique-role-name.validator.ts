@@ -19,11 +19,11 @@ export class IsUniqueRoleNameConstraint implements ValidatorConstraintInterface 
     const ignoreIdField = (args.constraints?.[0]?.ignoreIdField as string) || 'id';
     const ignoreId = (args.object as any)?.[ignoreIdField];
 
-    const where: any = { code: value };
+    const where: any = { name: value };
     if (ignoreId) where.id = Not(ignoreId);
 
     const repo = this.dataSource.getRepository(RoleEntity);
-    const exists = await repo.exist({ where });
+    const exists = await repo.exists({ where });
     return !exists;
   }
 
