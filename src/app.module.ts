@@ -21,6 +21,8 @@ import { RequestContextModule } from 'src/common/context/request-context.module'
 import { RedisModule } from 'src/common/redis/redis.module';
 import { SessionsModule } from 'src/services/sessions/sessions.module';
 import { validate } from 'src/config/env-validation';
+import { WinstonModule } from 'nest-winston';
+import winston from 'winston';
 
 @Module({
   imports: [
@@ -57,6 +59,20 @@ import { validate } from 'src/config/env-validation';
         }),
       },
     ]),
+
+    WinstonModule.forRoot({
+      level: 'info',
+      format: winston.format.combine(
+        winston.format.timestamp(),
+        winston.format.errors({ stack: true }),
+        winston.format.json(),
+      ),
+      transports: [
+        //new winston.transports.Console(),
+        new winston.transports.File({ filename: 'logs/error.log', level: 'error' }),
+        new winston.transports.File({ filename: 'logs/combined.log' }),
+      ],
+    }),
 
     RedisModule,
     ScheduleModule.forRoot(),
