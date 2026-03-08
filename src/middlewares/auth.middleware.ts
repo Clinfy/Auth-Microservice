@@ -1,10 +1,4 @@
-import {
-  CanActivate,
-  ExecutionContext,
-  ForbiddenException,
-  Injectable,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { CanActivate, ExecutionContext, HttpStatus, Injectable } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { RequestWithUser } from 'src/interfaces/request-user';
 import { JwtService } from 'src/services/JWT/jwt.service';
@@ -15,6 +9,7 @@ import { AuthUser } from 'src/interfaces/auth-user.interface';
 import { RedisService } from 'src/common/redis/redis.service';
 import { getClientIp } from 'src/common/tools/get-client-ip';
 import { sameSubnetCheck } from 'src/common/tools/same-subnet-check';
+import { AuthErrorCodes, AuthException } from 'src/middlewares/auth.exception.handler';
 
 @Injectable()
 export class AuthGuard implements CanActivate {
@@ -31,20 +26,20 @@ export class AuthGuard implements CanActivate {
 
     const authorizationHeader = request.headers?.authorization;
     if (typeof authorizationHeader !== 'string' || authorizationHeader.trim().length === 0) {
-      throw new UnauthorizedException({
-        message: 'Authorization header missing',
-        code: 'AUTH_HEADER_MISSING',
-        statusCode: 401,
-      });
+      throw new AuthException(
+        'Authorization header missing',
+        AuthErrorCodes.AUTH_HEADER_MISSING,
+        HttpStatus.UNAUTHORIZED,
+      );
     }
 
     const [scheme, token] = authorizationHeader.trim().split(/\s+/);
     if (!/^Bearer$/i.test(scheme) || !token) {
-      throw new UnauthorizedException({
-        message: 'Invalid authorization header format',
-        code: 'AUTH_HEADER_INVALID',
-        statusCode: 401,
-      });
+      throw new AuthException(
+        'Invalid authorization header format',
+        AuthErrorCodes.AUTH_HEADER_INVALID,
+        HttpStatus.UNAUTHORIZED,
+      );
     }
 
     const payload = await this.jwtService.getPayload(token.trim(), 'auth');
@@ -56,33 +51,33 @@ export class AuthGuard implements CanActivate {
     const session: Session | null = raw ? JSON.parse(raw) : null;
 
     if (!session) {
-      throw new UnauthorizedException({
-        message: 'Session expired or invalid',
-        code: 'SESSION_INVALID',
-        statusCode: 401,
-      });
+      throw new AuthException(
+        'Session expired or invalid',
+        AuthErrorCodes.SESSION_INVALID,
+        HttpStatus.UNAUTHORIZED,
+      );
     }
     if (!session.active) {
-      throw new UnauthorizedException({
-        message: 'This session is no longer active',
-        code: 'SESSION_EXPIRED',
-        statusCode: 401,
-      });
+      throw new AuthException(
+        'This session is no longer active',
+        AuthErrorCodes.SESSION_EXPIRED,
+        HttpStatus.UNAUTHORIZED,
+      );
     }
     if (session.email !== payload.email) {
-      throw new UnauthorizedException({
-        message: 'Token/Session mismatch',
-        code: 'SESSION_TOKEN_MISMATCH',
-        statusCode: 401,
-      });
+      throw new AuthException(
+        'Token/Session mismatch',
+        AuthErrorCodes.SESSION_TOKEN_MISMATCH,
+        HttpStatus.UNAUTHORIZED,
+      );
     }
 
     if (!sameSubnetCheck(session.ip, getClientIp(request))) {
-      throw new UnauthorizedException({
-        message: 'Session IP mismatch',
-        code: 'SESSION_IP_MISMATCH',
-        statusCode: 401,
-      });
+      throw new AuthException(
+        'Session IP mismatch',
+        AuthErrorCodes.SESSION_IP_MISMATCH,
+        HttpStatus.UNAUTHORIZED,
+      );
     }
 
     const authUser: AuthUser = {
@@ -104,12 +99,14 @@ export class AuthGuard implements CanActivate {
       return true;
     }
 
-    const hasAllPermissions = permissions.some((permission) =>
-      session.permissions.includes(permission),
-    );
+    const hasAllPermissions = permissions.some((permission) => session.permissions.includes(permission));
 
     if (!hasAllPermissions) {
-      throw new ForbiddenException('Insufficient permissions');
+      throw new AuthException (
+        'Insufficient permissions',
+        AuthErrorCodes.INSUFFICIENT_PERMISSIONS,
+        HttpStatus.FORBIDDEN,
+      );
     }
 
     return true;
