@@ -10,12 +10,13 @@ import {
 } from 'jsonwebtoken';
 import dayjs from 'dayjs';
 import { Payload } from 'src/interfaces/payload';
+import { StringValue } from 'ms';
 
 type TokenType = 'refresh' | 'auth';
 
 type TokenConfig = {
   secret: string;
-  expiresIn: string;
+  expiresIn: StringValue;
 };
 
 type JwtPayload = { email: string; sid: string };
@@ -34,11 +35,11 @@ export class JwtService {
     this.configByType = {
       auth: {
         secret: this.configService.get<string>('JWT_AUTH_SECRET', 'authSecret'),
-        expiresIn: this.configService.get<string>('JWT_AUTH_EXPIRES_IN', '1d'),
+        expiresIn: this.configService.get<StringValue>('JWT_AUTH_EXPIRES_IN', '1d'),
       },
       refresh: {
         secret: this.configService.get<string>('JWT_REFRESH_SECRET', 'refreshSecret'),
-        expiresIn: this.configService.get<string>('JWT_REFRESH_EXPIRES_IN', '1d'),
+        expiresIn: this.configService.get<StringValue>('JWT_REFRESH_EXPIRES_IN', '1d'),
       },
     };
 
