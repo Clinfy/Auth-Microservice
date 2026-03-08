@@ -9,6 +9,7 @@ import {
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
+  ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { RoleEntity } from 'src/entities/role.entity';
@@ -17,6 +18,7 @@ import { PatchRoleDTO } from 'src/interfaces/DTO/patch.dto';
 import * as requestUser from 'src/interfaces/request-user';
 import { CreateRoleDTO } from 'src/interfaces/DTO/create.dto';
 
+@ApiTags('Roles')
 @ApiBearerAuth()
 @Controller('roles')
 export class RolesController {

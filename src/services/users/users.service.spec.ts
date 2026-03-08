@@ -10,7 +10,7 @@ import { UsersService } from './users.service';
 import { JwtService } from '../JWT/jwt.service';
 import { RolesService } from '../roles/roles.service';
 import { EmailService } from 'src/clients/email/email.service';
-import { UserEntity } from 'src/entities/user.entity';
+import { UserEntity, UserStatus } from 'src/entities/user.entity';
 import { RedisService } from 'src/common/redis/redis.service';
 
 jest.mock('bcrypt', () => ({
@@ -32,6 +32,7 @@ describe('UsersService', () => {
     userRepository = {
       findOneByEmail: jest.fn(),
       findOneById: jest.fn(),
+      findAll: jest.fn(),
       save: jest.fn(),
       create: jest.fn((dto) => ({ id: 'mock-id', ...dto }) as UserEntity),
     };
@@ -116,7 +117,8 @@ describe('UsersService', () => {
       id: 'user-1',
       email: 'john@example.com',
       password: 'hashed-password',
-      active: true,
+      status: UserStatus.ACTIVE,
+      roles: [],
     } as any);
 
     const request: any = {
@@ -178,7 +180,18 @@ describe('UsersService', () => {
     it('throws UnauthorizedException when user inactive', async () => {
       (userRepository.findOneByEmail as jest.Mock).mockResolvedValue({
         ...activeUser,
-        active: false,
+        status: UserStatus.INACTIVE,
+      });
+
+      await expect(
+        service.logIn({ email: 'john@example.com', password: 'secret' }, request),
+      ).rejects.toBeInstanceOf(UnauthorizedException);
+    });
+
+    it('throws UnauthorizedException when user is pending', async () => {
+      (userRepository.findOneByEmail as jest.Mock).mockResolvedValue({
+        ...activeUser,
+        status: UserStatus.PENDING,
       });
 
       await expect(
@@ -358,6 +371,177 @@ describe('UsersService', () => {
       await expect(service.refreshToken('refresh-token')).rejects.toBeInstanceOf(
         UnauthorizedException,
       );
+    });
+  });
+
+  describe('register', () => {
+    it('creates a user inside a transaction and returns a success message', async () => {
+      const dto = { email: 'new@example.com', password: 'P@ss1', person_id: 'p-1' };
+      const request = { user: { id: 'admin-1' } } as any;
+
+      (dataSource.transaction as jest.Mock).mockImplementation(async (cb) => {
+        return cb({});
+      });
+      (userRepository.save as jest.Mock).mockResolvedValue({ id: 'new-id', email: dto.email });
+
+      const result = await service.register(dto, request);
+
+      expect(result).toEqual({ message: 'User new@example.com created' });
+      expect(userRepository.create).toHaveBeenCalledWith(expect.objectContaining({
+        email: dto.email,
+        password: dto.password,
+        person_id: dto.person_id,
+      }));
+    });
+  });
+
+  describe('firstActivation', () => {
+    it('activates a pending user with correct temporary password', async () => {
+      const storedUser: any = {
+        id: 'u-1',
+        email: 'user@example.com',
+        password: 'hashed',
+        status: UserStatus.PENDING,
+      };
+      (userRepository.findOneByEmail as jest.Mock).mockResolvedValue(storedUser);
+      (compare as jest.Mock).mockResolvedValue(true);
+      (userRepository.save as jest.Mock).mockResolvedValue(storedUser);
+
+      await expect(
+        service.firstActivation({ email: 'user@example.com', password: 'temp', new_password: 'N3w!' }),
+      ).resolves.toEqual({ message: 'User activated successfully' });
+
+      expect(storedUser.status).toBe(UserStatus.ACTIVE);
+      expect(storedUser.password).toBe('N3w!');
+    });
+
+    it('throws NotFoundException when user does not exist', async () => {
+      (userRepository.findOneByEmail as jest.Mock).mockResolvedValue(null);
+
+      await expect(
+        service.firstActivation({ email: 'no@example.com', password: 'temp', new_password: 'N3w!' }),
+      ).rejects.toBeInstanceOf(NotFoundException);
+    });
+
+    it('throws ForbiddenException when user already activated', async () => {
+      (userRepository.findOneByEmail as jest.Mock).mockResolvedValue({
+        id: 'u-1',
+        status: UserStatus.ACTIVE,
+      });
+
+      await expect(
+        service.firstActivation({ email: 'user@example.com', password: 'temp', new_password: 'N3w!' }),
+      ).rejects.toBeInstanceOf(ForbiddenException);
+    });
+
+    it('throws UnauthorizedException when password is wrong', async () => {
+      (userRepository.findOneByEmail as jest.Mock).mockResolvedValue({
+        id: 'u-1',
+        email: 'user@example.com',
+        password: 'hashed',
+        status: UserStatus.PENDING,
+      });
+      (compare as jest.Mock).mockResolvedValue(false);
+
+      await expect(
+        service.firstActivation({ email: 'user@example.com', password: 'wrong', new_password: 'N3w!' }),
+      ).rejects.toBeInstanceOf(UnauthorizedException);
+    });
+  });
+
+  describe('activate', () => {
+    it('activates an inactive user', async () => {
+      const storedUser: any = { id: 'u-1', status: UserStatus.INACTIVE };
+      (userRepository.findOneById as jest.Mock).mockResolvedValue(storedUser);
+      (userRepository.save as jest.Mock).mockResolvedValue(storedUser);
+
+      await expect(service.activate('u-1')).resolves.toEqual({
+        message: 'User activated successfully',
+      });
+      expect(storedUser.status).toBe(UserStatus.ACTIVE);
+    });
+
+    it('throws ForbiddenException when user is not inactive', async () => {
+      (userRepository.findOneById as jest.Mock).mockResolvedValue({
+        id: 'u-1',
+        status: UserStatus.ACTIVE,
+      });
+
+      await expect(service.activate('u-1')).rejects.toBeInstanceOf(ForbiddenException);
+    });
+
+    it('throws NotFoundException when user does not exist', async () => {
+      (userRepository.findOneById as jest.Mock).mockResolvedValue(null);
+
+      await expect(service.activate('missing')).rejects.toBeInstanceOf(NotFoundException);
+    });
+  });
+
+  describe('deactivate', () => {
+    it('deactivates an active user', async () => {
+      const storedUser: any = { id: 'u-1', status: UserStatus.ACTIVE };
+      (userRepository.findOneById as jest.Mock).mockResolvedValue(storedUser);
+      (userRepository.save as jest.Mock).mockResolvedValue(storedUser);
+
+      await expect(service.deactivate('u-1')).resolves.toEqual({
+        message: 'User deactivated successfully',
+      });
+      expect(storedUser.status).toBe(UserStatus.INACTIVE);
+    });
+
+    it('throws ForbiddenException when user is not active', async () => {
+      (userRepository.findOneById as jest.Mock).mockResolvedValue({
+        id: 'u-1',
+        status: UserStatus.INACTIVE,
+      });
+
+      await expect(service.deactivate('u-1')).rejects.toBeInstanceOf(ForbiddenException);
+    });
+
+    it('throws NotFoundException when user does not exist', async () => {
+      (userRepository.findOneById as jest.Mock).mockResolvedValue(null);
+
+      await expect(service.deactivate('missing')).rejects.toBeInstanceOf(NotFoundException);
+    });
+  });
+
+  describe('findAll', () => {
+    it('delegates to userRepository.findAll', async () => {
+      const users = [{ id: 'u-1' }, { id: 'u-2' }] as UserEntity[];
+      (userRepository.findAll as jest.Mock).mockResolvedValue(users);
+
+      await expect(service.findAll()).resolves.toEqual(users);
+      expect(userRepository.findAll).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('assignRole', () => {
+    it('assigns roles to a user and saves', async () => {
+      const storedUser: any = { id: 'u-1', roles: [] };
+      const role: any = { id: 'r-1', name: 'admin' };
+      (userRepository.findOneById as jest.Mock).mockResolvedValue(storedUser);
+      (roleService.findOne as jest.Mock).mockResolvedValue(role);
+      (userRepository.save as jest.Mock).mockResolvedValue({ ...storedUser, roles: [role] });
+
+      const result = await service.assignRole('u-1', { rolesIds: ['r-1'] });
+
+      expect(result.roles).toEqual([role]);
+      expect(roleService.findOne).toHaveBeenCalledWith('r-1');
+    });
+  });
+
+  describe('findByEmail', () => {
+    it('delegates to userRepository.findOneByEmail', async () => {
+      const user = { id: 'u-1', email: 'test@example.com' } as UserEntity;
+      (userRepository.findOneByEmail as jest.Mock).mockResolvedValue(user);
+
+      await expect(service.findByEmail('test@example.com')).resolves.toEqual(user);
+    });
+
+    it('returns null when user not found', async () => {
+      (userRepository.findOneByEmail as jest.Mock).mockResolvedValue(null);
+
+      await expect(service.findByEmail('no@example.com')).resolves.toBeNull();
     });
   });
 });

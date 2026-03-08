@@ -126,6 +126,7 @@ describe('ApiKeysService', () => {
       { id: secondApiKeyId, key_hash: 'HASH2', active: true },
     ];
     (repository.find as jest.Mock).mockResolvedValue(keys);
+    // @ts-ignore
     compareMock.mockResolvedValueOnce(false).mockResolvedValueOnce(true);
 
     await expect(service.findActiveByPlainKey('PLAINTEXT')).resolves.toEqual(keys[1]);
@@ -137,6 +138,7 @@ describe('ApiKeysService', () => {
     (repository.find as jest.Mock).mockResolvedValue([
       { id: apiKeyId, key_hash: 'HASH', active: true },
     ]);
+    // @ts-ignore
     compareMock.mockResolvedValue(false);
 
     await expect(service.findActiveByPlainKey('PLAINTEXT')).rejects.toBeInstanceOf(
