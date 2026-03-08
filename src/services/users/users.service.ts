@@ -1,10 +1,4 @@
-import {
-  ForbiddenException,
-  Injectable,
-  InternalServerErrorException,
-  NotFoundException,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
 import { UserEntity } from 'src/entities/user.entity';
 import { DataSource } from 'typeorm';
 import { JwtService } from 'src/services/JWT/jwt.service';
@@ -27,6 +21,7 @@ import { UAParser } from 'ua-parser-js';
 import { getClientIp } from 'src/common/tools/get-client-ip';
 import { ResetPasswordRedisPayload } from 'src/interfaces/payload';
 import { UsersRepository } from 'src/services/users/users.repository';
+import { UsersErrorCodes, UsersException } from 'src/services/users/users.exception.handler';
 
 @Injectable()
 export class UsersService {
@@ -48,11 +43,7 @@ export class UsersService {
     const session = raw ? (JSON.parse(raw) as Session) : null;
 
     if (!session || !session.active) {
-      throw new UnauthorizedException({
-        message: 'Session expired or invalid',
-        code: 'SESSION_INVALID',
-        statusCode: 401,
-      });
+      throw new UsersException('Session expired or invalid', UsersErrorCodes.SESSION_INVALID, HttpStatus.UNAUTHORIZED);
     }
 
     const user = await this.findOne(session.user_id);
@@ -76,42 +67,50 @@ export class UsersService {
     const session = raw ? (JSON.parse(raw) as Session) : null;
 
     if (!session || !session.active) {
-      throw new UnauthorizedException('Session expired or invalid');
+      throw new UsersException('Session expired or invalid', UsersErrorCodes.SESSION_INVALID, HttpStatus.UNAUTHORIZED);
     }
 
     const allowed = session.permissions.includes(permissionCode);
 
     if (!allowed) {
-      throw new ForbiddenException('Insufficient permissions');
+      throw new UsersException(
+        'Insufficient permissions',
+        UsersErrorCodes.INSUFFICIENT_PERMISSIONS,
+        HttpStatus.FORBIDDEN,
+      );
     }
 
     return allowed;
   }
 
   async register(dto: RegisterUserDTO, request: RequestWithUser): Promise<{ message: string }> {
-    return await this.dataSource.transaction(async (manager) => {
-      const newUser = this.userRepository.create({
-        ...dto,
-        created_by: request.user,
+    try {
+      return await this.dataSource.transaction(async (manager) => {
+        const newUser = this.userRepository.create({
+          ...dto,
+          created_by: request.user,
+        });
+        const user = await this.userRepository.save(newUser, manager);
+        return { message: `User ${user.email} created` };
       });
-      const user = await this.userRepository.save(newUser, manager);
-      return { message: `User ${user.email} created` };
-    });
+    } catch (error) {
+      throw new UsersException('User registration failed', UsersErrorCodes.USER_NOT_REGISTERED, error.status?? HttpStatus.INTERNAL_SERVER_ERROR);
+    }
   }
 
   async logIn(body: LoginDTO, req: Request): Promise<AuthInterface> {
     const user = await this.findByEmail(body.email);
     if (!user) {
-      throw new UnauthorizedException('Wrong email or password');
-    }
-
-    if (!user.active) {
-      throw new UnauthorizedException('This user is not active');
+      throw new UsersException('Wrong email or password', UsersErrorCodes.WRONG_CREDENTIALS, HttpStatus.UNAUTHORIZED);
     }
 
     const isPasswordValid = await compare(body.password, user.password);
     if (!isPasswordValid) {
-      throw new UnauthorizedException('Wrong email or password');
+      throw new UsersException('Wrong email or password', UsersErrorCodes.WRONG_CREDENTIALS, HttpStatus.UNAUTHORIZED);
+    }
+
+    if (!user.active) {
+      throw new UsersException('This user is not active', UsersErrorCodes.USER_INACTIVE, HttpStatus.UNAUTHORIZED);
     }
 
     try {
@@ -152,7 +151,11 @@ export class UsersService {
         refreshToken,
       };
     } catch (error) {
-      throw new InternalServerErrorException('Unable to issue authentication tokens');
+      throw new UsersException(
+        'Unable to issue authentication tokens',
+        UsersErrorCodes.TOKENS_ISSUE_ERROR,
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
   }
 
@@ -197,11 +200,11 @@ export class UsersService {
     const raw = await this.redis.raw.get(redisIndex);
     const redisPayload = raw ? (JSON.parse(raw) as ResetPasswordRedisPayload) : null;
     if (!redisPayload) {
-      throw new UnauthorizedException({
-        message: 'Invalid or expired token',
-        code: 'RESET_PASSWORD_INVALID_EXPIRED',
-        statusCode: 401,
-      });
+      throw new UsersException(
+        'Invalid or expired token',
+        UsersErrorCodes.RESET_PASSWORD_INVALID,
+        HttpStatus.UNAUTHORIZED,
+      );
     }
 
     let user: UserEntity;
@@ -209,11 +212,11 @@ export class UsersService {
       user = await this.findOne(redisPayload.id);
     } catch (error) {
       if (error instanceof NotFoundException) {
-        throw new NotFoundException({
-          message: 'Invalid or expired token',
-          code: 'RESET_PASSWORD_USER_NOT_FOUND',
-          statusCode: 404,
-        });
+        throw new UsersException(
+          'Invalid or expired token',
+          UsersErrorCodes.RESET_PASSWORD_USER_NOT_FOUND,
+          HttpStatus.NOT_FOUND,
+        );
       }
       throw error;
     }
@@ -231,7 +234,7 @@ export class UsersService {
 
   private async findOne(id: string): Promise<UserEntity> {
     const user = await this.userRepository.findOneById(id);
-    if (!user) throw new NotFoundException('User not found');
+    if (!user) throw new UsersException('User not found', UsersErrorCodes.USER_NOT_FOUND, HttpStatus.NOT_FOUND);
     return user;
   }
 

@@ -1,0 +1,19 @@
+import { HttpException, HttpStatus } from '@nestjs/common';
+
+export enum UsersErrorCodes {
+  SESSION_INVALID = 'SESSION_INVALID',
+  WRONG_CREDENTIALS = 'WRONG_CREDENTIALS',
+  INSUFFICIENT_PERMISSIONS = 'INSUFFICIENT_PERMISSIONS',
+  USER_NOT_REGISTERED = 'USER_NOT_REGISTERED',
+  USER_NOT_FOUND = 'USER_NOT_FOUND',
+  USER_INACTIVE = 'USER_INACTIVE',
+  TOKENS_ISSUE_ERROR = 'TOKENS_ISSUE_ERROR',
+  RESET_PASSWORD_INVALID = 'RESET_PASSWORD_INVALID',
+  RESET_PASSWORD_USER_NOT_FOUND = 'RESET_PASSWORD_USER_NOT_FOUND',
+}
+
+export class UsersException extends HttpException {
+  constructor(message: string, errorCode: UsersErrorCodes, status: HttpStatus) {
+    super({ message, errorCode, statusCode: status }, status);
+  }
+}
