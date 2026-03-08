@@ -2,8 +2,10 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { useContainer } from 'class-validator';
-import { ValidationPipe } from '@nestjs/common';
+import { BadRequestException, HttpStatus, ValidationPipe } from '@nestjs/common';
 import { writeFileSync } from 'node:fs';
+import { AllExceptionsFilter } from 'src/common/filters/all-exceptions.filter';
+import { findFirstErrorCode, findFirstMessage } from 'src/common/tools/find-errors-data';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, { bufferLogs: true });
@@ -11,6 +13,10 @@ async function bootstrap() {
   //Trust Proxy
   const expressApp = app.getHttpAdapter().getInstance();
   expressApp.set('trust proxy', 1);
+
+  //Error Handler
+  const exceptionFilter = app.get(AllExceptionsFilter);
+  app.useGlobalFilters(exceptionFilter);
 
   //Logs
   useContainer(app.select(AppModule), { fallbackOnErrors: true }); // <—
@@ -20,12 +26,22 @@ async function bootstrap() {
       forbidNonWhitelisted: true,
       transform: true,
       transformOptions: { enableImplicitConversion: true },
+      validationError: { target: false, value: true },
+      exceptionFactory: (errors) => {
+        const errorCode = findFirstErrorCode(errors) ?? 'VALIDATION_ERROR';
+        const message = findFirstMessage(errors);
+        return new BadRequestException({
+          statusCode: HttpStatus.BAD_REQUEST,
+          errorCode,
+          message,
+        });
+      },
     }),
   );
 
   //Swagger
   const config = new DocumentBuilder()
-    .setTitle('Clinify Users Microservice')
+    .setTitle('Clinfy Users Microservice')
     .setDescription('Docs')
     .setVersion('1.0')
     .addBearerAuth()
