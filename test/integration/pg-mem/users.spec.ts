@@ -171,6 +171,12 @@ describe('UsersService (integration)', () => {
       request,
     );
 
+    await usersService.firstActivation({
+      email: 'bob@example.com',
+      password: 'Secret123',
+      new_password: 'N3wS3cret!',
+    });
+
     jwtServiceMock.generateToken.mockImplementation(
       async (_payload: any, type: string) => `${type}-token`,
     );
@@ -185,7 +191,7 @@ describe('UsersService (integration)', () => {
     };
 
     const tokens = await usersService.logIn(
-      { email: 'bob@example.com', password: 'Secret123' },
+      { email: 'bob@example.com', password: 'N3wS3cret!' },
       httpRequest,
     );
 
@@ -351,5 +357,87 @@ describe('UsersService (integration)', () => {
       email: 'erin@example.com',
     });
     expect(updated?.password).toMatch(/^\$2[aby]\$.+/);
+  });
+
+  it('activates a user for the first time with correct temporary password', async () => {
+    await usersService.register(
+      {
+        email: 'grace@example.com',
+        password: 'TempP@ss1',
+        person_id: randomUUID(),
+      },
+      request,
+    );
+
+    const result = await usersService.firstActivation({
+      email: 'grace@example.com',
+      password: 'TempP@ss1',
+      new_password: 'N3wP@ssw0rd!',
+    });
+
+    expect(result).toEqual({ message: 'User activated successfully' });
+
+    const stored = await userRepository.findOneBy({ email: 'grace@example.com' });
+    expect(stored?.status).toBe('ACTIVE');
+    expect(stored?.password).toMatch(/^\$2[aby]\$.+/);
+  });
+
+  it('deactivates an active user and reactivates them', async () => {
+    await usersService.register(
+      {
+        email: 'hank@example.com',
+        password: 'TempP@ss1',
+        person_id: randomUUID(),
+      },
+      request,
+    );
+
+    await usersService.firstActivation({
+      email: 'hank@example.com',
+      password: 'TempP@ss1',
+      new_password: 'N3wP@ssw0rd!',
+    });
+
+    const stored = await userRepository.findOneBy({ email: 'hank@example.com' });
+
+    const deactivateResult = await usersService.deactivate(stored!.id);
+    expect(deactivateResult).toEqual({ message: 'User deactivated successfully' });
+
+    const deactivated = await userRepository.findOneBy({ email: 'hank@example.com' });
+    expect(deactivated?.status).toBe('INACTIVE');
+
+    const activateResult = await usersService.activate(stored!.id);
+    expect(activateResult).toEqual({ message: 'User activated successfully' });
+
+    const reactivated = await userRepository.findOneBy({ email: 'hank@example.com' });
+    expect(reactivated?.status).toBe('ACTIVE');
+  });
+
+  it('logs out a user and clears the session from redis', async () => {
+    const user = {
+      id: 'user-1',
+      email: 'iris@example.com',
+      person_id: randomUUID(),
+      session_id: 'sess-logout',
+    };
+
+    const result = await usersService.logOut(user);
+
+    expect(result).toEqual({ message: 'Logged out successfully' });
+    expect(redisServiceMock.raw.del).toHaveBeenCalledWith('auth_session:sess-logout');
+    expect(redisServiceMock.raw.sRem).toHaveBeenCalledWith('user_sessions:user-1', 'sess-logout');
+  });
+
+  it('findAll returns all registered users', async () => {
+    await usersService.register(
+      { email: 'julia@example.com', password: 'P@ssword1', person_id: randomUUID() },
+      request,
+    );
+
+    const users = await usersService.findAll();
+    const emails = users.map((u) => u.email);
+
+    expect(emails).toContain('julia@example.com');
+    expect(users.length).toBeGreaterThanOrEqual(1);
   });
 });

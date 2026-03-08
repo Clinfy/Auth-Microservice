@@ -6,11 +6,14 @@ import { Permissions } from 'src/middlewares/decorators/permissions.decorator';
 import {
   ApiBearerAuth,
   ApiForbiddenResponse,
+  ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
+  ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 
+@ApiTags('Sessions')
 @ApiBearerAuth()
 @Controller('sessions')
 export class SessionsController {
@@ -45,6 +48,7 @@ export class SessionsController {
   @ApiUnauthorizedResponse({
     description: 'Missing or invalid bearer token or session',
   })
+  @ApiNotFoundResponse({ description: 'Session not found' })
   @ApiForbiddenResponse({ description: 'Insufficient permissions' })
   @Post('deactivate/:sid')
   deactivateSession(@Param('sid') sid: string): Promise<{ message: string }> {
