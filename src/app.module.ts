@@ -23,6 +23,7 @@ import { SessionsModule } from 'src/services/sessions/sessions.module';
 import { validate } from 'src/config/env-validation';
 import { WinstonModule } from 'nest-winston';
 import winston from 'winston';
+import { AllExceptionsFilter } from 'src/common/filters/all-exceptions.filter';
 
 @Module({
   imports: [
@@ -89,6 +90,7 @@ import winston from 'winston';
   controllers: [AppController],
   providers: [
     AppService,
+    AllExceptionsFilter,
     IsUniquePermissionCodeConstraint,
     IsUniqueRoleNameConstraint,
     OutboxPublisherService,
