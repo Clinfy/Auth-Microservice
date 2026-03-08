@@ -8,6 +8,7 @@ import {
 import { DataSource, Not } from 'typeorm';
 import { PermissionEntity } from 'src/entities/permission.entity';
 import { Injectable } from '@nestjs/common';
+import { PermissionsErrorCodes } from 'src/services/permissions/permissions.exception.handler';
 
 @ValidatorConstraint({ name: 'IsUniquePermissionCode', async: true })
 @Injectable()
@@ -41,7 +42,13 @@ export function IsUniquePermissionCode(
       target: object.constructor,
       propertyName,
       constraints: [options || {}],
-      options: validationOptions,
+      options: {
+        ...validationOptions,
+        context: {
+          errorCode: PermissionsErrorCodes.PERMISSION_ALREADY_EXISTS,
+          ...validationOptions?.context,
+        },
+      },
       validator: IsUniquePermissionCodeConstraint,
     });
   };
