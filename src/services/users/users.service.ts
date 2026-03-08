@@ -154,7 +154,7 @@ export class UsersService {
       throw new UsersException(
         'Unable to issue authentication tokens',
         UsersErrorCodes.TOKENS_ISSUE_ERROR,
-        HttpStatus.INTERNAL_SERVER_ERROR,
+        error.status ?? HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
   }

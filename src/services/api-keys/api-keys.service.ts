@@ -99,7 +99,7 @@ export class ApiKeysService {
       throw new ApiKeyException(
         'Api key is already inactive',
         ApiKeyErrorCodes.API_KEY_ALREADY_DEACTIVATE,
-        HttpStatus.BAD_REQUEST,
+        error.status ?? HttpStatus.BAD_REQUEST,
       );
     }
   }
