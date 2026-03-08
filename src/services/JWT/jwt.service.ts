@@ -1,6 +1,13 @@
 import { HttpStatus, Injectable, InternalServerErrorException, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { JsonWebTokenError, NotBeforeError, sign, SignOptions, TokenExpiredError, verify } from 'jsonwebtoken';
+import {
+  JsonWebTokenError,
+  NotBeforeError,
+  sign,
+  SignOptions,
+  TokenExpiredError,
+  verify,
+} from 'jsonwebtoken';
 import dayjs from 'dayjs';
 import { Payload } from 'src/interfaces/payload';
 import { JwtErrorCodes, JwtException } from 'src/services/JWT/jwt.excpetion.handler';
@@ -93,7 +100,7 @@ export class JwtService {
     try {
       const decoded = await this.verifyToken<Payload>(token, secret);
       if (!decoded?.email || !decoded.exp) {
-        throw new UnauthorizedException('Token payload is invalid');
+        throw new JwtException('Token payload is invalid', JwtErrorCodes.INVALID_PAYLOAD, HttpStatus.UNAUTHORIZED);
       }
 
       if (type === 'refresh' && !decoded.sid) {
@@ -107,11 +114,7 @@ export class JwtService {
       return decoded;
     } catch (error) {
       if (error instanceof TokenExpiredError) {
-        throw new JwtException(
-          'Token has expired',
-          JwtErrorCodes.TOKEN_EXPIRED,
-          HttpStatus.UNAUTHORIZED,
-        );
+        throw new JwtException('Token has expired', JwtErrorCodes.TOKEN_EXPIRED, HttpStatus.UNAUTHORIZED);
       }
 
       if (error instanceof JsonWebTokenError || error instanceof NotBeforeError) {
@@ -134,11 +137,14 @@ export class JwtService {
 
       sign(payload, config.secret, options, (err, token) => {
         if (err || !token) {
-          reject(err ?? new JwtException (
-            'Token signing failed',
-            JwtErrorCodes.TOKEN_SIGNING_FAILED,
-            HttpStatus.INTERNAL_SERVER_ERROR
-          ));
+          reject(
+            err ??
+              new JwtException(
+                'Token signing failed',
+                JwtErrorCodes.TOKEN_SIGNING_FAILED,
+                HttpStatus.INTERNAL_SERVER_ERROR,
+              ),
+          );
           return;
         }
 
