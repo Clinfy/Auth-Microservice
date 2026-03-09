@@ -1,15 +1,10 @@
-import {
-  CanActivate,
-  ExecutionContext,
-  ForbiddenException,
-  Injectable,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { CanActivate, ExecutionContext, HttpStatus, Injectable } from '@nestjs/common';
 import { ModuleRef, Reflector } from '@nestjs/core';
 import { RequestWithApiKey } from 'src/interfaces/request-api-key';
 import { Permissions } from 'src/middlewares/decorators/permissions.decorator';
 import { extractApiKey } from 'src/common/tools/extract-api-key';
 import { ApiKeysService } from 'src/services/api-keys/api-keys.service';
+import { AuthErrorCodes, AuthException } from 'src/middlewares/auth.exception.handler';
 
 @Injectable()
 export class ApiKeyGuard implements CanActivate {
@@ -28,7 +23,7 @@ export class ApiKeyGuard implements CanActivate {
     });
     const apiKey = await apiKeysService.findActiveByPlainKey(rawApiKey);
     if (!apiKey) {
-      throw new UnauthorizedException('Invalid API key');
+      throw new AuthException('Invalid API key', AuthErrorCodes.API_KEY_INVALID, HttpStatus.UNAUTHORIZED);
     }
 
     request.apiKey = apiKey;
@@ -48,7 +43,7 @@ export class ApiKeyGuard implements CanActivate {
     );
 
     if (!hasAllPermissions) {
-      throw new ForbiddenException('Insufficient API key permissions');
+      throw new AuthException('Insufficient API key permissions', AuthErrorCodes.INSUFFICIENT_PERMISSIONS, HttpStatus.FORBIDDEN);
     }
 
     return true;
