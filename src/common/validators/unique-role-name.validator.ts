@@ -8,6 +8,7 @@ import {
 import { DataSource, Not } from 'typeorm';
 import { RoleEntity } from 'src/entities/role.entity';
 import { Injectable } from '@nestjs/common';
+import { RolesErrorCodes } from 'src/services/roles/roles.exception.handler';
 
 @ValidatorConstraint({ name: 'IsUniqueRoleName', async: true })
 @Injectable()
@@ -41,7 +42,13 @@ export function IsUniqueRoleName(
       target: object.constructor,
       propertyName,
       constraints: [options || {}],
-      options: validationOptions,
+      options: {
+        ...validationOptions,
+        context: {
+          errorCode: RolesErrorCodes.ROLES_ALREADY_EXISTS,
+          ...validationOptions?.context,
+        },
+      },
       validator: IsUniqueRoleNameConstraint,
     });
   };
