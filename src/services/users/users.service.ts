@@ -106,13 +106,13 @@ export class UsersService {
       throw new UnauthorizedException('Wrong email or password');
     }
 
-    if (user.status != UserStatus.ACTIVE) {
-      throw new UnauthorizedException('This user is not active');
-    }
-
     const isPasswordValid = await compare(body.password, user.password);
     if (!isPasswordValid) {
       throw new UnauthorizedException('Wrong email or password');
+    }
+
+    if (user.status != UserStatus.ACTIVE) {
+      throw new UnauthorizedException('This user is not active');
     }
 
     try {
