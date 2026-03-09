@@ -1,16 +1,10 @@
-import { Injectable, InternalServerErrorException, UnauthorizedException } from '@nestjs/common';
+import { HttpStatus, Injectable, InternalServerErrorException, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import {
-  sign,
-  verify,
-  SignOptions,
-  JsonWebTokenError,
-  TokenExpiredError,
-  NotBeforeError,
-} from 'jsonwebtoken';
+import { JsonWebTokenError, NotBeforeError, sign, SignOptions, TokenExpiredError, verify } from 'jsonwebtoken';
 import dayjs from 'dayjs';
 import { Payload } from 'src/interfaces/payload';
 import { StringValue } from 'ms';
+import { JwtErrorCodes, JwtException } from 'src/services/JWT/jwt.excpetion.handler';
 
 type TokenType = 'refresh' | 'auth';
 
@@ -43,21 +37,20 @@ export class JwtService {
       },
     };
 
-    const threshold = Number(
-      this.configService.get<string>('JWT_REFRESH_RENEW_THRESHOLD_MINUTES', '20'),
-    );
+    const threshold = Number(this.configService.get<string>('JWT_REFRESH_RENEW_THRESHOLD_MINUTES', '20'));
     this.refreshRenewThresholdMinutes =
       Number.isFinite(threshold) && !Number.isNaN(threshold) && threshold >= 0 ? threshold : 20;
   }
 
-  async generateToken<T extends TokenType>(
-    payload: TokenPayloadType[T],
-    type: T = 'auth' as T,
-  ): Promise<string> {
+  async generateToken<T extends TokenType>(payload: TokenPayloadType[T], type: T = 'auth' as T): Promise<string> {
     try {
       return await this.signToken(payload, this.configByType[type]);
     } catch (error) {
-      throw new InternalServerErrorException('Failed to generate token');
+      throw new JwtException(
+        'Failed to generate token',
+        JwtErrorCodes.TOKEN_GENERATION_FAILED,
+        error.status ?? HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
   }
 
@@ -83,7 +76,11 @@ export class JwtService {
       if (error instanceof UnauthorizedException || error instanceof InternalServerErrorException) {
         throw error;
       }
-      throw new UnauthorizedException('Invalid refresh token');
+      throw new JwtException(
+        'Invalid refresh token',
+        JwtErrorCodes.INVALID_REFRESH_TOKEN,
+        error.status ?? HttpStatus.UNAUTHORIZED,
+      );
     }
   }
 
@@ -93,33 +90,33 @@ export class JwtService {
     try {
       const decoded = await this.verifyToken<Payload>(token, secret);
       if (!decoded?.email || !decoded.exp) {
-        throw new UnauthorizedException('Token payload is invalid');
+        throw new JwtException('Token payload is invalid', JwtErrorCodes.INVALID_PAYLOAD, HttpStatus.UNAUTHORIZED);
       }
 
       if (type === 'refresh' && !decoded.sid) {
-        throw new UnauthorizedException({
-          message: 'Token payload is missing data',
-          code: 'TOKEN_PAYLOAD_MISSING_DATA',
-          statusCode: 401,
-        });
+        throw new JwtException(
+          'Token payload is missing data',
+          JwtErrorCodes.PAYLOAD_MISSING_DATA,
+          HttpStatus.UNAUTHORIZED
+        );
       }
 
       return decoded;
     } catch (error) {
       if (error instanceof TokenExpiredError) {
-        throw new UnauthorizedException({
-          message: 'Token has expired',
-          code: 'TOKEN_EXPIRED',
-          statusCode: 401,
-        });
+        throw new JwtException(
+          'Token has expired',
+          JwtErrorCodes.TOKEN_EXPIRED,
+          HttpStatus.UNAUTHORIZED,
+        );
       }
 
       if (error instanceof JsonWebTokenError || error instanceof NotBeforeError) {
-        throw new UnauthorizedException({
-          message: 'Token verification failed',
-          code: 'TOKEN_VERIFICATION_FAILED',
-          statusCode: 401,
-        });
+        throw new JwtException(
+          'Token verification failed',
+          JwtErrorCodes.TOKEN_VERIFICATION_FAILED,
+          HttpStatus.UNAUTHORIZED,
+        );
       }
 
       throw error;
@@ -134,7 +131,7 @@ export class JwtService {
 
       sign(payload, config.secret, options, (err, token) => {
         if (err || !token) {
-          reject(err ?? new Error('Token signing failed'));
+          reject(err ??  new JwtException('Token signing failed', JwtErrorCodes.TOKEN_SIGNING_FAILED, HttpStatus.INTERNAL_SERVER_ERROR));
           return;
         }
 
