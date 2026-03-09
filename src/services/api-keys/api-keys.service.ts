@@ -1,4 +1,4 @@
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { HttpStatus, Injectable } from '@nestjs/common';
 import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
 import { compare, hash } from 'bcrypt';
 import { randomBytes } from 'crypto';
@@ -9,6 +9,7 @@ import { PermissionsService } from 'src/services/permissions/permissions.service
 import { RequestWithApiKey } from 'src/interfaces/request-api-key';
 import { extractApiKey } from 'src/common/tools/extract-api-key';
 import { RequestWithUser } from 'src/interfaces/request-user';
+import { ApiKeyErrorCodes, ApiKeyException } from 'src/services/api-keys/api-keys.exception.handler';
 
 @Injectable()
 export class ApiKeysService {
@@ -22,33 +23,44 @@ export class ApiKeysService {
     private readonly permissionService: PermissionsService,
   ) {}
 
-  async create(
-    dto: CreateApiKeyDTO,
-    response: RequestWithUser,
-  ): Promise<{ apiKey: string; id: string; client: string }> {
-    return this.dataSource.transaction(async (transactionManager) => {
-      const permissions = await Promise.all(
-        dto.permissionIds.map((id) => this.permissionService.findOne(id)),
-      );
+  async create(dto: CreateApiKeyDTO, response: RequestWithUser): Promise<{ apiKey: string; id: string; client: string }> {
+    try {
+      return this.dataSource.transaction(async (transactionManager) => {
+        const permissions = await Promise.all(dto.permissionIds.map((id) => this.permissionService.findOne(id)));
 
-      const plainApiKey = this.generatePlainKey();
-      const hashedApiKey = await hash(plainApiKey, 10);
+        const plainApiKey = this.generatePlainKey();
+        const hashedApiKey = await hash(plainApiKey, 10);
 
-      const apiKey = transactionManager.create(ApiKeyEntity, {
-        client: dto.client,
-        key_hash: hashedApiKey,
-        permissions,
-        created_by: response.user,
+        const apiKey = transactionManager.create(ApiKeyEntity, {
+          client: dto.client,
+          key_hash: hashedApiKey,
+          permissions,
+          created_by: response.user,
+        });
+
+        await transactionManager.save(apiKey);
+
+        return { apiKey: plainApiKey, id: apiKey.id, client: apiKey.client };
       });
-
-      await transactionManager.save(apiKey);
-
-      return { apiKey: plainApiKey, id: apiKey.id, client: apiKey.client };
-    });
+    } catch (error) {
+      throw new ApiKeyException(
+        'Failed to create API key',
+        ApiKeyErrorCodes.API_KEY_NOT_CREATED,
+        error.status ?? HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
   }
 
   async findAll(): Promise<ApiKeyEntity[]> {
-    return this.apiKeyRepository.find({ relations: ['permissions'] });
+    try {
+      return this.apiKeyRepository.find({ relations: ['permissions'] });
+    } catch (error) {
+      throw new ApiKeyException(
+        'Api keys not found',
+        ApiKeyErrorCodes.API_KEY_NOT_FOUND,
+        error.status ?? HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
   }
 
   async findOne(id: string): Promise<ApiKeyEntity> {
@@ -57,7 +69,7 @@ export class ApiKeysService {
       relations: ['permissions'],
     });
     if (!apiKey) {
-      throw new NotFoundException('API key not found');
+      throw new ApiKeyException('API key not found', ApiKeyErrorCodes.API_KEY_NOT_FOUND, HttpStatus.NOT_FOUND);
     }
     return apiKey;
   }
@@ -66,7 +78,11 @@ export class ApiKeysService {
     const apiKey = await this.findOne(id);
 
     if (!apiKey.active) {
-      return { message: 'API key is already inactive' };
+      throw new ApiKeyException(
+        'Api Key already deactivated',
+        ApiKeyErrorCodes.API_KEY_ALREADY_DEACTIVATE,
+        HttpStatus.BAD_REQUEST,
+      );
     }
 
     apiKey.active = false;
@@ -95,7 +111,7 @@ export class ApiKeysService {
       if (isMatch) return apiKey;
     }
 
-    throw new ForbiddenException('Invalid or inactive API key');
+    throw new ApiKeyException('Invalid or inactive API key', ApiKeyErrorCodes.API_KEY_NOT_FOUND, HttpStatus.NOT_FOUND);
   }
 
   private generatePlainKey(): string {

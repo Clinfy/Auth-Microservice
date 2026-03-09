@@ -1,6 +1,6 @@
 import { ConfigService } from '@nestjs/config';
-import { InternalServerErrorException, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from './jwt.service';
+import { JwtException } from 'src/services/JWT/jwt.excpetion.handler';
 
 jest.mock('jsonwebtoken', () => {
   const sign = jest.fn();
@@ -105,7 +105,7 @@ describe('JwtService', () => {
 
     await expect(
       service.generateToken({ email: 'user@example.com', sid: '111' }, 'auth'),
-    ).rejects.toBeInstanceOf(InternalServerErrorException);
+    ).rejects.toBeInstanceOf(JwtException);
   });
 
   it('getPayload returns decoded payload', async () => {
@@ -125,7 +125,7 @@ describe('JwtService', () => {
     );
 
     await expect(service.getPayload('token', 'refresh')).rejects.toBeInstanceOf(
-      UnauthorizedException,
+      JwtException,
     );
   });
 
@@ -133,17 +133,17 @@ describe('JwtService', () => {
     verifyMock.mockImplementation((_token, _secret, callback) =>
       callback(new TokenExpiredError('expired'), undefined),
     );
-    await expect(service.getPayload('token', 'auth')).rejects.toBeInstanceOf(UnauthorizedException);
+    await expect(service.getPayload('token', 'auth')).rejects.toBeInstanceOf(JwtException);
 
     verifyMock.mockImplementation((_token, _secret, callback) =>
       callback(new JsonWebTokenError('invalid'), undefined),
     );
-    await expect(service.getPayload('token', 'auth')).rejects.toBeInstanceOf(UnauthorizedException);
+    await expect(service.getPayload('token', 'auth')).rejects.toBeInstanceOf(JwtException);
 
     verifyMock.mockImplementation((_token, _secret, callback) =>
       callback(new NotBeforeError('nbf'), undefined),
     );
-    await expect(service.getPayload('token', 'auth')).rejects.toBeInstanceOf(UnauthorizedException);
+    await expect(service.getPayload('token', 'auth')).rejects.toBeInstanceOf(JwtException);
   });
 
   it('refreshToken rotates refresh token when close to expiry', async () => {
@@ -182,6 +182,6 @@ describe('JwtService', () => {
       callback(new Error('boom'), undefined),
     );
 
-    await expect(service.refreshToken('bad-token')).rejects.toBeInstanceOf(UnauthorizedException);
+    await expect(service.refreshToken('bad-token')).rejects.toBeInstanceOf(JwtException);
   });
 });

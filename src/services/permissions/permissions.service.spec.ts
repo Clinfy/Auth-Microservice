@@ -1,6 +1,6 @@
-import { NotFoundException } from '@nestjs/common';
 import { PermissionsRepository } from './permissions.repository';
 import { PermissionsService } from './permissions.service';
+import { PermissionsException } from './permissions.exception.handler';
 
 describe('PermissionsService', () => {
   let permissionRepository: jest.Mocked<Partial<PermissionsRepository>>;
@@ -75,10 +75,10 @@ describe('PermissionsService', () => {
     });
   });
 
-  it('findOne throws NotFoundException when missing', async () => {
+  it('findOne throws PermissionsException when missing', async () => {
     (permissionRepository.findOneById as jest.Mock).mockResolvedValue(null);
 
-    await expect(service.findOne(missingPermissionId)).rejects.toBeInstanceOf(NotFoundException);
+    await expect(service.findOne(missingPermissionId)).rejects.toBeInstanceOf(PermissionsException);
   });
 
   it('findAll returns list of permissions', async () => {

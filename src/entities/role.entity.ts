@@ -22,7 +22,7 @@ export class RoleEntity extends BaseEntity {
   id: string;
 
   @ApiProperty({ description: 'Unique role name', example: 'Admin' })
-  @Column({ unique: true })
+  @Column()
   name: string;
 
   @ApiProperty({ description: 'Creation timestamp' })

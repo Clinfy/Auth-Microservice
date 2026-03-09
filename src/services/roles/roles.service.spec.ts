@@ -1,7 +1,7 @@
-import { NotFoundException } from '@nestjs/common';
 import { RolesRepository } from './roles.repository';
 import { RolesService } from './roles.service';
 import { PermissionsService } from '../permissions/permissions.service';
+import { RolesException } from './roles.exception.handler';
 
 describe('RolesService', () => {
   let roleRepository: jest.Mocked<Partial<RolesRepository>>;
@@ -80,10 +80,10 @@ describe('RolesService', () => {
     });
   });
 
-  it('findOne throws NotFoundException when role missing', async () => {
+  it('findOne throws RolesException when role missing', async () => {
     (roleRepository.findOneById as jest.Mock).mockResolvedValue(null);
 
-    await expect(service.findOne(otherRoleId)).rejects.toBeInstanceOf(NotFoundException);
+    await expect(service.findOne(otherRoleId)).rejects.toBeInstanceOf(RolesException);
   });
 
   it('findAll returns all roles', async () => {
