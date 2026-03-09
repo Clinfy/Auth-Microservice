@@ -1,6 +1,6 @@
 {
   "name": "clinfy-auth-microservice",
-  "version": "1.5.0",
+  "version": "2.0.0",
   "description": "Microservice for users, API, permissions, roles and authentication.",
   "author": "Agustín Liendo Ortiz",
   "private": true,
@@ -21,7 +21,6 @@
     "heroku-postbuild": "npm run build"
   },
   "dependencies": {
-    "@keyv/redis": "^5.1.6",
     "@nestjs/cache-manager": "^3.1.0",
     "@nestjs/common": "^11.0.1",
     "@nestjs/config": "^4.0.2",
@@ -35,8 +34,6 @@
     "amqplib": "^0.10.9",
     "axios": "^1.12.2",
     "bcrypt": "^6.0.0",
-    "cache-manager": "^7.2.8",
-    "cache-manager-redis-yet": "^5.1.5",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.2",
     "jsonwebtoken": "^9.0.2",
