@@ -54,9 +54,12 @@ describe('PermissionsService', () => {
       id: permissionId,
       code: 'NEW',
     });
-    expect(permissionRepository.merge).toHaveBeenCalledWith({ id: permissionId, code: 'OLD' }, {
-      code: 'NEW',
-    });
+    expect(permissionRepository.merge).toHaveBeenCalledWith(
+      { id: permissionId, code: 'OLD' },
+      {
+        code: 'NEW',
+      },
+    );
   });
 
   it('deletes a permission and returns message', async () => {
@@ -82,9 +85,7 @@ describe('PermissionsService', () => {
   });
 
   it('findAll returns list of permissions', async () => {
-    (permissionRepository.findAll as jest.Mock).mockResolvedValue([
-      { id: permissionId, code: 'PERM' },
-    ]);
+    (permissionRepository.findAll as jest.Mock).mockResolvedValue([{ id: permissionId, code: 'PERM' }]);
 
     await expect(service.findAll()).resolves.toEqual([{ id: permissionId, code: 'PERM' }]);
   });

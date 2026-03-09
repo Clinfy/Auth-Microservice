@@ -55,7 +55,12 @@ export class PermissionsService {
 
   async findOne(id: string): Promise<PermissionEntity> {
     const permission = await this.permissionRepository.findOneById(id);
-    if (!permission) throw new PermissionsException('Permission not found', PermissionsErrorCodes.PERMISSION_NOT_FOUND, HttpStatus.NOT_FOUND);
+    if (!permission)
+      throw new PermissionsException(
+        'Permission not found',
+        PermissionsErrorCodes.PERMISSION_NOT_FOUND,
+        HttpStatus.NOT_FOUND,
+      );
     return permission;
   }
 
@@ -63,7 +68,11 @@ export class PermissionsService {
     try {
       return await this.permissionRepository.findAll();
     } catch (error) {
-      throw new PermissionsException('Permissions not found', PermissionsErrorCodes.PERMISSION_NOT_FOUND, error.status ?? HttpStatus.NOT_FOUND);
+      throw new PermissionsException(
+        'Permissions not found',
+        PermissionsErrorCodes.PERMISSION_NOT_FOUND,
+        error.status ?? HttpStatus.NOT_FOUND,
+      );
     }
   }
 }

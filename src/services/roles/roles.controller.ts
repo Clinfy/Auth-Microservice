@@ -55,10 +55,7 @@ export class RolesController {
   @ApiUnauthorizedResponse({ description: 'Missing or invalid bearer token' })
   @ApiForbiddenResponse({ description: 'Insufficient permissions' })
   @Patch('assign-permissions/:id')
-  assignPermissions(
-    @Param('id') id: string,
-    @Body() dto: AssignPermissionDTO,
-  ): Promise<RoleEntity> {
+  assignPermissions(@Param('id') id: string, @Body() dto: AssignPermissionDTO): Promise<RoleEntity> {
     return this.rolesService.assignPermissions(id, dto);
   }
 

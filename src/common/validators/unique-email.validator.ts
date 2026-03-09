@@ -33,10 +33,7 @@ export class IsUniqueEmailConstraint implements ValidatorConstraintInterface {
   }
 }
 
-export function IsUniqueEmail(
-  options?: { ignoreIdField?: string },
-  validationOptions?: ValidationOptions,
-) {
+export function IsUniqueEmail(options?: { ignoreIdField?: string }, validationOptions?: ValidationOptions) {
   return function (object: any, propertyName: string) {
     registerDecorator({
       target: object.constructor,

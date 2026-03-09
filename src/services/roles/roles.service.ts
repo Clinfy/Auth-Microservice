@@ -19,7 +19,11 @@ export class RolesService {
     try {
       return await this.roleRepository.save(this.roleRepository.create({ ...dto, created_by: request.user }));
     } catch (error) {
-      throw new RolesException('Role creation failed', RolesErrorCodes.ROLES_NOT_CREATED, error.status ?? HttpStatus.INTERNAL_SERVER_ERROR);
+      throw new RolesException(
+        'Role creation failed',
+        RolesErrorCodes.ROLES_NOT_CREATED,
+        error.status ?? HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
   }
 
@@ -27,7 +31,11 @@ export class RolesService {
     try {
       return await this.roleRepository.save(await this.roleRepository.merge(await this.findOne(id), dto));
     } catch (error) {
-      throw new RolesException('Role update failed', RolesErrorCodes.ROLES_NOT_UPDATED, error.status ?? HttpStatus.INTERNAL_SERVER_ERROR);
+      throw new RolesException(
+        'Role update failed',
+        RolesErrorCodes.ROLES_NOT_UPDATED,
+        error.status ?? HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
   }
 
@@ -37,7 +45,11 @@ export class RolesService {
       await this.roleRepository.remove(role);
       return { message: `Role ${role.name} deleted` };
     } catch (error) {
-      throw new RolesException('Role deletion failed', RolesErrorCodes.ROLES_NOT_DELETED, error.status ?? HttpStatus.INTERNAL_SERVER_ERROR);
+      throw new RolesException(
+        'Role deletion failed',
+        RolesErrorCodes.ROLES_NOT_DELETED,
+        error.status ?? HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
   }
 
@@ -61,7 +73,11 @@ export class RolesService {
       role.permissions = await Promise.all(dto.permissionsIds.map((id) => this.permissionService.findOne(id)));
       return await this.roleRepository.save(role);
     } catch (error) {
-      throw new RolesException('Permission assignment failed', RolesErrorCodes.ROLES_ASSIGN_ERROR, error.status ?? HttpStatus.INTERNAL_SERVER_ERROR);
+      throw new RolesException(
+        'Permission assignment failed',
+        RolesErrorCodes.ROLES_ASSIGN_ERROR,
+        error.status ?? HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
   }
 }

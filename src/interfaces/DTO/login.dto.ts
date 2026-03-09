@@ -12,4 +12,3 @@ export class LoginDTO {
   @IsNotEmpty({ message: 'This field is required' })
   password: string;
 }
-

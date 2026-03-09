@@ -26,11 +26,7 @@ export class AuthGuard implements CanActivate {
 
     const authorizationHeader = request.headers?.authorization;
     if (typeof authorizationHeader !== 'string' || authorizationHeader.trim().length === 0) {
-      throw new AuthException(
-        'Authorization header missing',
-        AuthErrorCodes.AUTH_HEADER_MISSING,
-        HttpStatus.UNAUTHORIZED,
-      );
+      throw new AuthException('Authorization header missing', AuthErrorCodes.AUTH_HEADER_MISSING, HttpStatus.UNAUTHORIZED);
     }
 
     const [scheme, token] = authorizationHeader.trim().split(/\s+/);
@@ -54,11 +50,7 @@ export class AuthGuard implements CanActivate {
       throw new AuthException('Session expired or invalid', AuthErrorCodes.SESSION_INVALID, HttpStatus.UNAUTHORIZED);
     }
     if (!session.active) {
-      throw new AuthException(
-        'This session is no longer active',
-        AuthErrorCodes.SESSION_EXPIRED,
-        HttpStatus.UNAUTHORIZED,
-      );
+      throw new AuthException('This session is no longer active', AuthErrorCodes.SESSION_EXPIRED, HttpStatus.UNAUTHORIZED);
     }
     if (session.email !== payload.email) {
       throw new AuthException('Token/Session mismatch', AuthErrorCodes.SESSION_TOKEN_MISMATCH, HttpStatus.UNAUTHORIZED);
@@ -78,10 +70,7 @@ export class AuthGuard implements CanActivate {
     request.user = authUser;
     this.requestContextService.setUser(authUser);
 
-    const permissions = this.reflector.getAllAndOverride<string[]>(Permissions, [
-      context.getHandler(),
-      context.getClass(),
-    ]);
+    const permissions = this.reflector.getAllAndOverride<string[]>(Permissions, [context.getHandler(), context.getClass()]);
 
     if (!permissions || permissions.length === 0) {
       return true;
@@ -90,11 +79,7 @@ export class AuthGuard implements CanActivate {
     const hasAllPermissions = permissions.some((permission) => session.permissions.includes(permission));
 
     if (!hasAllPermissions) {
-      throw new AuthException(
-        'Insufficient permissions',
-        AuthErrorCodes.INSUFFICIENT_PERMISSIONS,
-        HttpStatus.FORBIDDEN,
-      );
+      throw new AuthException('Insufficient permissions', AuthErrorCodes.INSUFFICIENT_PERMISSIONS, HttpStatus.FORBIDDEN);
     }
 
     return true;

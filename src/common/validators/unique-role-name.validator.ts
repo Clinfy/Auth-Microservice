@@ -33,10 +33,7 @@ export class IsUniqueRoleNameConstraint implements ValidatorConstraintInterface 
   }
 }
 
-export function IsUniqueRoleName(
-  options?: { ignoreIdField?: string },
-  validationOptions?: ValidationOptions,
-) {
+export function IsUniqueRoleName(options?: { ignoreIdField?: string }, validationOptions?: ValidationOptions) {
   return function (object: any, propertyName: string) {
     registerDecorator({
       target: object.constructor,

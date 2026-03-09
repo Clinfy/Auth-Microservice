@@ -235,7 +235,11 @@ export class UsersService {
       throw new UsersException('User not found', UsersErrorCodes.USER_NOT_FOUND, HttpStatus.NOT_FOUND);
     }
     if (user.status != UserStatus.PENDING) {
-      throw new UsersException('User has already been activated', UsersErrorCodes.USER_ALREADY_ACTIVE, HttpStatus.BAD_REQUEST);
+      throw new UsersException(
+        'User has already been activated',
+        UsersErrorCodes.USER_ALREADY_ACTIVE,
+        HttpStatus.BAD_REQUEST,
+      );
     }
     const isPasswordValid = await compare(dto.password, user.password);
     if (!isPasswordValid) {

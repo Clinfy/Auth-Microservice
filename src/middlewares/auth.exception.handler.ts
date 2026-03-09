@@ -13,7 +13,7 @@ export enum AuthErrorCodes {
 }
 
 export class AuthException extends HttpException {
-  constructor (message: string, errorCode: AuthErrorCodes, status: HttpStatus) {
-    super ({message, errorCode, statusCode: status}, status);
+  constructor(message: string, errorCode: AuthErrorCodes, status: HttpStatus) {
+    super({ message, errorCode, statusCode: status }, status);
   }
 }

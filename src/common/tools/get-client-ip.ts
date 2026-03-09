@@ -3,10 +3,7 @@ import { Request } from 'express';
 export function getClientIp(req: Request) {
   const xff = req.headers['x-forwarded-for'];
   const ip =
-    (typeof xff === 'string' ? xff.split(',')[0].trim() : undefined) ||
-    req.ip ||
-    req.socket?.remoteAddress ||
-    'unknown';
+    (typeof xff === 'string' ? xff.split(',')[0].trim() : undefined) || req.ip || req.socket?.remoteAddress || 'unknown';
 
   if (ip === '::1') return '127.0.0.1';
 

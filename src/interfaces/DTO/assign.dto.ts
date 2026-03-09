@@ -24,4 +24,3 @@ export class AssignRoleDTO {
   @IsArray({ message: 'This field must be an array' })
   rolesIds: string[];
 }
-

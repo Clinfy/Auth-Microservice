@@ -33,9 +33,7 @@ export class SessionsController {
   })
   @ApiForbiddenResponse({ description: 'Insufficient permissions' })
   @Get('user/:userId')
-  getUserSessions(
-    @Param('userId') userId: string,
-  ): Promise<{ sessions: SessionWithSid[]; total: number }> {
+  getUserSessions(@Param('userId') userId: string): Promise<{ sessions: SessionWithSid[]; total: number }> {
     return this.sessionsService.findUserSessions(userId);
   }
 

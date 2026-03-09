@@ -119,10 +119,7 @@ export class OutboxSubscriberService implements EntitySubscriberInterface {
     );
   }
 
-  private resolveEntityName(
-    metadata: EntityMetadata | undefined,
-    entity: Record<string, unknown>,
-  ): string {
+  private resolveEntityName(metadata: EntityMetadata | undefined, entity: Record<string, unknown>): string {
     return metadata?.targetName ?? metadata?.name ?? entity.constructor?.name ?? 'UnknownEntity';
   }
 
@@ -139,11 +136,7 @@ export class OutboxSubscriberService implements EntitySubscriberInterface {
     );
   }
 
-  private async createOutboxRecord(
-    manager: EntityManager,
-    pattern: string,
-    payload: Record<string, unknown>,
-  ) {
+  private async createOutboxRecord(manager: EntityManager, pattern: string, payload: Record<string, unknown>) {
     const outbox = manager.create(OutboxEntity, {
       pattern,
       destination: 'audit_queue',

@@ -81,13 +81,9 @@ describe('UsersService', () => {
 
   describe('canDo', () => {
     it('returns true when permission exists', async () => {
-      redisService.raw.get.mockResolvedValue(
-        JSON.stringify({ active: true, permissions: ['EDIT_USER'] }),
-      );
+      redisService.raw.get.mockResolvedValue(JSON.stringify({ active: true, permissions: ['EDIT_USER'] }));
 
-      await expect(
-        service.canDo({ session_id: 'abc', id: '1', email: '', person_id: '' }, 'EDIT_USER'),
-      ).resolves.toBe(true);
+      await expect(service.canDo({ session_id: 'abc', id: '1', email: '', person_id: '' }, 'EDIT_USER')).resolves.toBe(true);
       expect(redisService.raw.get).toHaveBeenCalledWith('auth_session:abc');
     });
 
@@ -129,22 +125,16 @@ describe('UsersService', () => {
       redisService.raw.set.mockResolvedValue('OK');
       (userRepository.findOneByEmail as jest.Mock).mockResolvedValue(activeUser);
       (compare as jest.Mock).mockResolvedValue(true);
-      (jwtService.generateToken as jest.Mock)
-        .mockResolvedValueOnce('access-token')
-        .mockResolvedValueOnce('refresh-token');
+      (jwtService.generateToken as jest.Mock).mockResolvedValueOnce('access-token').mockResolvedValueOnce('refresh-token');
 
-      await expect(
-        service.logIn({ email: 'john@example.com', password: 'secret' }, request),
-      ).resolves.toEqual({
+      await expect(service.logIn({ email: 'john@example.com', password: 'secret' }, request)).resolves.toEqual({
         accessToken: 'access-token',
         refreshToken: 'refresh-token',
       });
 
-      expect(redisService.raw.set).toHaveBeenCalledWith(
-        expect.stringMatching(/^auth_session:/),
-        expect.any(String),
-        { PX: 1000 },
-      );
+      expect(redisService.raw.set).toHaveBeenCalledWith(expect.stringMatching(/^auth_session:/), expect.any(String), {
+        PX: 1000,
+      });
       const [[cacheKey, rawSession]] = redisService.raw.set.mock.calls;
       const sessionId = cacheKey.replace('auth_session:', '');
       const session = JSON.parse(rawSession);
@@ -157,19 +147,16 @@ describe('UsersService', () => {
         permissions: [],
         active: true,
       });
-      expect(redisService.raw.sAdd).toHaveBeenCalledWith(
-        `user_sessions:${activeUser.id}`,
-        sessionId,
-      );
+      expect(redisService.raw.sAdd).toHaveBeenCalledWith(`user_sessions:${activeUser.id}`, sessionId);
       expect(redisService.raw.pExpire).toHaveBeenCalledWith(`user_sessions:${activeUser.id}`, 1000);
     });
 
     it('throws UnauthorizedException when user not found', async () => {
       (userRepository.findOneByEmail as jest.Mock).mockResolvedValue(null);
 
-      await expect(
-        service.logIn({ email: 'john@example.com', password: 'secret' }, request),
-      ).rejects.toBeInstanceOf(UsersException);
+      await expect(service.logIn({ email: 'john@example.com', password: 'secret' }, request)).rejects.toBeInstanceOf(
+        UsersException,
+      );
     });
 
     it('throws UsersException when user inactive', async () => {
@@ -178,9 +165,9 @@ describe('UsersService', () => {
         status: UserStatus.INACTIVE,
       });
 
-      await expect(
-        service.logIn({ email: 'john@example.com', password: 'secret' }, request),
-      ).rejects.toBeInstanceOf(UsersException);
+      await expect(service.logIn({ email: 'john@example.com', password: 'secret' }, request)).rejects.toBeInstanceOf(
+        UsersException,
+      );
     });
 
     it('throws UsersException when user is pending', async () => {
@@ -189,18 +176,18 @@ describe('UsersService', () => {
         status: UserStatus.PENDING,
       });
 
-      await expect(
-        service.logIn({ email: 'john@example.com', password: 'secret' }, request),
-      ).rejects.toBeInstanceOf(UsersException);
+      await expect(service.logIn({ email: 'john@example.com', password: 'secret' }, request)).rejects.toBeInstanceOf(
+        UsersException,
+      );
     });
 
     it('throws UsersException when password comparison fails', async () => {
       (userRepository.findOneByEmail as jest.Mock).mockResolvedValue(activeUser);
       (compare as jest.Mock).mockResolvedValue(false);
 
-      await expect(
-        service.logIn({ email: 'john@example.com', password: 'wrong' }, request),
-      ).rejects.toBeInstanceOf(UsersException);
+      await expect(service.logIn({ email: 'john@example.com', password: 'wrong' }, request)).rejects.toBeInstanceOf(
+        UsersException,
+      );
     });
 
     it('throws UsersException if token generation fails', async () => {
@@ -208,9 +195,9 @@ describe('UsersService', () => {
       (compare as jest.Mock).mockResolvedValue(true);
       (jwtService.generateToken as jest.Mock).mockRejectedValue(new Error('sign error'));
 
-      await expect(
-        service.logIn({ email: 'john@example.com', password: 'secret' }, request),
-      ).rejects.toBeInstanceOf(UsersException);
+      await expect(service.logIn({ email: 'john@example.com', password: 'secret' }, request)).rejects.toBeInstanceOf(
+        UsersException,
+      );
     });
   });
 
@@ -244,10 +231,7 @@ describe('UsersService', () => {
         JSON.stringify({ id: 'user-1' }),
         { PX: expect.any(Number) },
       );
-      expect(emailService.sendResetPasswordMail).toHaveBeenCalledWith(
-        'user@example.com',
-        expect.any(String),
-      );
+      expect(emailService.sendResetPasswordMail).toHaveBeenCalledWith('user@example.com', expect.any(String));
     });
 
     it('returns success message without side effects when user missing', async () => {
@@ -272,9 +256,7 @@ describe('UsersService', () => {
       };
       (userRepository.findOneById as jest.Mock).mockResolvedValue(storedUser);
 
-      await expect(
-        service.resetPassword('token-123', { password: 'new-password' }),
-      ).resolves.toEqual({
+      await expect(service.resetPassword('token-123', { password: 'new-password' })).resolves.toEqual({
         message: 'Password reset successfully',
       });
 
@@ -291,18 +273,14 @@ describe('UsersService', () => {
     it('throws UsersException when token invalid or expired', async () => {
       redisService.raw.get.mockResolvedValue(null);
 
-      await expect(service.resetPassword('token', { password: 'new' })).rejects.toBeInstanceOf(
-        UsersException,
-      );
+      await expect(service.resetPassword('token', { password: 'new' })).rejects.toBeInstanceOf(UsersException);
     });
 
     it('throws UsersException when user missing', async () => {
       redisService.raw.get.mockResolvedValue(JSON.stringify({ id: 'missing-id' }));
       (userRepository.findOneById as jest.Mock).mockResolvedValue(null);
 
-      await expect(service.resetPassword('token', { password: 'new' })).rejects.toBeInstanceOf(
-        UsersException,
-      );
+      await expect(service.resetPassword('token', { password: 'new' })).rejects.toBeInstanceOf(UsersException);
     });
   });
 
@@ -350,9 +328,7 @@ describe('UsersService', () => {
       });
       redisService.raw.get.mockResolvedValue(null);
 
-      await expect(service.refreshToken('refresh-token')).rejects.toBeInstanceOf(
-        UsersException,
-      );
+      await expect(service.refreshToken('refresh-token')).rejects.toBeInstanceOf(UsersException);
     });
 
     it('throws UsersException when session inactive', async () => {
@@ -363,9 +339,7 @@ describe('UsersService', () => {
       });
       redisService.raw.get.mockResolvedValue(JSON.stringify({ user_id: 'user-1', active: false }));
 
-      await expect(service.refreshToken('refresh-token')).rejects.toBeInstanceOf(
-        UsersException,
-      );
+      await expect(service.refreshToken('refresh-token')).rejects.toBeInstanceOf(UsersException);
     });
   });
 
@@ -382,11 +356,13 @@ describe('UsersService', () => {
       const result = await service.register(dto, request);
 
       expect(result).toEqual({ message: 'User new@example.com created' });
-      expect(userRepository.create).toHaveBeenCalledWith(expect.objectContaining({
-        email: dto.email,
-        password: dto.password,
-        person_id: dto.person_id,
-      }));
+      expect(userRepository.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          email: dto.email,
+          password: dto.password,
+          person_id: dto.person_id,
+        }),
+      );
     });
   });
 

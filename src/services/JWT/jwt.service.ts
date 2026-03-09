@@ -94,21 +94,13 @@ export class JwtService {
       }
 
       if (type === 'refresh' && !decoded.sid) {
-        throw new JwtException(
-          'Token payload is missing data',
-          JwtErrorCodes.PAYLOAD_MISSING_DATA,
-          HttpStatus.UNAUTHORIZED
-        );
+        throw new JwtException('Token payload is missing data', JwtErrorCodes.PAYLOAD_MISSING_DATA, HttpStatus.UNAUTHORIZED);
       }
 
       return decoded;
     } catch (error) {
       if (error instanceof TokenExpiredError) {
-        throw new JwtException(
-          'Token has expired',
-          JwtErrorCodes.TOKEN_EXPIRED,
-          HttpStatus.UNAUTHORIZED,
-        );
+        throw new JwtException('Token has expired', JwtErrorCodes.TOKEN_EXPIRED, HttpStatus.UNAUTHORIZED);
       }
 
       if (error instanceof JsonWebTokenError || error instanceof NotBeforeError) {
@@ -131,7 +123,10 @@ export class JwtService {
 
       sign(payload, config.secret, options, (err, token) => {
         if (err || !token) {
-          reject(err ??  new JwtException('Token signing failed', JwtErrorCodes.TOKEN_SIGNING_FAILED, HttpStatus.INTERNAL_SERVER_ERROR));
+          reject(
+            err ??
+              new JwtException('Token signing failed', JwtErrorCodes.TOKEN_SIGNING_FAILED, HttpStatus.INTERNAL_SERVER_ERROR),
+          );
           return;
         }
 

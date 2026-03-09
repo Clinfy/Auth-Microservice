@@ -33,10 +33,7 @@ export class IsUniquePermissionCodeConstraint implements ValidatorConstraintInte
   }
 }
 
-export function IsUniquePermissionCode(
-  options?: { ignoreIdField?: string },
-  validationOptions?: ValidationOptions,
-) {
+export function IsUniquePermissionCode(options?: { ignoreIdField?: string }, validationOptions?: ValidationOptions) {
   return function (object: any, propertyName: string) {
     registerDecorator({
       target: object.constructor,

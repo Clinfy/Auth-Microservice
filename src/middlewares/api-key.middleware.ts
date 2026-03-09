@@ -38,12 +38,14 @@ export class ApiKeyGuard implements CanActivate {
     }
 
     const apiKeyPermissions = apiKey.permissionCodes;
-    const hasAllPermissions = requiredPermissions.some((permission) =>
-      apiKeyPermissions.includes(permission),
-    );
+    const hasAllPermissions = requiredPermissions.some((permission) => apiKeyPermissions.includes(permission));
 
     if (!hasAllPermissions) {
-      throw new AuthException('Insufficient API key permissions', AuthErrorCodes.INSUFFICIENT_PERMISSIONS, HttpStatus.FORBIDDEN);
+      throw new AuthException(
+        'Insufficient API key permissions',
+        AuthErrorCodes.INSUFFICIENT_PERMISSIONS,
+        HttpStatus.FORBIDDEN,
+      );
     }
 
     return true;
