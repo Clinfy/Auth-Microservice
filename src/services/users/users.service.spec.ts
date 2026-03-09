@@ -1,9 +1,4 @@
-import {
-  ForbiddenException,
-  InternalServerErrorException,
-  NotFoundException,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { UsersException } from './users.exception.handler';
 import { DataSource } from 'typeorm';
 import { UsersRepository } from './users.repository';
 import { UsersService } from './users.service';
@@ -100,7 +95,7 @@ describe('UsersService', () => {
       redisService.raw.get.mockResolvedValue(null);
       await expect(
         service.canDo({ session_id: 'missing', id: '1', email: '', person_id: '' }, 'DELETE_USER'),
-      ).rejects.toBeInstanceOf(UnauthorizedException);
+      ).rejects.toBeInstanceOf(UsersException);
     });
 
     it('throws ForbiddenException when permission missing', async () => {
@@ -108,7 +103,7 @@ describe('UsersService', () => {
 
       await expect(
         service.canDo({ session_id: 'abc', id: '1', email: '', person_id: '' }, 'DELETE_USER'),
-      ).rejects.toBeInstanceOf(ForbiddenException);
+      ).rejects.toBeInstanceOf(UsersException);
     });
   });
 
@@ -174,10 +169,10 @@ describe('UsersService', () => {
 
       await expect(
         service.logIn({ email: 'john@example.com', password: 'secret' }, request),
-      ).rejects.toBeInstanceOf(UnauthorizedException);
+      ).rejects.toBeInstanceOf(UsersException);
     });
 
-    it('throws UnauthorizedException when user inactive', async () => {
+    it('throws UsersException when user inactive', async () => {
       (userRepository.findOneByEmail as jest.Mock).mockResolvedValue({
         ...activeUser,
         status: UserStatus.INACTIVE,
@@ -185,10 +180,10 @@ describe('UsersService', () => {
 
       await expect(
         service.logIn({ email: 'john@example.com', password: 'secret' }, request),
-      ).rejects.toBeInstanceOf(UnauthorizedException);
+      ).rejects.toBeInstanceOf(UsersException);
     });
 
-    it('throws UnauthorizedException when user is pending', async () => {
+    it('throws UsersException when user is pending', async () => {
       (userRepository.findOneByEmail as jest.Mock).mockResolvedValue({
         ...activeUser,
         status: UserStatus.PENDING,
@@ -196,26 +191,26 @@ describe('UsersService', () => {
 
       await expect(
         service.logIn({ email: 'john@example.com', password: 'secret' }, request),
-      ).rejects.toBeInstanceOf(UnauthorizedException);
+      ).rejects.toBeInstanceOf(UsersException);
     });
 
-    it('throws UnauthorizedException when password comparison fails', async () => {
+    it('throws UsersException when password comparison fails', async () => {
       (userRepository.findOneByEmail as jest.Mock).mockResolvedValue(activeUser);
       (compare as jest.Mock).mockResolvedValue(false);
 
       await expect(
         service.logIn({ email: 'john@example.com', password: 'wrong' }, request),
-      ).rejects.toBeInstanceOf(UnauthorizedException);
+      ).rejects.toBeInstanceOf(UsersException);
     });
 
-    it('throws InternalServerErrorException if token generation fails', async () => {
+    it('throws UsersException if token generation fails', async () => {
       (userRepository.findOneByEmail as jest.Mock).mockResolvedValue(activeUser);
       (compare as jest.Mock).mockResolvedValue(true);
       (jwtService.generateToken as jest.Mock).mockRejectedValue(new Error('sign error'));
 
       await expect(
         service.logIn({ email: 'john@example.com', password: 'secret' }, request),
-      ).rejects.toBeInstanceOf(InternalServerErrorException);
+      ).rejects.toBeInstanceOf(UsersException);
     });
   });
 
@@ -293,20 +288,20 @@ describe('UsersService', () => {
       expect(emailService.confirmPasswordChange).toHaveBeenCalledWith('user@example.com');
     });
 
-    it('throws UnauthorizedException when token invalid or expired', async () => {
+    it('throws UsersException when token invalid or expired', async () => {
       redisService.raw.get.mockResolvedValue(null);
 
       await expect(service.resetPassword('token', { password: 'new' })).rejects.toBeInstanceOf(
-        UnauthorizedException,
+        UsersException,
       );
     });
 
-    it('throws NotFoundException when user missing', async () => {
+    it('throws UsersException when user missing', async () => {
       redisService.raw.get.mockResolvedValue(JSON.stringify({ id: 'missing-id' }));
       (userRepository.findOneById as jest.Mock).mockResolvedValue(null);
 
       await expect(service.resetPassword('token', { password: 'new' })).rejects.toBeInstanceOf(
-        NotFoundException,
+        UsersException,
       );
     });
   });
@@ -347,7 +342,7 @@ describe('UsersService', () => {
       expect(jwtService.refreshToken).toHaveBeenCalledWith('refresh-token');
     });
 
-    it('throws UnauthorizedException when session missing', async () => {
+    it('throws UsersException when session missing', async () => {
       (jwtService.getPayload as jest.Mock).mockResolvedValue({
         email: 'user@example.com',
         sid: 'sess-1',
@@ -356,11 +351,11 @@ describe('UsersService', () => {
       redisService.raw.get.mockResolvedValue(null);
 
       await expect(service.refreshToken('refresh-token')).rejects.toBeInstanceOf(
-        UnauthorizedException,
+        UsersException,
       );
     });
 
-    it('throws UnauthorizedException when session inactive', async () => {
+    it('throws UsersException when session inactive', async () => {
       (jwtService.getPayload as jest.Mock).mockResolvedValue({
         email: 'user@example.com',
         sid: 'sess-1',
@@ -369,7 +364,7 @@ describe('UsersService', () => {
       redisService.raw.get.mockResolvedValue(JSON.stringify({ user_id: 'user-1', active: false }));
 
       await expect(service.refreshToken('refresh-token')).rejects.toBeInstanceOf(
-        UnauthorizedException,
+        UsersException,
       );
     });
   });
@@ -415,15 +410,15 @@ describe('UsersService', () => {
       expect(storedUser.password).toBe('N3w!');
     });
 
-    it('throws NotFoundException when user does not exist', async () => {
+    it('throws UsersException when user does not exist', async () => {
       (userRepository.findOneByEmail as jest.Mock).mockResolvedValue(null);
 
       await expect(
         service.firstActivation({ email: 'no@example.com', password: 'temp', new_password: 'N3w!' }),
-      ).rejects.toBeInstanceOf(NotFoundException);
+      ).rejects.toBeInstanceOf(UsersException);
     });
 
-    it('throws ForbiddenException when user already activated', async () => {
+    it('throws UsersException when user already activated', async () => {
       (userRepository.findOneByEmail as jest.Mock).mockResolvedValue({
         id: 'u-1',
         status: UserStatus.ACTIVE,
@@ -431,10 +426,10 @@ describe('UsersService', () => {
 
       await expect(
         service.firstActivation({ email: 'user@example.com', password: 'temp', new_password: 'N3w!' }),
-      ).rejects.toBeInstanceOf(ForbiddenException);
+      ).rejects.toBeInstanceOf(UsersException);
     });
 
-    it('throws UnauthorizedException when password is wrong', async () => {
+    it('throws UsersException when password is wrong', async () => {
       (userRepository.findOneByEmail as jest.Mock).mockResolvedValue({
         id: 'u-1',
         email: 'user@example.com',
@@ -445,7 +440,7 @@ describe('UsersService', () => {
 
       await expect(
         service.firstActivation({ email: 'user@example.com', password: 'wrong', new_password: 'N3w!' }),
-      ).rejects.toBeInstanceOf(UnauthorizedException);
+      ).rejects.toBeInstanceOf(UsersException);
     });
   });
 
@@ -461,19 +456,19 @@ describe('UsersService', () => {
       expect(storedUser.status).toBe(UserStatus.ACTIVE);
     });
 
-    it('throws ForbiddenException when user is not inactive', async () => {
+    it('throws UsersException when user is not inactive', async () => {
       (userRepository.findOneById as jest.Mock).mockResolvedValue({
         id: 'u-1',
         status: UserStatus.ACTIVE,
       });
 
-      await expect(service.activate('u-1')).rejects.toBeInstanceOf(ForbiddenException);
+      await expect(service.activate('u-1')).rejects.toBeInstanceOf(UsersException);
     });
 
-    it('throws NotFoundException when user does not exist', async () => {
+    it('throws UsersException when user does not exist', async () => {
       (userRepository.findOneById as jest.Mock).mockResolvedValue(null);
 
-      await expect(service.activate('missing')).rejects.toBeInstanceOf(NotFoundException);
+      await expect(service.activate('missing')).rejects.toBeInstanceOf(UsersException);
     });
   });
 
@@ -489,19 +484,19 @@ describe('UsersService', () => {
       expect(storedUser.status).toBe(UserStatus.INACTIVE);
     });
 
-    it('throws ForbiddenException when user is not active', async () => {
+    it('throws UsersException when user is not active', async () => {
       (userRepository.findOneById as jest.Mock).mockResolvedValue({
         id: 'u-1',
         status: UserStatus.INACTIVE,
       });
 
-      await expect(service.deactivate('u-1')).rejects.toBeInstanceOf(ForbiddenException);
+      await expect(service.deactivate('u-1')).rejects.toBeInstanceOf(UsersException);
     });
 
-    it('throws NotFoundException when user does not exist', async () => {
+    it('throws UsersException when user does not exist', async () => {
       (userRepository.findOneById as jest.Mock).mockResolvedValue(null);
 
-      await expect(service.deactivate('missing')).rejects.toBeInstanceOf(NotFoundException);
+      await expect(service.deactivate('missing')).rejects.toBeInstanceOf(UsersException);
     });
   });
 
