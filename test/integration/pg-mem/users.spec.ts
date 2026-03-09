@@ -177,9 +177,7 @@ describe('UsersService (integration)', () => {
       new_password: 'N3wS3cret!',
     });
 
-    jwtServiceMock.generateToken.mockImplementation(
-      async (_payload: any, type: string) => `${type}-token`,
-    );
+    jwtServiceMock.generateToken.mockImplementation(async (_payload: any, type: string) => `${type}-token`);
 
     const httpRequest: any = {
       headers: {
@@ -190,21 +188,16 @@ describe('UsersService (integration)', () => {
       socket: { remoteAddress: '127.0.0.1' },
     };
 
-    const tokens = await usersService.logIn(
-      { email: 'bob@example.com', password: 'N3wS3cret!' },
-      httpRequest,
-    );
+    const tokens = await usersService.logIn({ email: 'bob@example.com', password: 'N3wS3cret!' }, httpRequest);
 
     expect(tokens).toEqual({
       accessToken: 'auth-token',
       refreshToken: 'refresh-token',
     });
     expect(jwtServiceMock.generateToken).toHaveBeenCalledTimes(2);
-    expect(redisServiceMock.raw.set).toHaveBeenCalledWith(
-      expect.stringMatching(/^auth_session:/),
-      expect.any(String),
-      { PX: 1000 },
-    );
+    expect(redisServiceMock.raw.set).toHaveBeenCalledWith(expect.stringMatching(/^auth_session:/), expect.any(String), {
+      PX: 1000,
+    });
     const [indexKey] = redisServiceMock.raw.sAdd.mock.calls[0];
     expect(indexKey).toMatch(/^user_sessions:/);
   });
@@ -236,9 +229,7 @@ describe('UsersService (integration)', () => {
     expect(updated.roles).toHaveLength(1);
     expect(updated.roles[0].name).toBe('manager');
 
-    redisServiceMock.raw.get.mockResolvedValue(
-      JSON.stringify({ active: true, permissions: ['USERS_ASSIGN'] }),
-    );
+    redisServiceMock.raw.get.mockResolvedValue(JSON.stringify({ active: true, permissions: ['USERS_ASSIGN'] }));
     const canDo = await usersService.canDo(
       {
         id: updated.id,
@@ -270,9 +261,7 @@ describe('UsersService (integration)', () => {
       sid: 'sess-1',
       exp: Math.floor(Date.now() / 1000) + 600,
     });
-    redisServiceMock.raw.get.mockResolvedValue(
-      JSON.stringify({ user_id: stored!.id, permissions: [], active: true }),
-    );
+    redisServiceMock.raw.get.mockResolvedValue(JSON.stringify({ user_id: stored!.id, permissions: [], active: true }));
     jwtServiceMock.refreshToken.mockResolvedValue({
       accessToken: 'next-access',
       refreshToken: 'next-refresh',
@@ -316,10 +305,7 @@ describe('UsersService (integration)', () => {
       JSON.stringify({ id: stored!.id }),
       { PX: expect.any(Number) },
     );
-    expect(emailServiceMock.sendResetPasswordMail).toHaveBeenCalledWith(
-      'dave@example.com',
-      expect.any(String),
-    );
+    expect(emailServiceMock.sendResetPasswordMail).toHaveBeenCalledWith('dave@example.com', expect.any(String));
   });
 
   it('resets the password, clears the token from redis, and notifies the user', async () => {
@@ -334,9 +320,7 @@ describe('UsersService (integration)', () => {
     emailServiceMock.sendResetPasswordMail.mockResolvedValue(undefined);
     await usersService.forgotPassword({ email: 'erin@example.com' });
 
-    const [[redisKey]] = redisServiceMock.raw.set.mock.calls.filter((call) =>
-      call[0].startsWith('reset_password:'),
-    );
+    const [[redisKey]] = redisServiceMock.raw.set.mock.calls.filter((call) => call[0].startsWith('reset_password:'));
     const token = redisKey.replace('reset_password:', '');
 
     const stored = await userRepository.findOneBy({
@@ -429,10 +413,7 @@ describe('UsersService (integration)', () => {
   });
 
   it('findAll returns all registered users', async () => {
-    await usersService.register(
-      { email: 'julia@example.com', password: 'P@ssword1', person_id: randomUUID() },
-      request,
-    );
+    await usersService.register({ email: 'julia@example.com', password: 'P@ssword1', person_id: randomUUID() }, request);
 
     const users = await usersService.findAll();
     const emails = users.map((u) => u.email);

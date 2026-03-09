@@ -1,6 +1,6 @@
-import { NotFoundException } from '@nestjs/common';
 import { PermissionsRepository } from './permissions.repository';
 import { PermissionsService } from './permissions.service';
+import { PermissionsException } from './permissions.exception.handler';
 
 describe('PermissionsService', () => {
   let permissionRepository: jest.Mocked<Partial<PermissionsRepository>>;
@@ -54,9 +54,12 @@ describe('PermissionsService', () => {
       id: permissionId,
       code: 'NEW',
     });
-    expect(permissionRepository.merge).toHaveBeenCalledWith({ id: permissionId, code: 'OLD' }, {
-      code: 'NEW',
-    });
+    expect(permissionRepository.merge).toHaveBeenCalledWith(
+      { id: permissionId, code: 'OLD' },
+      {
+        code: 'NEW',
+      },
+    );
   });
 
   it('deletes a permission and returns message', async () => {
@@ -75,16 +78,14 @@ describe('PermissionsService', () => {
     });
   });
 
-  it('findOne throws NotFoundException when missing', async () => {
+  it('findOne throws PermissionsException when missing', async () => {
     (permissionRepository.findOneById as jest.Mock).mockResolvedValue(null);
 
-    await expect(service.findOne(missingPermissionId)).rejects.toBeInstanceOf(NotFoundException);
+    await expect(service.findOne(missingPermissionId)).rejects.toBeInstanceOf(PermissionsException);
   });
 
   it('findAll returns list of permissions', async () => {
-    (permissionRepository.findAll as jest.Mock).mockResolvedValue([
-      { id: permissionId, code: 'PERM' },
-    ]);
+    (permissionRepository.findAll as jest.Mock).mockResolvedValue([{ id: permissionId, code: 'PERM' }]);
 
     await expect(service.findAll()).resolves.toEqual([{ id: permissionId, code: 'PERM' }]);
   });

@@ -18,10 +18,7 @@ export class PermissionsRepository {
     return this.ormRepository.create(permission);
   }
 
-  async merge(
-    permission: PermissionEntity,
-    changes: Partial<PermissionEntity>,
-  ): Promise<PermissionEntity> {
+  async merge(permission: PermissionEntity, changes: Partial<PermissionEntity>): Promise<PermissionEntity> {
     return this.ormRepository.merge(permission, changes);
   }
 

@@ -42,10 +42,7 @@ export class PermissionsController {
   @ApiUnauthorizedResponse({ description: 'Missing or invalid bearer token' })
   @ApiForbiddenResponse({ description: 'Insufficient permissions' })
   @Post('new')
-  create(
-    @Req() request: requestUser.RequestWithUser,
-    @Body() dto: CreatePermissionDTO,
-  ): Promise<PermissionEntity> {
+  create(@Req() request: requestUser.RequestWithUser, @Body() dto: CreatePermissionDTO): Promise<PermissionEntity> {
     return this.permissionService.create(dto, request);
   }
 

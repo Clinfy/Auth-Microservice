@@ -26,4 +26,3 @@ export class RegisterUserDTO {
   @IsNotEmpty({ message: 'This field is required' })
   person_id: string;
 }
-

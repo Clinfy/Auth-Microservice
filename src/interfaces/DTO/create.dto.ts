@@ -18,4 +18,3 @@ export class CreateRoleDTO {
   @IsUniqueRoleName()
   name: string;
 }
-

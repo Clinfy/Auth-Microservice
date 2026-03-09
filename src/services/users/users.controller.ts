@@ -51,10 +51,7 @@ export class UsersController {
     schema: { type: 'object', properties: { message: { type: 'string' } } },
   })
   @Post('register')
-  register(
-    @Req() request: requestUser.RequestWithUser,
-    @Body() dto: RegisterUserDTO,
-  ): Promise<{ message: string }> {
+  register(@Req() request: requestUser.RequestWithUser, @Body() dto: RegisterUserDTO): Promise<{ message: string }> {
     return this.userService.register(dto, request);
   }
 
@@ -151,10 +148,7 @@ export class UsersController {
   @ApiUnauthorizedResponse({ description: 'Missing or invalid bearer token' })
   @ApiForbiddenResponse({ description: 'Insufficient permissions' })
   @Get('can-do/:permission')
-  canDo(
-    @Req() request: requestUser.RequestWithUser,
-    @Param('permission') permission: string,
-  ): Promise<boolean> {
+  canDo(@Req() request: requestUser.RequestWithUser, @Param('permission') permission: string): Promise<boolean> {
     return this.userService.canDo(request.user, permission);
   }
 
@@ -222,10 +216,7 @@ export class UsersController {
   @ApiUnauthorizedResponse({ description: 'Invalid or expired token' })
   @ApiForbiddenResponse({ description: 'Password already changed' })
   @Post('reset-password')
-  resetPassword(
-    @Query('token') token: string,
-    @Body() dto: ResetPasswordDTO,
-  ): Promise<{ message: string }> {
+  resetPassword(@Query('token') token: string, @Body() dto: ResetPasswordDTO): Promise<{ message: string }> {
     return this.userService.resetPassword(token, dto);
   }
 

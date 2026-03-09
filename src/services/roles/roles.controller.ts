@@ -16,6 +16,7 @@ import { RoleEntity } from 'src/entities/role.entity';
 import { AssignPermissionDTO } from 'src/interfaces/DTO/assign.dto';
 import { PatchRoleDTO } from 'src/interfaces/DTO/patch.dto';
 import * as requestUser from 'src/interfaces/request-user';
+import { CreateRoleDTO } from 'src/interfaces/DTO/create.dto';
 
 @ApiTags('Roles')
 @ApiBearerAuth()
@@ -30,7 +31,7 @@ export class RolesController {
   @ApiUnauthorizedResponse({ description: 'Missing or invalid bearer token' })
   @ApiForbiddenResponse({ description: 'Insufficient permissions' })
   @Post('new')
-  create(@Req() request: requestUser.RequestWithUser, @Body() dto: any): Promise<RoleEntity> {
+  create(@Req() request: requestUser.RequestWithUser, @Body() dto: CreateRoleDTO): Promise<RoleEntity> {
     return this.rolesService.create(dto, request);
   }
 
@@ -54,10 +55,7 @@ export class RolesController {
   @ApiUnauthorizedResponse({ description: 'Missing or invalid bearer token' })
   @ApiForbiddenResponse({ description: 'Insufficient permissions' })
   @Patch('assign-permissions/:id')
-  assignPermissions(
-    @Param('id') id: string,
-    @Body() dto: AssignPermissionDTO,
-  ): Promise<RoleEntity> {
+  assignPermissions(@Param('id') id: string, @Body() dto: AssignPermissionDTO): Promise<RoleEntity> {
     return this.rolesService.assignPermissions(id, dto);
   }
 

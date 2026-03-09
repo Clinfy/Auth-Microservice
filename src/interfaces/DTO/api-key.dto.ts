@@ -19,4 +19,3 @@ export class CreateApiKeyDTO extends AssignApiPermissionDTO {
   @IsString({ message: 'client must be a string' })
   client: string;
 }
-

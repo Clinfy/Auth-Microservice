@@ -42,10 +42,7 @@ export class ApiKeysController {
   @ApiUnauthorizedResponse({ description: 'API key header missing or invalid' })
   @ApiForbiddenResponse({ description: 'Invalid or inactive API key' })
   @Get('can-do/:permission')
-  canDo(
-    @Req() request: requestWithApi.RequestWithApiKey,
-    @Param('permission') permission: string,
-  ): Promise<boolean> {
+  canDo(@Req() request: requestWithApi.RequestWithApiKey, @Param('permission') permission: string): Promise<boolean> {
     return this.apiKeysService.canDo(request, permission);
   }
 

@@ -8,6 +8,7 @@ import {
 import { DataSource, Not } from 'typeorm';
 import { PermissionEntity } from 'src/entities/permission.entity';
 import { Injectable } from '@nestjs/common';
+import { PermissionsErrorCodes } from 'src/services/permissions/permissions.exception.handler';
 
 @ValidatorConstraint({ name: 'IsUniquePermissionCode', async: true })
 @Injectable()
@@ -23,7 +24,7 @@ export class IsUniquePermissionCodeConstraint implements ValidatorConstraintInte
     if (ignoreId) where.id = Not(ignoreId);
 
     const repo = this.dataSource.getRepository(PermissionEntity);
-    const exists = await repo.exist({ where });
+    const exists = await repo.exists({ where });
     return !exists;
   }
 
@@ -32,16 +33,19 @@ export class IsUniquePermissionCodeConstraint implements ValidatorConstraintInte
   }
 }
 
-export function IsUniquePermissionCode(
-  options?: { ignoreIdField?: string },
-  validationOptions?: ValidationOptions,
-) {
+export function IsUniquePermissionCode(options?: { ignoreIdField?: string }, validationOptions?: ValidationOptions) {
   return function (object: any, propertyName: string) {
     registerDecorator({
       target: object.constructor,
       propertyName,
       constraints: [options || {}],
-      options: validationOptions,
+      options: {
+        ...validationOptions,
+        context: {
+          errorCode: PermissionsErrorCodes.PERMISSION_ALREADY_EXISTS,
+          ...validationOptions?.context,
+        },
+      },
       validator: IsUniquePermissionCodeConstraint,
     });
   };

@@ -8,6 +8,7 @@ import {
 import { DataSource, Not } from 'typeorm';
 import { UserEntity } from 'src/entities/user.entity';
 import { Injectable } from '@nestjs/common';
+import { UsersErrorCodes } from 'src/services/users/users.exception.handler';
 
 @ValidatorConstraint({ name: 'IsUniqueEmail', async: true })
 @Injectable()
@@ -23,7 +24,7 @@ export class IsUniqueEmailConstraint implements ValidatorConstraintInterface {
     if (ignoreId) where.id = Not(ignoreId);
 
     const repo = this.dataSource.getRepository(UserEntity);
-    const exists = await repo.exist({ where });
+    const exists = await repo.exists({ where });
     return !exists;
   }
 
@@ -32,16 +33,19 @@ export class IsUniqueEmailConstraint implements ValidatorConstraintInterface {
   }
 }
 
-export function IsUniqueEmail(
-  options?: { ignoreIdField?: string },
-  validationOptions?: ValidationOptions,
-) {
+export function IsUniqueEmail(options?: { ignoreIdField?: string }, validationOptions?: ValidationOptions) {
   return function (object: any, propertyName: string) {
     registerDecorator({
       target: object.constructor,
       propertyName,
       constraints: [options || {}],
-      options: validationOptions,
+      options: {
+        ...validationOptions,
+        context: {
+          errorCode: UsersErrorCodes.USER_ALREADY_REGISTERED,
+          ...validationOptions?.context,
+        },
+      },
       validator: IsUniqueEmailConstraint,
     });
   };
