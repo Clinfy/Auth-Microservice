@@ -1,4 +1,5 @@
 import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
+import { APP_INTERCEPTOR } from '@nestjs/core';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { ConfigModule, ConfigService } from '@nestjs/config';
@@ -24,6 +25,8 @@ import { validate } from 'src/config/env-validation';
 import { WinstonModule } from 'nest-winston';
 import winston from 'winston';
 import { AllExceptionsFilter } from 'src/common/filters/all-exceptions.filter';
+import { ObservabilityModule } from 'src/observability/observability.module';
+import { HttpMetricsInterceptor } from 'src/observability/http-metrics.interceptor';
 
 @Module({
   imports: [
@@ -75,6 +78,7 @@ import { AllExceptionsFilter } from 'src/common/filters/all-exceptions.filter';
       ],
     }),
 
+    ObservabilityModule,
     RedisModule,
     ScheduleModule.forRoot(),
     TypeOrmModule.forFeature(entities),
@@ -91,6 +95,10 @@ import { AllExceptionsFilter } from 'src/common/filters/all-exceptions.filter';
   providers: [
     AppService,
     AllExceptionsFilter,
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: HttpMetricsInterceptor,
+    },
     IsUniquePermissionCodeConstraint,
     IsUniqueRoleNameConstraint,
     OutboxPublisherService,

@@ -1,4 +1,4 @@
-import { HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
+import { HttpStatus, Injectable, NotFoundException, Optional } from '@nestjs/common';
 import { UserEntity, UserStatus } from 'src/entities/user.entity';
 import { DataSource } from 'typeorm';
 import { JwtService } from 'src/services/JWT/jwt.service';
@@ -23,6 +23,7 @@ import { ResetPasswordRedisPayload } from 'src/interfaces/payload';
 import { UsersRepository } from 'src/services/users/users.repository';
 import { ActivateUserDTO } from 'src/interfaces/DTO/activate.dto';
 import { UsersErrorCodes, UsersException } from 'src/services/users/users.exception.handler';
+import { MetricsService } from 'src/observability/metrics.service';
 
 @Injectable()
 export class UsersService {
@@ -34,6 +35,7 @@ export class UsersService {
     private readonly jwtService: JwtService,
     private readonly roleService: RolesService,
     private readonly emailService: EmailService,
+    @Optional() private readonly metricsService?: MetricsService,
   ) {}
 
   async refreshToken(refreshToken: string): Promise<AuthInterface> {
@@ -102,15 +104,18 @@ export class UsersService {
   async logIn(body: LoginDTO, req: Request): Promise<AuthInterface> {
     const user = await this.findByEmail(body.email);
     if (!user) {
+      this.metricsService?.recordAuthAttempt('failure');
       throw new UsersException('Wrong email or password', UsersErrorCodes.WRONG_CREDENTIALS, HttpStatus.UNAUTHORIZED);
     }
 
     const isPasswordValid = await compare(body.password, user.password);
     if (!isPasswordValid) {
+      this.metricsService?.recordAuthAttempt('failure');
       throw new UsersException('Wrong email or password', UsersErrorCodes.WRONG_CREDENTIALS, HttpStatus.UNAUTHORIZED);
     }
 
     if (user.status != UserStatus.ACTIVE) {
+      this.metricsService?.recordAuthAttempt('failure');
       throw new UsersException('This user is not active', UsersErrorCodes.USER_INACTIVE, HttpStatus.UNAUTHORIZED);
     }
 
@@ -147,11 +152,13 @@ export class UsersService {
       await this.redis.raw.sAdd(userIndex, sessionId);
       await this.redis.raw.pExpire(userIndex, getTtlFromEnv('JWT_REFRESH_EXPIRES_IN'));
 
+      this.metricsService?.recordAuthAttempt('success');
       return {
         accessToken,
         refreshToken,
       };
     } catch (error) {
+      this.metricsService?.recordAuthAttempt('failure');
       throw new UsersException(
         'Unable to issue authentication tokens',
         UsersErrorCodes.TOKENS_ISSUE_ERROR,

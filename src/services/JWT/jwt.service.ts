@@ -1,10 +1,11 @@
-import { HttpStatus, Injectable, InternalServerErrorException, UnauthorizedException } from '@nestjs/common';
+import { HttpStatus, Injectable, InternalServerErrorException, Optional, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JsonWebTokenError, NotBeforeError, sign, SignOptions, TokenExpiredError, verify } from 'jsonwebtoken';
 import dayjs from 'dayjs';
 import { Payload } from 'src/interfaces/payload';
 import { StringValue } from 'ms';
 import { JwtErrorCodes, JwtException } from 'src/services/JWT/jwt.excpetion.handler';
+import { MetricsService } from 'src/observability/metrics.service';
 
 type TokenType = 'refresh' | 'auth';
 
@@ -25,7 +26,10 @@ export class JwtService {
   private readonly configByType: Record<TokenType, TokenConfig>;
   private readonly refreshRenewThresholdMinutes: number;
 
-  constructor(private readonly configService: ConfigService) {
+  constructor(
+    private readonly configService: ConfigService,
+    @Optional() private readonly metricsService?: MetricsService,
+  ) {
     this.configByType = {
       auth: {
         secret: this.configService.get<string>('JWT_AUTH_SECRET', 'authSecret'),
@@ -43,9 +47,16 @@ export class JwtService {
   }
 
   async generateToken<T extends TokenType>(payload: TokenPayloadType[T], type: T = 'auth' as T): Promise<string> {
+    const startTime = process.hrtime.bigint();
     try {
-      return await this.signToken(payload, this.configByType[type]);
+      const token = await this.signToken(payload, this.configByType[type]);
+      const durationSeconds = Number(process.hrtime.bigint() - startTime) / 1e9;
+      this.metricsService?.recordDependencyOperation('jwt', 'generate', 'success', durationSeconds);
+      return token;
     } catch (error) {
+      const durationSeconds = Number(process.hrtime.bigint() - startTime) / 1e9;
+      this.metricsService?.recordDependencyOperation('jwt', 'generate', 'error', durationSeconds);
+      this.metricsService?.recordDependencyError('jwt', 'generate', error.name || 'GenerationError');
       throw new JwtException(
         'Failed to generate token',
         JwtErrorCodes.TOKEN_GENERATION_FAILED,
@@ -86,24 +97,34 @@ export class JwtService {
 
   async getPayload(token: string, type: TokenType): Promise<Payload> {
     const { secret } = this.configByType[type];
+    const startTime = process.hrtime.bigint();
 
     try {
       const decoded = await this.verifyToken<Payload>(token, secret);
       if (!decoded?.email || !decoded.exp) {
+        this.metricsService?.recordDependencyError('jwt', 'verify', 'InvalidPayload');
         throw new JwtException('Token payload is invalid', JwtErrorCodes.INVALID_PAYLOAD, HttpStatus.UNAUTHORIZED);
       }
 
       if (type === 'refresh' && !decoded.sid) {
+        this.metricsService?.recordDependencyError('jwt', 'verify', 'MissingData');
         throw new JwtException('Token payload is missing data', JwtErrorCodes.PAYLOAD_MISSING_DATA, HttpStatus.UNAUTHORIZED);
       }
 
+      const durationSeconds = Number(process.hrtime.bigint() - startTime) / 1e9;
+      this.metricsService?.recordDependencyOperation('jwt', 'verify', 'success', durationSeconds);
       return decoded;
     } catch (error) {
+      const durationSeconds = Number(process.hrtime.bigint() - startTime) / 1e9;
+      this.metricsService?.recordDependencyOperation('jwt', 'verify', 'error', durationSeconds);
+
       if (error instanceof TokenExpiredError) {
+        this.metricsService?.recordDependencyError('jwt', 'verify', 'TokenExpired');
         throw new JwtException('Token has expired', JwtErrorCodes.TOKEN_EXPIRED, HttpStatus.UNAUTHORIZED);
       }
 
       if (error instanceof JsonWebTokenError || error instanceof NotBeforeError) {
+        this.metricsService?.recordDependencyError('jwt', 'verify', error.name);
         throw new JwtException(
           'Token verification failed',
           JwtErrorCodes.TOKEN_VERIFICATION_FAILED,

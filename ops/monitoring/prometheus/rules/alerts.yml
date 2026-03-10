@@ -1,0 +1,138 @@
+groups:
+  - name: auth_service_alerts
+    interval: 30s
+    rules:
+      # =====================================================================
+      # Service Health Alerts
+      # =====================================================================
+      
+      - alert: AuthServiceDown
+        expr: up{job="auth-microservice"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Auth service is down"
+          description: "The auth microservice has been unreachable for more than 1 minute."
+
+      # =====================================================================
+      # HTTP Error Rate Alerts
+      # =====================================================================
+      
+      - alert: HighErrorRate5xx
+        expr: |
+          (
+            sum(rate(auth_http_requests_total{status_code=~"5.."}[5m])) 
+            / 
+            sum(rate(auth_http_requests_total[5m]))
+          ) > 0.05
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "High 5xx error rate detected"
+          description: "More than 5% of requests are returning 5xx errors over the last 5 minutes."
+
+      - alert: HighErrorRate4xx
+        expr: |
+          (
+            sum(rate(auth_http_requests_total{status_code=~"4.."}[5m])) 
+            / 
+            sum(rate(auth_http_requests_total[5m]))
+          ) > 0.20
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High 4xx error rate detected"
+          description: "More than 20% of requests are returning 4xx errors over the last 5 minutes."
+
+      # =====================================================================
+      # Latency Alerts
+      # =====================================================================
+      
+      - alert: HighLatencyP95
+        expr: |
+          histogram_quantile(0.95, 
+            sum(rate(auth_http_request_duration_seconds_bucket[5m])) by (le)
+          ) > 1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High P95 latency detected"
+          description: "P95 request latency is above 1 second for the last 5 minutes."
+
+      - alert: HighLatencyP99
+        expr: |
+          histogram_quantile(0.99, 
+            sum(rate(auth_http_request_duration_seconds_bucket[5m])) by (le)
+          ) > 2
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "High P99 latency detected"
+          description: "P99 request latency is above 2 seconds for the last 5 minutes."
+
+      # =====================================================================
+      # Dependency Health Alerts
+      # =====================================================================
+      
+      - alert: DatabaseErrorsHigh
+        expr: |
+          sum(rate(auth_db_errors_total[5m])) > 0.1
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "High database error rate"
+          description: "Database errors are occurring at a rate higher than normal."
+
+      - alert: RedisErrorsHigh
+        expr: |
+          sum(rate(auth_redis_errors_total[5m])) > 0.1
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "High Redis error rate"
+          description: "Redis errors are occurring at a rate higher than normal."
+
+      - alert: RabbitMQErrorsHigh
+        expr: |
+          sum(rate(auth_rmq_errors_total[5m])) > 0.1
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High RabbitMQ error rate"
+          description: "RabbitMQ errors are occurring at a rate higher than normal."
+
+      # =====================================================================
+      # Business Logic Alerts
+      # =====================================================================
+      
+      - alert: HighLoginFailureRate
+        expr: |
+          (
+            sum(rate(auth_login_attempts_total{result="failure"}[10m]))
+            /
+            sum(rate(auth_login_attempts_total[10m]))
+          ) > 0.50
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High login failure rate"
+          description: "More than 50% of login attempts are failing - possible brute force attack or service issue."
+
+      - alert: OutboxBacklogHigh
+        expr: |
+          auth_rmq_outbox_backlog > 100
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Outbox backlog is high"
+          description: "There are more than 100 pending events in the outbox queue."

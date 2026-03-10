@@ -1,5 +1,5 @@
-import { IsNotEmpty, IsNumber, IsString, MinLength, validateSync } from 'class-validator';
-import { plainToInstance } from 'class-transformer';
+import { IsNotEmpty, IsNumber, IsString, MinLength, validateSync, IsOptional, IsBoolean } from 'class-validator';
+import { plainToInstance, Transform } from 'class-transformer';
 
 class EnvironmentVariables {
   //---------- MAIN HOSTS -----------------
@@ -60,6 +60,16 @@ class EnvironmentVariables {
   @IsString()
   @IsNotEmpty()
   RESET_PASSWORD_EXPIRES_IN: string;
+
+  //---------- METRICS CONFIGS -----------------
+  @IsOptional()
+  @IsBoolean()
+  @Transform(({ value }) => value === 'true' || value === true)
+  METRICS_ENABLED?: boolean;
+
+  @IsOptional()
+  @IsString()
+  METRICS_API_KEY?: string;
 }
 
 export function validate(config: Record<string, unknown>) {
