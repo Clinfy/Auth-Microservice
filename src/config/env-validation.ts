@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsNumber, IsOptional, IsString, MinLength, validateSync } from 'class-validator';
+import { IsBoolean, IsNotEmpty, IsNumber, IsOptional, IsString, MinLength, validateSync } from 'class-validator';
 import { plainToInstance } from 'class-transformer';
 
 class EnvironmentVariables {
@@ -54,12 +54,8 @@ class EnvironmentVariables {
 
   //---------- METRICS CONFIGS -----------------
   @IsOptional()
-  @IsString()
-  METRICS_ENABLED?: string;
-
-  @IsOptional()
-  @IsString()
-  METRICS_API_KEY?: string;
+  @IsBoolean()
+  METRICS_ENABLED?: boolean;
 }
 
 export function validate(config: Record<string, unknown>) {
