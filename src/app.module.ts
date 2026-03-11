@@ -24,6 +24,7 @@ import { validate } from 'src/config/env-validation';
 import { WinstonModule } from 'nest-winston';
 import winston from 'winston';
 import { AllExceptionsFilter } from 'src/common/filters/all-exceptions.filter';
+import { ObservabilityModule } from 'src/observability/observability.module';
 
 @Module({
   imports: [
@@ -86,6 +87,7 @@ import { AllExceptionsFilter } from 'src/common/filters/all-exceptions.filter';
     SessionsModule,
     JwtModule,
     EmailModule,
+    ObservabilityModule,
   ],
   controllers: [AppController],
   providers: [

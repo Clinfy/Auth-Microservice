@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsNumber, IsString, MinLength, validateSync } from 'class-validator';
+import { IsBoolean, IsNotEmpty, IsNumber, IsOptional, IsString, MinLength, validateSync } from 'class-validator';
 import { plainToInstance } from 'class-transformer';
 
 class EnvironmentVariables {
@@ -28,15 +28,6 @@ class EnvironmentVariables {
   @IsNotEmpty()
   FRONTEND_URL: string;
 
-  //---------- EMAIL CONFIGS -----------------
-  @IsString()
-  @IsNotEmpty()
-  EMAIL_API_KEY: string;
-
-  @IsString()
-  @IsNotEmpty()
-  EMAIL_API_URL: string;
-
   //---------- JWT CONFIGS -----------------
   @IsString()
   @MinLength(32)
@@ -60,6 +51,11 @@ class EnvironmentVariables {
   @IsString()
   @IsNotEmpty()
   RESET_PASSWORD_EXPIRES_IN: string;
+
+  //---------- METRICS CONFIGS -----------------
+  @IsOptional()
+  @IsBoolean()
+  METRICS_ENABLED?: boolean;
 }
 
 export function validate(config: Record<string, unknown>) {

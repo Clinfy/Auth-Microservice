@@ -35,6 +35,9 @@ lerna-debug.log*
 !.vscode/launch.json
 !.vscode/extensions.json
 
+# AI Agents
+/.antigravity
+
 # dotenv environment variable files
 .env
 .env.development.local
@@ -51,6 +54,9 @@ pids
 *.pid
 *.seed
 *.pid.lock
+
+#Ops Secrets
+/ops/monitoring/prometheus/secrets/
 
 # Diagnostic reports (https://nodejs.org/api/report.html)
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json

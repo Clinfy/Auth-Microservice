@@ -1,0 +1,54 @@
+groups:
+  - name: auth-microservice-alerts
+    rules:
+      # ── High error rate ────────────────────────────────────────
+      - alert: AuthHighErrorRate
+        expr: |
+          (
+            sum(rate(auth_http_requests_total{status_code=~"5.."}[5m]))
+            /
+            sum(rate(auth_http_requests_total[5m]))
+          ) > 0.05
+        for: 5m
+        labels:
+          severity: critical
+          service: auth-microservice
+        annotations:
+          summary: "High 5xx error rate on Auth Microservice"
+          description: "5xx error rate is above 5% for the last 5 minutes (current: {{ $value | humanizePercentage }})"
+
+      # ── High latency ───────────────────────────────────────────
+      - alert: AuthHighLatency
+        expr: |
+          histogram_quantile(0.95, sum(rate(auth_http_request_duration_seconds_bucket[5m])) by (le))
+          > 2
+        for: 5m
+        labels:
+          severity: warning
+          service: auth-microservice
+        annotations:
+          summary: "High p95 latency on Auth Microservice"
+          description: "P95 request latency is above 2s for the last 5 minutes (current: {{ $value | humanizeDuration }})"
+
+      # ── Scrape down ────────────────────────────────────────────
+      - alert: AuthScrapeDown
+        expr: up{job="auth-microservice"} == 0
+        for: 2m
+        labels:
+          severity: critical
+          service: auth-microservice
+        annotations:
+          summary: "Auth Microservice scrape target is down"
+          description: "Prometheus cannot scrape the auth-microservice /metrics endpoint for 2 minutes"
+
+      # ── Dependency errors ──────────────────────────────────────
+      - alert: AuthDependencyErrors
+        expr: |
+          sum(rate(auth_dependency_errors_total[5m])) by (dependency) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+          service: auth-microservice
+        annotations:
+          summary: "Elevated dependency errors in Auth Microservice"
+          description: "Dependency {{ $labels.dependency }} is generating errors at > 0.1/s for 5 minutes"
