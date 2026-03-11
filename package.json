@@ -1,6 +1,6 @@
 {
   "name": "clinfy-auth-microservice",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "Microservice for users, API, permissions, roles and authentication.",
   "author": "Agustín Liendo Ortiz",
   "private": true,
