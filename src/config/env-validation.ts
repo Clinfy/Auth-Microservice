@@ -28,15 +28,6 @@ class EnvironmentVariables {
   @IsNotEmpty()
   FRONTEND_URL: string;
 
-  //---------- EMAIL CONFIGS -----------------
-  @IsString()
-  @IsNotEmpty()
-  EMAIL_API_KEY: string;
-
-  @IsString()
-  @IsNotEmpty()
-  EMAIL_API_URL: string;
-
   //---------- JWT CONFIGS -----------------
   @IsString()
   @MinLength(32)
