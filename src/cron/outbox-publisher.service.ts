@@ -4,6 +4,7 @@ import { OutboxEntity, OutboxStatus } from 'src/entities/outbox.entity';
 import { Repository } from 'typeorm';
 import { ClientProxy } from '@nestjs/microservices';
 import { Cron, CronExpression } from '@nestjs/schedule';
+import { MetricsService } from 'src/observability/metrics.service';
 
 @Injectable()
 export class OutboxPublisherService {
@@ -13,7 +14,9 @@ export class OutboxPublisherService {
 
     @Inject('AUDIT_SERVICE')
     private readonly auditClient: ClientProxy,
-  ) {}
+
+    private readonly metrics: MetricsService,
+  ) { }
 
   @Cron(CronExpression.EVERY_10_SECONDS)
   private async handleAuditEvents() {
@@ -21,11 +24,15 @@ export class OutboxPublisherService {
       where: { status: OutboxStatus.PENDING, destination: 'audit_queue' },
     });
 
+    this.metrics.outboxBatchSize.set(pendingEvents.length);
+
     for (const event of pendingEvents) {
       try {
-        this.auditClient.emit(event.pattern, event.payload);
-        await this.outboxRepository.update(event.id, {
-          status: OutboxStatus.SENT,
+        await this.metrics.recordDependencyCall('rabbitmq', 'publish', async () => {
+          this.auditClient.emit(event.pattern, event.payload);
+          await this.outboxRepository.update(event.id, {
+            status: OutboxStatus.SENT,
+          });
         });
       } catch (error) {
         console.error('Error publishing event:', error);

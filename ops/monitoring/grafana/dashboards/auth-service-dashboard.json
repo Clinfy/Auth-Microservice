@@ -1,0 +1,266 @@
+{
+    "annotations": {
+        "list": []
+    },
+    "editable": true,
+    "fiscalYearStartMonth": 0,
+    "graphTooltip": 1,
+    "id": null,
+    "links": [],
+    "panels": [
+        {
+            "title": "Requests Per Second (by endpoint)",
+            "type": "timeseries",
+            "gridPos": {
+                "h": 8,
+                "w": 12,
+                "x": 0,
+                "y": 0
+            },
+            "datasource": {
+                "type": "prometheus",
+                "uid": "PBFA97CFB590B2093"
+            },
+            "targets": [
+                {
+                    "expr": "sum(rate(auth_http_requests_total[5m])) by (route, method)",
+                    "legendFormat": "{{method}} {{route}}"
+                }
+            ],
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "reqps",
+                    "custom": {
+                        "drawStyle": "line",
+                        "fillOpacity": 10
+                    }
+                }
+            }
+        },
+        {
+            "title": "Error Rate (4xx / 5xx)",
+            "type": "timeseries",
+            "gridPos": {
+                "h": 8,
+                "w": 12,
+                "x": 12,
+                "y": 0
+            },
+            "datasource": {
+                "type": "prometheus",
+                "uid": "PBFA97CFB590B2093"
+            },
+            "targets": [
+                {
+                    "expr": "sum(rate(auth_http_requests_total{status_code=~\"4..\"}[5m]))",
+                    "legendFormat": "4xx"
+                },
+                {
+                    "expr": "sum(rate(auth_http_requests_total{status_code=~\"5..\"}[5m]))",
+                    "legendFormat": "5xx"
+                }
+            ],
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "reqps",
+                    "custom": {
+                        "drawStyle": "line",
+                        "fillOpacity": 10
+                    }
+                }
+            }
+        },
+        {
+            "title": "Latency p50 / p95 / p99 (by endpoint)",
+            "type": "timeseries",
+            "gridPos": {
+                "h": 8,
+                "w": 12,
+                "x": 0,
+                "y": 8
+            },
+            "datasource": {
+                "type": "prometheus",
+                "uid": "PBFA97CFB590B2093"
+            },
+            "targets": [
+                {
+                    "expr": "histogram_quantile(0.50, sum(rate(auth_http_request_duration_seconds_bucket[5m])) by (le, route))",
+                    "legendFormat": "p50 {{route}}"
+                },
+                {
+                    "expr": "histogram_quantile(0.95, sum(rate(auth_http_request_duration_seconds_bucket[5m])) by (le, route))",
+                    "legendFormat": "p95 {{route}}"
+                },
+                {
+                    "expr": "histogram_quantile(0.99, sum(rate(auth_http_request_duration_seconds_bucket[5m])) by (le, route))",
+                    "legendFormat": "p99 {{route}}"
+                }
+            ],
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "s",
+                    "custom": {
+                        "drawStyle": "line",
+                        "fillOpacity": 10
+                    }
+                }
+            }
+        },
+        {
+            "title": "Dependency Call Duration",
+            "type": "timeseries",
+            "gridPos": {
+                "h": 8,
+                "w": 12,
+                "x": 12,
+                "y": 8
+            },
+            "datasource": {
+                "type": "prometheus",
+                "uid": "PBFA97CFB590B2093"
+            },
+            "targets": [
+                {
+                    "expr": "histogram_quantile(0.95, sum(rate(auth_dependency_duration_seconds_bucket[5m])) by (le, dependency, operation))",
+                    "legendFormat": "p95 {{dependency}}/{{operation}}"
+                }
+            ],
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "s",
+                    "custom": {
+                        "drawStyle": "line",
+                        "fillOpacity": 10
+                    }
+                }
+            }
+        },
+        {
+            "title": "Dependency Errors",
+            "type": "timeseries",
+            "gridPos": {
+                "h": 8,
+                "w": 12,
+                "x": 0,
+                "y": 16
+            },
+            "datasource": {
+                "type": "prometheus",
+                "uid": "PBFA97CFB590B2093"
+            },
+            "targets": [
+                {
+                    "expr": "sum(rate(auth_dependency_errors_total[5m])) by (dependency, operation)",
+                    "legendFormat": "{{dependency}}/{{operation}}"
+                }
+            ],
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "ops",
+                    "custom": {
+                        "drawStyle": "bars",
+                        "fillOpacity": 50
+                    }
+                }
+            }
+        },
+        {
+            "title": "Outbox Batch Size",
+            "type": "stat",
+            "gridPos": {
+                "h": 8,
+                "w": 6,
+                "x": 12,
+                "y": 16
+            },
+            "datasource": {
+                "type": "prometheus",
+                "uid": "PBFA97CFB590B2093"
+            },
+            "targets": [
+                {
+                    "expr": "auth_outbox_batch_size",
+                    "legendFormat": "Pending events"
+                }
+            ],
+            "fieldConfig": {
+                "defaults": {
+                    "thresholds": {
+                        "steps": [
+                            {
+                                "color": "green",
+                                "value": null
+                            },
+                            {
+                                "color": "yellow",
+                                "value": 10
+                            },
+                            {
+                                "color": "red",
+                                "value": 50
+                            }
+                        ]
+                    }
+                }
+            }
+        },
+        {
+            "title": "Scrape Target Up",
+            "type": "stat",
+            "gridPos": {
+                "h": 8,
+                "w": 6,
+                "x": 18,
+                "y": 16
+            },
+            "datasource": {
+                "type": "prometheus",
+                "uid": "PBFA97CFB590B2093"
+            },
+            "targets": [
+                {
+                    "expr": "up{job=\"auth-microservice\"}",
+                    "legendFormat": "Up"
+                }
+            ],
+            "fieldConfig": {
+                "defaults": {
+                    "mappings": [
+                        {
+                            "type": "value",
+                            "options": {
+                                "0": {
+                                    "text": "DOWN",
+                                    "color": "red"
+                                },
+                                "1": {
+                                    "text": "UP",
+                                    "color": "green"
+                                }
+                            }
+                        }
+                    ]
+                }
+            }
+        }
+    ],
+    "schemaVersion": 39,
+    "tags": [
+        "auth",
+        "microservice",
+        "prometheus"
+    ],
+    "templating": {
+        "list": []
+    },
+    "time": {
+        "from": "now-1h",
+        "to": "now"
+    },
+    "timepicker": {},
+    "timezone": "browser",
+    "title": "Auth Microservice",
+    "uid": "auth-microservice-overview",
+    "version": 1
+}

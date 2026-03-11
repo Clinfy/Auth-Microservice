@@ -1,0 +1,31 @@
+import { Controller, Get, NotFoundException, Res, UseGuards } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { ApiExcludeController } from '@nestjs/swagger';
+import type { Response } from 'express';
+import { MetricsService } from './metrics.service.js';
+import { ApiKeyGuard } from 'src/middlewares/api-key.middleware';
+import { Permissions } from 'src/middlewares/decorators/permissions.decorator';
+
+@ApiExcludeController()
+@Controller('metrics')
+export class MetricsController {
+    constructor(
+        private readonly metricsService: MetricsService,
+        private readonly config: ConfigService,
+    ) { }
+
+    @Get()
+    @UseGuards(ApiKeyGuard)
+    @Permissions(['METRICS_READ'])
+    async getMetrics(@Res() res: Response) {
+        const enabled = this.config.get<string>('METRICS_ENABLED', 'true');
+
+        if (enabled !== 'true') {
+            throw new NotFoundException('Metrics endpoint is disabled');
+        }
+
+        const metrics = await this.metricsService.getMetrics();
+        res.set('Content-Type', this.metricsService.getContentType());
+        res.end(metrics);
+    }
+}
