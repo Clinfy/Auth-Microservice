@@ -15,6 +15,9 @@ describe('UsersController', () => {
   const roleIdB = '33333333-3333-3333-3333-333333333333';
 
   beforeEach(() => {
+    process.env.JWT_AUTH_EXPIRES_IN = '15m';
+    process.env.JWT_REFRESH_EXPIRES_IN = '7d';
+
     service = {
       register: jest.fn(),
       logIn: jest.fn(),
@@ -53,7 +56,7 @@ describe('UsersController', () => {
     expect(service.register).toHaveBeenCalledWith(dto, request);
   });
 
-  it('should log in a user', async () => {
+  it('should log in a user and set cookies', async () => {
     const dto: LoginDTO = { email: 'user@example.com', password: 'secret' };
     const tokens: AuthInterface = {
       accessToken: 'access',
@@ -61,23 +64,29 @@ describe('UsersController', () => {
     };
     service.logIn.mockResolvedValue(tokens);
     const request = { ip: '127.0.0.1' } as any;
+    const response = { cookie: jest.fn() } as any;
 
-    await expect(controller.logIn(dto, request)).resolves.toEqual(tokens);
+    await expect(controller.logIn(dto, request, response)).resolves.toEqual({ message: 'Login successful' });
     expect(service.logIn).toHaveBeenCalledWith(dto, request);
+    expect(response.cookie).toHaveBeenCalledWith('auth_token', 'access', expect.any(Object));
+    expect(response.cookie).toHaveBeenCalledWith('refresh_token', 'refresh', expect.any(Object));
   });
 
-  it('should refresh a token using the header', async () => {
+  it('should refresh a token using the cookie', async () => {
     const auth: AuthInterface = {
       accessToken: 'newAccess',
       refreshToken: 'newRefresh',
     };
     service.refreshToken.mockResolvedValue(auth);
     const request = {
-      headers: { 'refresh-token': 'refresh-token-value' },
+      cookies: { refresh_token: 'refresh-token-value' },
     } as any;
+    const response = { cookie: jest.fn() } as any;
 
-    await expect(controller.refreshToken(request)).resolves.toEqual(auth);
+    await expect(controller.refreshToken(request, response)).resolves.toEqual({ message: 'Token refreshed' });
     expect(service.refreshToken).toHaveBeenCalledWith('refresh-token-value');
+    expect(response.cookie).toHaveBeenCalledWith('auth_token', 'newAccess', expect.any(Object));
+    expect(response.cookie).toHaveBeenCalledWith('refresh_token', 'newRefresh', expect.any(Object));
   });
 
   it('should check if the user can perform an action', async () => {
@@ -150,7 +159,7 @@ describe('UsersController', () => {
     expect(service.resetPassword).toHaveBeenCalledWith('token-123', dto);
   });
 
-  it('should log out a user', async () => {
+  it('should log out a user and clear cookies', async () => {
     const user = {
       id: userId,
       email: 'user@example.com',
@@ -158,11 +167,14 @@ describe('UsersController', () => {
       session_id: 'abcd',
     };
     const request = { user } as any;
-    const response = { message: 'Logged out successfully' };
-    service.logOut.mockResolvedValue(response);
+    const serviceResponse = { message: 'Logged out successfully' };
+    service.logOut.mockResolvedValue(serviceResponse);
+    const response = { clearCookie: jest.fn() } as any;
 
-    await expect(controller.logOut(request)).resolves.toEqual(response);
+    await expect(controller.logOut(request, response)).resolves.toEqual(serviceResponse);
     expect(service.logOut).toHaveBeenCalledWith(user);
+    expect(response.clearCookie).toHaveBeenCalledWith('auth_token', { path: '/' });
+    expect(response.clearCookie).toHaveBeenCalledWith('refresh_token', { path: '/users/refresh-token' });
   });
 
   it('should activate a user for the first time', async () => {

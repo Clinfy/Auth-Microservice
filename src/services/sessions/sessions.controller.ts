@@ -4,7 +4,7 @@ import { SessionWithSid } from 'src/interfaces/session.interface';
 import { AuthGuard } from 'src/middlewares/auth.middleware';
 import { Permissions } from 'src/middlewares/decorators/permissions.decorator';
 import {
-  ApiBearerAuth,
+  ApiCookieAuth,
   ApiForbiddenResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
@@ -14,7 +14,7 @@ import {
 } from '@nestjs/swagger';
 
 @ApiTags('Sessions')
-@ApiBearerAuth()
+@ApiCookieAuth('auth_token')
 @Controller('sessions')
 export class SessionsController {
   constructor(private readonly sessionsService: SessionsService) {}
@@ -29,7 +29,7 @@ export class SessionsController {
     },
   })
   @ApiUnauthorizedResponse({
-    description: 'Missing or invalid bearer token or session',
+    description: 'Missing or invalid auth cookie or session',
   })
   @ApiForbiddenResponse({ description: 'Insufficient permissions' })
   @Get('user/:userId')
@@ -44,7 +44,7 @@ export class SessionsController {
     schema: { type: 'object', properties: { message: { type: 'string' } } },
   })
   @ApiUnauthorizedResponse({
-    description: 'Missing or invalid bearer token or session',
+    description: 'Missing or invalid auth cookie or session',
   })
   @ApiNotFoundResponse({ description: 'Session not found' })
   @ApiForbiddenResponse({ description: 'Insufficient permissions' })

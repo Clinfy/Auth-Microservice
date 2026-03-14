@@ -6,14 +6,14 @@ import { HttpMetricsInterceptor } from './http-metrics.interceptor.js';
 
 @Global()
 @Module({
-    controllers: [MetricsController],
-    providers: [
-        MetricsService,
-        {
-            provide: APP_INTERCEPTOR,
-            useClass: HttpMetricsInterceptor,
-        },
-    ],
-    exports: [MetricsService],
+  controllers: [MetricsController],
+  providers: [
+    MetricsService,
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: HttpMetricsInterceptor,
+    },
+  ],
+  exports: [MetricsService],
 })
-export class ObservabilityModule { }
+export class ObservabilityModule {}

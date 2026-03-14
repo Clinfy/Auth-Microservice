@@ -11,7 +11,7 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import {
-  ApiBearerAuth,
+  ApiCookieAuth,
   ApiForbiddenResponse,
   ApiHeader,
   ApiCreatedResponse,
@@ -48,7 +48,7 @@ export class ApiKeysController {
 
   @UseGuards(AuthGuard)
   @Permissions(['API_KEYS_CREATE'])
-  @ApiBearerAuth()
+  @ApiCookieAuth('auth_token')
   @ApiOperation({ summary: 'Create a new API key' })
   @ApiCreatedResponse({
     schema: {
@@ -61,7 +61,7 @@ export class ApiKeysController {
     },
   })
   @ApiNotFoundResponse({ description: 'Permission not found' })
-  @ApiUnauthorizedResponse({ description: 'Missing or invalid bearer token' })
+  @ApiUnauthorizedResponse({ description: 'Missing or invalid auth cookie' })
   @ApiForbiddenResponse({ description: 'Insufficient permissions' })
   @Post('generate')
   generate(
@@ -74,10 +74,10 @@ export class ApiKeysController {
   @UseGuards(AuthGuard)
   @Permissions(['API_KEYS_READ'])
   @UseInterceptors(ClassSerializerInterceptor)
-  @ApiBearerAuth()
+  @ApiCookieAuth('auth_token')
   @ApiOperation({ summary: 'List all API keys' })
   @ApiOkResponse({ type: [ApiKeyEntity] })
-  @ApiUnauthorizedResponse({ description: 'Missing or invalid bearer token' })
+  @ApiUnauthorizedResponse({ description: 'Missing or invalid auth cookie' })
   @ApiForbiddenResponse({ description: 'Insufficient permissions' })
   @Get('all')
   findAll(): Promise<ApiKeyEntity[]> {
@@ -86,13 +86,13 @@ export class ApiKeysController {
 
   @UseGuards(AuthGuard)
   @Permissions(['API_KEYS_DEACTIVATE'])
-  @ApiBearerAuth()
+  @ApiCookieAuth('auth_token')
   @ApiOperation({ summary: 'Deactivate an API key' })
   @ApiOkResponse({
     schema: { type: 'object', properties: { message: { type: 'string' } } },
   })
   @ApiNotFoundResponse({ description: 'API key not found' })
-  @ApiUnauthorizedResponse({ description: 'Missing or invalid bearer token' })
+  @ApiUnauthorizedResponse({ description: 'Missing or invalid auth cookie' })
   @ApiForbiddenResponse({ description: 'Insufficient permissions' })
   @Patch('deactivate/:id')
   deactivate(@Param('id') id: string): Promise<{ message: string }> {
