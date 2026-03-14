@@ -36,7 +36,12 @@ lerna-debug.log*
 !.vscode/extensions.json
 
 # AI Agents
+/AGENTS.md
 /.antigravity
+/.agent/*
+/.agent/
+/.atl/
+/skills-lock.json
 
 # dotenv environment variable files
 .env
