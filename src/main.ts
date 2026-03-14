@@ -6,9 +6,19 @@ import { BadRequestException, HttpStatus, ValidationPipe } from '@nestjs/common'
 import { writeFileSync } from 'node:fs';
 import { AllExceptionsFilter } from 'src/common/filters/all-exceptions.filter';
 import { findFirstErrorCode, findFirstMessage } from 'src/common/tools/find-errors-data';
+import cookieParser from 'cookie-parser';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, { bufferLogs: true });
+
+  //Cookie Parser
+  app.use(cookieParser());
+
+  //CORS
+  app.enableCors({
+    origin: process.env.CORS_ORIGIN?.split(',') || [],
+    credentials: true,
+  });
 
   //Trust Proxy
   const expressApp = app.getHttpAdapter().getInstance();
@@ -45,6 +55,8 @@ async function bootstrap() {
     .setDescription('Docs')
     .setVersion('1.0')
     .addBearerAuth()
+    .addCookieAuth('auth_token')
+    .addApiKey({ type: 'apiKey', in: 'header', name: 'x-api-key' }, 'api-key')
     .build();
 
   const document = SwaggerModule.createDocument(app, config);
