@@ -15,7 +15,7 @@ import { PermissionsService } from 'src/services/permissions/permissions.service
 import { AuthGuard } from 'src/middlewares/auth.middleware';
 import { Permissions } from 'src/middlewares/decorators/permissions.decorator';
 import {
-  ApiBearerAuth,
+  ApiCookieAuth,
   ApiCreatedResponse,
   ApiForbiddenResponse,
   ApiNotFoundResponse,
@@ -29,7 +29,7 @@ import { CreatePermissionDTO } from 'src/interfaces/DTO/create.dto';
 import * as requestUser from 'src/interfaces/request-user';
 
 @ApiTags('Permissions')
-@ApiBearerAuth()
+@ApiCookieAuth('auth_token')
 @Controller('permissions')
 export class PermissionsController {
   constructor(private readonly permissionService: PermissionsService) {}
@@ -39,7 +39,7 @@ export class PermissionsController {
   @UseInterceptors(ClassSerializerInterceptor)
   @ApiOperation({ summary: 'Create a new permission' })
   @ApiCreatedResponse({ type: PermissionEntity })
-  @ApiUnauthorizedResponse({ description: 'Missing or invalid bearer token' })
+  @ApiUnauthorizedResponse({ description: 'Missing or invalid auth cookie' })
   @ApiForbiddenResponse({ description: 'Insufficient permissions' })
   @Post('new')
   create(@Req() request: requestUser.RequestWithUser, @Body() dto: CreatePermissionDTO): Promise<PermissionEntity> {
@@ -52,7 +52,7 @@ export class PermissionsController {
   @ApiOperation({ summary: 'Update a permission' })
   @ApiOkResponse({ type: PermissionEntity })
   @ApiNotFoundResponse({ description: 'Permission not found' })
-  @ApiUnauthorizedResponse({ description: 'Missing or invalid bearer token' })
+  @ApiUnauthorizedResponse({ description: 'Missing or invalid auth cookie' })
   @ApiForbiddenResponse({ description: 'Insufficient permissions' })
   @Patch('edit/:id')
   edit(@Body() dto: CreatePermissionDTO, @Param('id') id: string): Promise<PermissionEntity> {
@@ -67,7 +67,7 @@ export class PermissionsController {
     schema: { type: 'object', properties: { message: { type: 'string' } } },
   })
   @ApiNotFoundResponse({ description: 'Permission not found' })
-  @ApiUnauthorizedResponse({ description: 'Missing or invalid bearer token' })
+  @ApiUnauthorizedResponse({ description: 'Missing or invalid auth cookie' })
   @ApiForbiddenResponse({ description: 'Insufficient permissions' })
   @Delete('delete/:id')
   delete(@Param('id') id: string): Promise<{ message: string }> {
@@ -80,7 +80,7 @@ export class PermissionsController {
   @ApiOperation({ summary: 'Find a permission by id number' })
   @ApiOkResponse({ type: PermissionEntity })
   @ApiNotFoundResponse({ description: 'Permission not found' })
-  @ApiUnauthorizedResponse({ description: 'Missing or invalid bearer token' })
+  @ApiUnauthorizedResponse({ description: 'Missing or invalid auth cookie' })
   @ApiForbiddenResponse({ description: 'Insufficient permissions' })
   @Get('find/:id')
   findOne(@Param('id') id: string): Promise<PermissionEntity> {
@@ -92,7 +92,7 @@ export class PermissionsController {
   @UseInterceptors(ClassSerializerInterceptor)
   @ApiOperation({ summary: 'Find all permissions' })
   @ApiOkResponse({ type: [PermissionEntity] })
-  @ApiUnauthorizedResponse({ description: 'Missing or invalid bearer token' })
+  @ApiUnauthorizedResponse({ description: 'Missing or invalid auth cookie' })
   @ApiForbiddenResponse({ description: 'Insufficient permissions' })
   @Get('all')
   findAll(): Promise<PermissionEntity[]> {
