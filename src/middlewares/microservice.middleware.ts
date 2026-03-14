@@ -28,7 +28,7 @@ export class MicroserviceGuard implements CanActivate {
     await this.validateApiKey(context, request);
 
     // Step 2: Validate Bearer token of the user
-    await this.validateUserToken(context, request);
+    await this.validateUserToken(request);
 
     return true;
   }
@@ -77,7 +77,7 @@ export class MicroserviceGuard implements CanActivate {
    * IP/subnet verification (the request comes from a microservice, not the
    * original user).
    */
-  private async validateUserToken(context: ExecutionContext, request: RequestWithUser): Promise<void> {
+  private async validateUserToken( request: RequestWithUser): Promise<void> {
     const authorizationHeader = request.headers?.authorization;
     if (typeof authorizationHeader !== 'string' || authorizationHeader.trim().length === 0) {
       throw new AuthException('Authorization header missing', AuthErrorCodes.AUTH_HEADER_MISSING, HttpStatus.UNAUTHORIZED);
