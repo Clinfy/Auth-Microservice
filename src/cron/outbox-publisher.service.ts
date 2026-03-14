@@ -16,7 +16,7 @@ export class OutboxPublisherService {
     private readonly auditClient: ClientProxy,
 
     private readonly metrics: MetricsService,
-  ) { }
+  ) {}
 
   @Cron(CronExpression.EVERY_10_SECONDS)
   private async handleAuditEvents() {

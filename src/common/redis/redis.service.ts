@@ -10,7 +10,7 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
   constructor(
     private readonly config: ConfigService,
     private readonly metrics: MetricsService,
-  ) { }
+  ) {}
 
   async onModuleInit() {
     const url = this.config.get<string>('REDIS_URL');
@@ -28,9 +28,7 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
       });
     });
 
-    await this.metrics.recordDependencyCall('redis', 'connect', () =>
-      this.client.connect(),
-    );
+    await this.metrics.recordDependencyCall('redis', 'connect', () => this.client.connect());
   }
 
   get raw(): RedisClientType {
