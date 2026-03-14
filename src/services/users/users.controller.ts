@@ -3,18 +3,22 @@ import {
   ClassSerializerInterceptor,
   Controller,
   Get,
+  HttpStatus,
   Param,
   Post,
   Query,
   Req,
+  Res,
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
 import { AuthGuard } from 'src/middlewares/auth.middleware';
+import { MicroserviceGuard } from 'src/middlewares/microservice.middleware';
 import { Permissions } from 'src/middlewares/decorators/permissions.decorator';
-import type { Request } from 'express';
+import type { Request, Response } from 'express';
 import {
   ApiBearerAuth,
+  ApiCookieAuth,
   ApiCreatedResponse,
   ApiForbiddenResponse,
   ApiHeader,
@@ -22,6 +26,7 @@ import {
   ApiOkResponse,
   ApiOperation,
   ApiQuery,
+  ApiSecurity,
   ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
@@ -31,10 +36,11 @@ import { UserEntity } from 'src/entities/user.entity';
 import { RegisterUserDTO } from 'src/interfaces/DTO/register.dto';
 import { LoginDTO } from 'src/interfaces/DTO/login.dto';
 import { AssignRoleDTO } from 'src/interfaces/DTO/assign.dto';
-import { AuthInterface } from 'src/interfaces/auth.interface';
 import { ApiKeyGuard } from 'src/middlewares/api-key.middleware';
 import { ForgotPasswordDTO, ResetPasswordDTO } from 'src/interfaces/DTO/reset-password.dto';
 import { ActivateUserDTO } from 'src/interfaces/DTO/activate.dto';
+import { getAuthCookieOptions, getRefreshCookieOptions } from 'src/common/tools/cookie-options';
+import { UsersErrorCodes, UsersException } from 'src/services/users/users.exception.handler';
 
 @ApiTags('Users')
 @Controller('users')
@@ -66,12 +72,12 @@ export class UsersController {
 
   @UseGuards(AuthGuard)
   @Permissions(['USERS_UPDATE'])
-  @ApiBearerAuth()
+  @ApiCookieAuth('auth_token')
   @ApiOperation({ summary: 'Activate a user' })
   @ApiOkResponse({
     schema: { type: 'object', properties: { message: { type: 'string' } } },
   })
-  @ApiUnauthorizedResponse({ description: 'Missing or invalid bearer token' })
+  @ApiUnauthorizedResponse({ description: 'Missing or invalid auth cookie' })
   @ApiForbiddenResponse({ description: 'Insufficient permissions' })
   @ApiNotFoundResponse({ description: 'User not found' })
   @Post('activate/:id')
@@ -81,12 +87,12 @@ export class UsersController {
 
   @UseGuards(AuthGuard)
   @Permissions(['USERS_UPDATE'])
-  @ApiBearerAuth()
+  @ApiCookieAuth('auth_token')
   @ApiOperation({ summary: 'Deactivate a user' })
   @ApiOkResponse({
     schema: { type: 'object', properties: { message: { type: 'string' } } },
   })
-  @ApiUnauthorizedResponse({ description: 'Missing or invalid bearer token' })
+  @ApiUnauthorizedResponse({ description: 'Missing or invalid auth cookie' })
   @ApiForbiddenResponse({ description: 'Insufficient permissions' })
   @ApiNotFoundResponse({ description: 'User not found' })
   @Post('deactivate/:id')
@@ -99,60 +105,84 @@ export class UsersController {
     schema: {
       type: 'object',
       properties: {
-        accessToken: { type: 'string' },
-        refreshToken: { type: 'string' },
+        message: { type: 'string' },
       },
     },
   })
   @ApiUnauthorizedResponse({ description: 'Wrong email or password' })
   @Post('login')
-  logIn(@Body() dto: LoginDTO, @Req() req: Request): Promise<AuthInterface> {
-    return this.userService.logIn(dto, req);
+  async logIn(
+    @Body() dto: LoginDTO,
+    @Req() req: Request,
+    @Res({ passthrough: true }) response: Response,
+  ): Promise<{ message: string }> {
+    const tokens = await this.userService.logIn(dto, req);
+    response.cookie('auth_token', tokens.accessToken, getAuthCookieOptions());
+    response.cookie('refresh_token', tokens.refreshToken, getRefreshCookieOptions());
+    return { message: 'Login successful' };
   }
 
   @UseGuards(AuthGuard)
-  @ApiBearerAuth()
+  @ApiCookieAuth('auth_token')
   @ApiOperation({ summary: 'Log out a user' })
   @ApiOkResponse({
     schema: { type: 'object', properties: { message: { type: 'string' } } },
   })
-  @ApiUnauthorizedResponse({ description: 'Missing or invalid bearer token' })
+  @ApiUnauthorizedResponse({ description: 'Missing or invalid auth cookie' })
   @Post('logout')
-  logOut(@Req() request: requestUser.RequestWithUser): Promise<{ message: string }> {
-    return this.userService.logOut(request.user);
+  async logOut(
+    @Req() request: requestUser.RequestWithUser,
+    @Res({ passthrough: true }) response: Response,
+  ): Promise<{ message: string }> {
+    const result = await this.userService.logOut(request.user);
+    response.clearCookie('auth_token', { path: '/' });
+    response.clearCookie('refresh_token', { path: '/users/refresh-token' });
+    return result;
   }
 
   @ApiOperation({ summary: 'Refresh a user token' })
-  @ApiHeader({ name: 'refresh-token', required: true })
+  @ApiCookieAuth('auth_token')
   @ApiOkResponse({
     schema: {
       type: 'object',
       properties: {
-        accessToken: { type: 'string' },
-        refreshToken: { type: 'string' },
+        message: { type: 'string' },
       },
     },
   })
   @ApiUnauthorizedResponse({ description: 'Invalid refresh token' })
   @Get('refresh-token')
-  refreshToken(@Req() request: Request): Promise<AuthInterface> {
-    return this.userService.refreshToken(request.headers['refresh-token'] as string);
+  async refreshToken(@Req() request: Request, @Res({ passthrough: true }) response: Response): Promise<{ message: string }> {
+    const refreshToken = request.cookies?.['refresh_token'];
+    if (!refreshToken) {
+      throw new UsersException(
+        'Refresh token cookie missing',
+        UsersErrorCodes.REFRESH_TOKEN_MISSING,
+        HttpStatus.UNAUTHORIZED,
+      );
+    }
+    const tokens = await this.userService.refreshToken(refreshToken);
+    response.cookie('auth_token', tokens.accessToken, getAuthCookieOptions());
+    response.cookie('refresh_token', tokens.refreshToken, getRefreshCookieOptions());
+    return { message: 'Token refreshed' };
   }
 
-  @UseGuards(AuthGuard)
+  @UseGuards(MicroserviceGuard)
+  @ApiSecurity('api-key')
   @ApiBearerAuth()
   @ApiOperation({
     summary: 'Return if a user have permissions to do something',
   })
   @ApiOkResponse({ schema: { type: 'boolean' } })
-  @ApiUnauthorizedResponse({ description: 'Missing or invalid bearer token' })
+  @ApiUnauthorizedResponse({ description: 'Missing or invalid API key or bearer token' })
   @ApiForbiddenResponse({ description: 'Insufficient permissions' })
   @Get('can-do/:permission')
   canDo(@Req() request: requestUser.RequestWithUser, @Param('permission') permission: string): Promise<boolean> {
     return this.userService.canDo(request.user, permission);
   }
 
-  @UseGuards(AuthGuard)
+  @UseGuards(MicroserviceGuard)
+  @ApiSecurity('api-key')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Return the authenticated user info' })
   @ApiOkResponse({
@@ -166,7 +196,7 @@ export class UsersController {
       },
     },
   })
-  @ApiUnauthorizedResponse({ description: 'Missing or invalid bearer token' })
+  @ApiUnauthorizedResponse({ description: 'Missing or invalid API key or bearer token' })
   @Get('me')
   me(@Req() request: requestUser.RequestWithUser): {
     id: string;
@@ -185,10 +215,10 @@ export class UsersController {
   @UseGuards(AuthGuard)
   @Permissions(['USERS_UPDATE'])
   @UseInterceptors(ClassSerializerInterceptor)
-  @ApiBearerAuth()
+  @ApiCookieAuth('auth_token')
   @ApiOperation({ summary: 'Assign roles to a user' })
   @ApiOkResponse({ type: UserEntity })
-  @ApiUnauthorizedResponse({ description: 'Missing or invalid bearer token' })
+  @ApiUnauthorizedResponse({ description: 'Missing or invalid auth cookie' })
   @ApiForbiddenResponse({ description: 'Insufficient permissions' })
   @ApiNotFoundResponse({ description: 'User or role not found' })
   @Post('assign-role/:id')
@@ -223,10 +253,10 @@ export class UsersController {
   @UseGuards(AuthGuard)
   @Permissions(['USERS_READ_ALL'])
   @UseInterceptors(ClassSerializerInterceptor)
-  @ApiBearerAuth()
+  @ApiCookieAuth('auth_token')
   @ApiOperation({ summary: 'Find all users' })
   @ApiOkResponse({ type: [UserEntity] })
-  @ApiUnauthorizedResponse({ description: 'Missing or invalid bearer token' })
+  @ApiUnauthorizedResponse({ description: 'Missing or invalid auth cookie' })
   @ApiForbiddenResponse({ description: 'Insufficient permissions' })
   @Get('all')
   findAll(): Promise<UserEntity[]> {

@@ -52,6 +52,19 @@ class EnvironmentVariables {
   @IsNotEmpty()
   RESET_PASSWORD_EXPIRES_IN: string;
 
+  //---------- COOKIE / CORS CONFIGS -----------------
+  @IsOptional()
+  @IsString()
+  COOKIE_DOMAIN?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  COOKIE_SECURE?: boolean;
+
+  @IsString()
+  @IsNotEmpty()
+  CORS_ORIGIN: string;
+
   //---------- METRICS CONFIGS -----------------
   @IsOptional()
   @IsBoolean()
