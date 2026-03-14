@@ -24,24 +24,19 @@ export class AuthGuard implements CanActivate {
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request: RequestWithUser = context.switchToHttp().getRequest();
 
-    const authorizationHeader = request.headers?.authorization;
-    if (typeof authorizationHeader !== 'string' || authorizationHeader.trim().length === 0) {
-      throw new AuthException('Authorization header missing', AuthErrorCodes.AUTH_HEADER_MISSING, HttpStatus.UNAUTHORIZED);
-    }
-
-    const [scheme, token] = authorizationHeader.trim().split(/\s+/);
-    if (!/^Bearer$/i.test(scheme) || !token) {
+    const token = this.extractToken(request);
+    if (!token) {
       throw new AuthException(
-        'Invalid authorization header format',
-        AuthErrorCodes.AUTH_HEADER_INVALID,
+        'Authentication cookie is missing, expired, or invalid',
+        AuthErrorCodes.AUTH_COOKIE_EXPIRED_INVALID,
         HttpStatus.UNAUTHORIZED,
       );
     }
 
-    const payload = await this.jwtService.getPayload(token.trim(), 'auth');
+    const payload = await this.jwtService.getPayload(token, 'auth');
     // Checks Permission via Redis cached session
     const sid = payload.sid;
-    const sessionKey = `auth_session:${sid ?? token.trim()}`;
+    const sessionKey = `auth_session:${sid ?? token}`;
 
     const raw = await this.redis.raw.get(sessionKey);
     const session: Session | null = raw ? JSON.parse(raw) : null;
@@ -64,7 +59,7 @@ export class AuthGuard implements CanActivate {
       id: session.user_id,
       email: session.email,
       person_id: session.person_id,
-      session_id: sid ?? token.trim(),
+      session_id: sid ?? token,
     };
 
     request.user = authUser;
@@ -83,5 +78,9 @@ export class AuthGuard implements CanActivate {
     }
 
     return true;
+  }
+
+  private extractToken(request: RequestWithUser): string | null {
+    return request.cookies?.['auth_token'] ?? null;
   }
 }
