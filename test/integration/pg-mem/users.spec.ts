@@ -16,6 +16,7 @@ import { IBackup, IMemoryDb, newDb } from 'pg-mem';
 import { entities } from 'src/entities';
 import { randomUUID } from 'crypto';
 import { RedisService } from 'src/common/redis/redis.service';
+import { SessionsService } from 'src/services/sessions/sessions.service';
 
 describe('UsersService (integration)', () => {
   let moduleRef: TestingModule;
@@ -49,6 +50,11 @@ describe('UsersService (integration)', () => {
       del: jest.fn().mockResolvedValue(1),
       sRem: jest.fn().mockResolvedValue(1),
     },
+  };
+
+  const sessionServiceMock = {
+    refreshSessionPermissions: jest.fn().mockResolvedValue(undefined),
+    refreshSessionPermissionsByRole: jest.fn().mockResolvedValue(undefined),
   };
 
   beforeAll(async () => {
@@ -105,6 +111,10 @@ describe('UsersService (integration)', () => {
         {
           provide: RedisService,
           useValue: redisServiceMock,
+        },
+        {
+          provide: SessionsService,
+          useValue: sessionServiceMock,
         },
         {
           provide: getRepositoryToken(UserEntity),
