@@ -9,9 +9,10 @@ import { RolesModule } from 'src/services/roles/roles.module';
 import { EmailModule } from 'src/clients/email/email.module';
 import { UsersRepository } from 'src/services/users/users.repository';
 import { IsUniquePersonConstraint } from 'src/common/validators/unique-person.validator';
+import { SessionsModule } from 'src/services/sessions/sessions.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([UserEntity]), RolesModule, JwtModule, EmailModule],
+  imports: [TypeOrmModule.forFeature([UserEntity]), RolesModule, JwtModule, EmailModule, SessionsModule],
   controllers: [UsersController],
   providers: [UsersService, UsersRepository, IsUniqueEmailConstraint, IsUniquePersonConstraint],
   exports: [UsersService],
