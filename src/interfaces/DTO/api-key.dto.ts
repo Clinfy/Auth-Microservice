@@ -1,4 +1,4 @@
-import { IsArray, IsNotEmpty, IsString } from 'class-validator';
+import { IsArray, IsNotEmpty, IsString, IsUUID } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class AssignApiPermissionDTO {
@@ -9,7 +9,7 @@ export class AssignApiPermissionDTO {
   })
   @IsNotEmpty({ message: 'permissionIds is required' })
   @IsArray({ message: 'permissionIds must be an array' })
-  @IsString({ each: true, message: 'Each permissionId must be a string' })
+  @IsUUID('4', { each: true, message: 'Each permissionId must be a valid UUID' })
   permissionIds: string[];
 }
 

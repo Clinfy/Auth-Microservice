@@ -36,6 +36,7 @@ describe('UsersService (integration)', () => {
   };
 
   const emailServiceMock = {
+    sendRegistrationMail: jest.fn().mockResolvedValue(undefined),
     sendResetPasswordMail: jest.fn(),
     confirmPasswordChange: jest.fn(),
   };
@@ -133,7 +134,6 @@ describe('UsersService (integration)', () => {
     const response = await usersService.register(
       {
         email: 'alice@example.com',
-        password: 'P@ssword123',
         person_id: randomUUID(),
       },
       request,
@@ -152,15 +152,17 @@ describe('UsersService (integration)', () => {
     await usersService.register(
       {
         email: 'bob@example.com',
-        password: 'Secret123',
         person_id: randomUUID(),
       },
       request,
     );
 
+    // Capture the auto-generated password from the email mock
+    const generatedPassword = emailServiceMock.sendRegistrationMail.mock.calls[0][1];
+
     await usersService.firstActivation({
       email: 'bob@example.com',
-      password: 'Secret123',
+      password: generatedPassword,
       new_password: 'N3wS3cret!',
     });
 
@@ -192,7 +194,6 @@ describe('UsersService (integration)', () => {
     await usersService.register(
       {
         email: 'carol@example.com',
-        password: 'Secret123',
         person_id: randomUUID(),
       },
       request,
@@ -232,7 +233,6 @@ describe('UsersService (integration)', () => {
     await usersService.register(
       {
         email: 'frank@example.com',
-        password: 'Secret123',
         person_id: randomUUID(),
       },
       request,
@@ -269,7 +269,6 @@ describe('UsersService (integration)', () => {
     await usersService.register(
       {
         email: 'dave@example.com',
-        password: 'Secret123',
         person_id: randomUUID(),
       },
       request,
@@ -298,7 +297,6 @@ describe('UsersService (integration)', () => {
     await usersService.register(
       {
         email: 'erin@example.com',
-        password: 'OldPassword1',
         person_id: randomUUID(),
       },
       request,
@@ -333,15 +331,17 @@ describe('UsersService (integration)', () => {
     await usersService.register(
       {
         email: 'grace@example.com',
-        password: 'TempP@ss1',
         person_id: randomUUID(),
       },
       request,
     );
 
+    // Capture the auto-generated password from the email mock
+    const generatedPassword = emailServiceMock.sendRegistrationMail.mock.calls[0][1];
+
     const result = await usersService.firstActivation({
       email: 'grace@example.com',
-      password: 'TempP@ss1',
+      password: generatedPassword,
       new_password: 'N3wP@ssw0rd!',
     });
 
@@ -356,15 +356,17 @@ describe('UsersService (integration)', () => {
     await usersService.register(
       {
         email: 'hank@example.com',
-        password: 'TempP@ss1',
         person_id: randomUUID(),
       },
       request,
     );
 
+    // Capture the auto-generated password from the email mock
+    const generatedPassword = emailServiceMock.sendRegistrationMail.mock.calls[0][1];
+
     await usersService.firstActivation({
       email: 'hank@example.com',
-      password: 'TempP@ss1',
+      password: generatedPassword,
       new_password: 'N3wP@ssw0rd!',
     });
 
@@ -399,7 +401,7 @@ describe('UsersService (integration)', () => {
   });
 
   it('findAll returns all registered users', async () => {
-    await usersService.register({ email: 'julia@example.com', password: 'P@ssword1', person_id: randomUUID() }, request);
+    await usersService.register({ email: 'julia@example.com', person_id: randomUUID() }, request);
 
     const users = await usersService.findAll();
     const emails = users.map((u) => u.email);

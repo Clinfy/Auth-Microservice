@@ -43,7 +43,6 @@ describe('UsersController', () => {
   it('should register a user', async () => {
     const dto: RegisterUserDTO = {
       email: 'user@example.com',
-      password: 'secret',
       person_id: '55555555-5555-5555-5555-555555555555',
     };
     const response = { message: 'User user@example.com created' };

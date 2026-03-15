@@ -1,10 +1,10 @@
 import { Injectable } from '@nestjs/common';
-import { promises as fs } from 'fs';
-import * as path from 'path';
+import { promises as fs } from 'node:fs';
+import * as path from 'node:path';
 
 @Injectable()
 export class TemplateService {
-  private cache = new Map<string, string>();
+  private readonly cache = new Map<string, string>();
 
   private resolve(file: string) {
     // __dirname en runtime apunta a dist/mail

@@ -14,6 +14,26 @@ export class EmailService {
     private readonly emailClient: ClientProxy,
   ) {}
 
+  async sendRegistrationMail(email: string, password: string){
+    const data = {
+      APP_NAME: this.configService.get('APP_NAME'),
+      APP_URL: this.configService.get('FRONTEND_URL'),
+      YEAR: String(new Date().getFullYear()),
+      USER_NAME_PREFIX: email.split('@')[0],
+      EMAIL: email,
+      PASSWORD: password,
+    };
+
+    const recipient = [email];
+    const subject = `¡Welcome! Finish your registration on ${data.APP_NAME}`;
+    const text = `Welcome to ${data.APP_NAME}! Your registration is complete. Please use the following credentials to log in: \n Email: ${data.EMAIL} \n Password: ${data.PASSWORD} \n The first time you log in, you will be asked to change your password. \n If you have any questions or need assistance, please contact our support team.`;
+
+    const template = await this.templateService.loadTemplate('send-registration.template.html');
+    const html = this.templateService.render(template, data);
+
+    await this.sendMail({ recipient, subject, html, text });
+  }
+
   async sendResetPasswordMail(email: string, token: string) {
     const data = {
       APP_NAME: this.configService.get('APP_NAME'),
@@ -55,7 +75,7 @@ export class EmailService {
 
   private async sendMail(body: EmailBody) {
     try {
-      await this.emailClient.emit('email_queue', body);
+      this.emailClient.emit('email_queue', body);
     } catch (error) {
       console.error('Error sending email:', error);
       throw error;

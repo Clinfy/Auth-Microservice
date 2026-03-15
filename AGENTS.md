@@ -1,62 +1,75 @@
 # AGENTS.md
 
-Guía operativa para agentes en este repositorio (`/extra/IdeaProjects/Auth-Microservice`).
+Operational guide for agents in this repository (`/extra/IdeaProjects/Auth-Microservice`).
 
-## 1) Contexto del proyecto
+## 1) Project Context
 
-- Servicio de autenticacion/autorizacion y gestion de usuarios.
-- Stack principal: NestJS 11, TypeScript, PostgreSQL (TypeORM), Redis y RabbitMQ.
-- Objetivo al trabajar aquí: cambios pequeños, seguros, trazables y alineados con los patrones existentes.
-- Comandos importantes:
-  - `npm run start:dev` - iniciar en modo desarrollo.
-  -  `npm run start` - Inicia en modo de producción
-  - `npm run format` - formatea el código según configuración del archivo `.prettierrc`.
-  - `npm run test` - ejecuta pruebas unitarias encontradas en cada service como también tests de integración.
-  - `npm run build` - compilar el proyecto.
+- Authentication/authorization and user management service.
+- Main stack: NestJS 11, TypeScript, PostgreSQL (TypeORM), Redis, and RabbitMQ.
+- Goal when working here: small, safe, traceable changes aligned with existing patterns.
+- Important commands:
+  - `npm run start:dev` - start in development mode.
+  - `npm run start` - start in production mode.
+  - `npm run format` - format code according to the `.prettierrc` configuration.
+  - `npm run test` - run unit tests found in each service as well as integration tests.
+  - `npm run build` - compile the project.
 
-## 2) Flujo de trabajo recomendado
+## 2) Recommended Workflow
 
-1. Entender la tarea y revisar el contexto mínimo necesario.
-2. Si la solicitud implica implementar, crear un archivo `.md` en `.agent/tasks` con un nombre alusivo a la implementación.
-3. Debatir con la persona usuaria y fundamentar claramente qué se debe hacer antes de codificar.
-4. Dejar esa planificación detallada en el archivo de `.agent/tasks`.
-5. Una vez que ambas partes estén satisfechas con la planificación, leer siempre ese archivo desde disco (no desde memoria) antes de implementar, porque puede haber sido editado manualmente.
-6. Implementar el cambio de forma puntual, evitando refactors amplios no solicitados.
-7. Validar localmente con pruebas/lint/build según impacto.
-8. Entregar resultado con:
-   - qué se cambió,
-   - por qué,
-   - archivos tocados,
-   - pasos de verificación ejecutados.
+1. Understand the task and review the minimum necessary context.
+2. If the request involves implementation, create an `.md` file in `.agent/tasks` with a name related to the implementation.
+3. Discuss with the user and clearly justify what should be done before coding.
+4. Record the detailed plan in the `.agent/tasks` file.
+5. Once both parties are satisfied with the plan, always read that file from disk (not from memory) before implementing, as it may have been manually edited.
+6. Implement the change in a focused manner, avoiding broad unsolicited refactors.
+7. Validate locally with tests/lint/build depending on impact.
+8. Deliver the result with:
+   - what was changed,
+   - why,
+   - files affected,
+   - verification steps executed.
 
-## 3) Convenciones de implementación
+## 3) Implementation Conventions
 
-- Mantener consistencia con la arquitectura modular de NestJS ya presente.
-- Reutilizar utilidades, patrones y nombres existentes antes de crear nuevos.
-- No introducir dependencias nuevas sin justificación técnica clara.
-- Priorizar cambios mínimos y enfocados al requerimiento.
-- Respetar configuraciones del proyecto (lint, tests, tsconfig, estructura de carpetas).
+- Maintain consistency with the existing NestJS modular architecture.
+- Reuse existing utilities, patterns, and names before creating new ones.
+- Do not introduce new dependencies without clear technical justification.
+- Prioritize minimal changes focused on the requirement.
+- Respect project configurations (lint, tests, tsconfig, folder structure).
 
-## 4) Restricciones de seguridad y operación
+## 4) Security and Operational Restrictions
 
-- No exponer secretos en código, logs, pruebas ni documentación.
-- No modificar `.env` real para forzar ejecuciones; usar `example.env` como referencia.
-- Evitar acciones destructivas (borrados masivos, resets forzados, cambios irreversibles) salvo instrucción explícita.
-- Verificar funcionamiento de los cambios antes de entregarlos ejecutando los tests y realizando una compilación.
+- Do not expose secrets in code, logs, tests, or documentation.
+- Do not modify the real `.env` to force executions; use `example.env` as a reference.
+- Avoid destructive actions (mass deletions, forced resets, irreversible changes) unless explicitly instructed.
+- Verify that changes work before delivering them by running tests and performing a build.
 
-## 5) Political Git NO NEGOCIABLE
+## 5) NON-NEGOTIABLE Git Policy
 
-Motivo: la persona usuaria revisa y ejecuta manualmente todas las acciones de Git.
+Reason: the user reviews and manually executes all Git actions.
 
-- **NUNCA ejecutar `git add`**.
-- **NUNCA crear commits** (incluye `git commit` y variantes).
-- **NUNCA hacer push** (`git push` o equivalentes).
-- **NUNCA crear Pull Requests** (CLI, API o UI).
-- Se permite inspección de estado/diffs solo si la tarea lo requiere y sin alterar historial.
+- **NEVER run `git add`**.
+- **NEVER create commits** (includes `git commit` and variants).
+- **NEVER push** (`git push` or equivalents).
+- **NEVER create Pull Requests** (CLI, API, or UI).
+- Inspection of status/diffs is allowed only if the task requires it and without altering history.
 
-## 6) Preferencias de respuesta
+## 6) Language Policy
 
-- Responder en español, de forma breve, clara y accionable.
-- Explicar primero el resultado y luego detalles clave.
-- Incluir rutas de archivos modificados y comandos de verificación ejecutados.
-- Si falta información crítica, hacer una única pregunta concreta con una recomendación por defecto.
+- Chat conversations may be in Spanish or any language the user prefers.
+- **ALL written artifacts MUST be in English.** This includes:
+  - This file (`AGENTS.md`) and any agent configuration files.
+  - Task files in `.agent/tasks`.
+  - Code comments.
+  - Commit messages.
+  - PR descriptions.
+  - Specs, designs, and any other documentation files.
+  - Any persisted text or written artifact produced by an agent.
+- If the user writes a request in Spanish, the agent may respond in Spanish in the chat, but any file, comment, or documentation produced must still be written in English.
+
+## 7) Response Preferences
+
+- Be brief, clear, and actionable.
+- Explain the result first, then key details.
+- Include paths of modified files and verification commands executed.
+- If critical information is missing, ask a single concrete question with a default recommendation.
