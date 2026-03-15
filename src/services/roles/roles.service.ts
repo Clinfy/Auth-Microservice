@@ -7,12 +7,14 @@ import { PatchRoleDTO } from 'src/interfaces/DTO/patch.dto';
 import { RequestWithUser } from 'src/interfaces/request-user';
 import { RolesRepository } from 'src/services/roles/roles.repository';
 import { RolesErrorCodes, RolesException } from 'src/services/roles/roles.exception.handler';
+import { SessionsService } from 'src/services/sessions/sessions.service';
 
 @Injectable()
 export class RolesService {
   constructor(
     private readonly roleRepository: RolesRepository,
     private readonly permissionService: PermissionsService,
+    private readonly sessionService: SessionsService,
   ) {}
 
   async create(dto: CreateRoleDTO, request: RequestWithUser): Promise<RoleEntity> {
@@ -71,7 +73,9 @@ export class RolesService {
     try {
       const role = await this.findOne(roleId);
       role.permissions = await Promise.all(dto.permissionsIds.map((id) => this.permissionService.findOne(id)));
-      return await this.roleRepository.save(role);
+      const savedRole = await this.roleRepository.save(role);
+      await this.sessionService.refreshSessionPermissionsByRole(roleId);
+      return savedRole;
     } catch (error) {
       throw new RolesException(
         'Permission assignment failed',
