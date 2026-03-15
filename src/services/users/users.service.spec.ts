@@ -8,6 +8,7 @@ import { EmailService } from 'src/clients/email/email.service';
 import { UserEntity, UserStatus } from 'src/entities/user.entity';
 import { RedisService } from 'src/common/redis/redis.service';
 import { RegisterUserDTO } from 'src/interfaces/DTO/register.dto';
+import { SessionsService } from 'src/services/sessions/sessions.service';
 
 jest.mock('bcrypt', () => ({
   compare: jest.fn(),
@@ -23,6 +24,7 @@ describe('UsersService', () => {
   let jwtService: jest.Mocked<Partial<JwtService>>;
   let roleService: jest.Mocked<Partial<RolesService>>;
   let emailService: jest.Mocked<Partial<EmailService>>;
+  let sessionService: jest.Mocked<Partial<SessionsService>>;
 
   beforeEach(() => {
     userRepository = {
@@ -64,6 +66,11 @@ describe('UsersService', () => {
       confirmPasswordChange: jest.fn(),
     };
 
+    sessionService = {
+      refreshSessionPermissions: jest.fn().mockResolvedValue(undefined),
+      refreshSessionPermissionsByRole: jest.fn().mockResolvedValue(undefined),
+    };
+
     process.env.JWT_REFRESH_EXPIRES_IN = '1000';
     process.env.RESET_PASSWORD_EXPIRES_IN = '1000';
 
@@ -74,6 +81,7 @@ describe('UsersService', () => {
       jwtService as any,
       roleService as any,
       emailService as any,
+      sessionService as any,
     );
   });
 
@@ -493,15 +501,28 @@ describe('UsersService', () => {
   describe('assignRole', () => {
     it('assigns roles to a user and saves', async () => {
       const storedUser: any = { id: 'u-1', roles: [] };
-      const role: any = { id: 'r-1', name: 'admin' };
+      const role: any = { id: 'r-1', name: 'admin', permissions: [{ code: 'PERM_A' }] };
+      const savedUser = Object.assign(new UserEntity(), { id: 'u-1', roles: [role] });
       (userRepository.findOneById as jest.Mock).mockResolvedValue(storedUser);
       (roleService.findOne as jest.Mock).mockResolvedValue(role);
-      (userRepository.save as jest.Mock).mockResolvedValue({ ...storedUser, roles: [role] });
+      (userRepository.save as jest.Mock).mockResolvedValue(savedUser);
 
       const result = await service.assignRole('u-1', { rolesIds: ['r-1'] });
 
       expect(result.roles).toEqual([role]);
       expect(roleService.findOne).toHaveBeenCalledWith('r-1');
+    });
+
+    it('calls refreshSessionPermissions after saving', async () => {
+      const role: any = { id: 'r-1', name: 'admin', permissions: [{ code: 'PERM_A' }] };
+      const savedUser = Object.assign(new UserEntity(), { id: 'u-1', roles: [role] });
+      (userRepository.findOneById as jest.Mock).mockResolvedValue({ id: 'u-1', roles: [] });
+      (roleService.findOne as jest.Mock).mockResolvedValue(role);
+      (userRepository.save as jest.Mock).mockResolvedValue(savedUser);
+
+      await service.assignRole('u-1', { rolesIds: ['r-1'] });
+
+      expect(sessionService.refreshSessionPermissions).toHaveBeenCalledWith('u-1', ['PERM_A']);
     });
   });
 

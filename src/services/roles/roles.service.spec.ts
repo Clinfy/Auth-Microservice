@@ -2,10 +2,12 @@ import { RolesRepository } from './roles.repository';
 import { RolesService } from './roles.service';
 import { PermissionsService } from '../permissions/permissions.service';
 import { RolesException } from './roles.exception.handler';
+import { SessionsService } from 'src/services/sessions/sessions.service';
 
 describe('RolesService', () => {
   let roleRepository: jest.Mocked<Partial<RolesRepository>>;
   let permissionsService: jest.Mocked<Partial<PermissionsService>>;
+  let sessionService: jest.Mocked<Partial<SessionsService>>;
   let service: RolesService;
   const roleId = '11111111-1111-1111-1111-111111111111';
   const otherRoleId = '22222222-2222-2222-2222-222222222222';
@@ -28,7 +30,12 @@ describe('RolesService', () => {
       findOne: jest.fn(),
     };
 
-    service = new RolesService(roleRepository as any, permissionsService as any);
+    sessionService = {
+      refreshSessionPermissions: jest.fn().mockResolvedValue(undefined),
+      refreshSessionPermissionsByRole: jest.fn().mockResolvedValue(undefined),
+    };
+
+    service = new RolesService(roleRepository as any, permissionsService as any, sessionService as any);
   });
 
   it('creates a role', async () => {
@@ -119,5 +126,23 @@ describe('RolesService', () => {
 
     expect(permissionsService.findOne).toHaveBeenNthCalledWith(1, permissionIdA);
     expect(permissionsService.findOne).toHaveBeenNthCalledWith(2, permissionIdB);
+  });
+
+  it('assignPermissions calls refreshSessionPermissionsByRole after saving', async () => {
+    (roleRepository.findOneById as jest.Mock).mockResolvedValue({
+      id: roleId,
+      name: 'ADMIN',
+      permissions: [],
+    });
+    (permissionsService.findOne as jest.Mock).mockResolvedValueOnce({ id: permissionIdA, code: 'PERM_A' });
+    (roleRepository.save as jest.Mock).mockResolvedValue({
+      id: roleId,
+      name: 'ADMIN',
+      permissions: [{ id: permissionIdA }],
+    });
+
+    await service.assignPermissions(roleId, { permissionsIds: [permissionIdA] });
+
+    expect(sessionService.refreshSessionPermissionsByRole).toHaveBeenCalledWith(roleId);
   });
 });

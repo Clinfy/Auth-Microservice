@@ -6,9 +6,10 @@ import { PermissionsModule } from 'src/services/permissions/permissions.module';
 import { RoleEntity } from 'src/entities/role.entity';
 import { JwtModule } from 'src/services/JWT/jwt.module';
 import { RolesRepository } from 'src/services/roles/roles.repository';
+import { SessionsModule } from 'src/services/sessions/sessions.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([RoleEntity]), PermissionsModule, JwtModule],
+  imports: [TypeOrmModule.forFeature([RoleEntity]), PermissionsModule, JwtModule, SessionsModule],
   controllers: [RolesController],
   providers: [RolesService, RolesRepository],
   exports: [RolesService],
