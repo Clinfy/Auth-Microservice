@@ -83,11 +83,14 @@ export class UsersService {
   async register(dto: RegisterUserDTO, request: RequestWithUser): Promise<{ message: string }> {
     try {
       return await this.dataSource.transaction(async (manager) => {
+        const password = randomBytes(12).toString('hex');
         const newUser = this.userRepository.create({
           ...dto,
+          password,
           created_by: request.user,
         });
         const user = await this.userRepository.save(newUser, manager);
+        await this.emailService.sendRegistrationMail(user.email, password);
         return { message: `User ${user.email} created` };
       });
     } catch (error) {
@@ -110,9 +113,13 @@ export class UsersService {
       throw new UsersException('Wrong email or password', UsersErrorCodes.WRONG_CREDENTIALS, HttpStatus.UNAUTHORIZED);
     }
 
-    if (user.status != UserStatus.ACTIVE) {
-      throw new UsersException('This user is not active', UsersErrorCodes.USER_INACTIVE, HttpStatus.UNAUTHORIZED);
+    if (user.status == UserStatus.PENDING) {
+      throw new UsersException('This user has to finish their activation by changing the password', UsersErrorCodes.USER_NOT_INITIALIZED, HttpStatus.UNAUTHORIZED);
     }
+
+      if (user.status == UserStatus.INACTIVE) {
+        throw new UsersException('This user is not active', UsersErrorCodes.USER_INACTIVE, HttpStatus.UNAUTHORIZED);
+      }
 
     try {
       const sessionId = randomUUID();
