@@ -49,8 +49,11 @@ export class UsersService {
       throw new UsersException('Session expired or invalid', UsersErrorCodes.SESSION_INVALID, HttpStatus.UNAUTHORIZED);
     }
 
+    const user = await this.findOne(session.user_id);
+
     const newSession: Session = {
       ...session,
+      permissions: user.permissionCodes,
       last_refresh_at: new Date().toISOString(),
     };
 
