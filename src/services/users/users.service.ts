@@ -23,6 +23,7 @@ import { ResetPasswordRedisPayload } from 'src/interfaces/payload';
 import { UsersRepository } from 'src/services/users/users.repository';
 import { ActivateUserDTO } from 'src/interfaces/DTO/activate.dto';
 import { UsersErrorCodes, UsersException } from 'src/services/users/users.exception.handler';
+import { SessionsService } from 'src/services/sessions/sessions.service';
 
 @Injectable()
 export class UsersService {
@@ -34,6 +35,7 @@ export class UsersService {
     private readonly jwtService: JwtService,
     private readonly roleService: RolesService,
     private readonly emailService: EmailService,
+    private readonly sessionService: SessionsService,
   ) {}
 
   async refreshToken(refreshToken: string): Promise<AuthInterface> {
@@ -47,11 +49,8 @@ export class UsersService {
       throw new UsersException('Session expired or invalid', UsersErrorCodes.SESSION_INVALID, HttpStatus.UNAUTHORIZED);
     }
 
-    const user = await this.findOne(session.user_id);
-
     const newSession: Session = {
       ...session,
-      permissions: user.permissionCodes,
       last_refresh_at: new Date().toISOString(),
     };
 
@@ -114,12 +113,16 @@ export class UsersService {
     }
 
     if (user.status == UserStatus.PENDING) {
-      throw new UsersException('This user has to finish their activation by changing the password', UsersErrorCodes.USER_NOT_INITIALIZED, HttpStatus.UNAUTHORIZED);
+      throw new UsersException(
+        'This user has to finish their activation by changing the password',
+        UsersErrorCodes.USER_NOT_INITIALIZED,
+        HttpStatus.UNAUTHORIZED,
+      );
     }
 
-      if (user.status == UserStatus.INACTIVE) {
-        throw new UsersException('This user is not active', UsersErrorCodes.USER_INACTIVE, HttpStatus.UNAUTHORIZED);
-      }
+    if (user.status == UserStatus.INACTIVE) {
+      throw new UsersException('This user is not active', UsersErrorCodes.USER_INACTIVE, HttpStatus.UNAUTHORIZED);
+    }
 
     try {
       const sessionId = randomUUID();
@@ -183,7 +186,9 @@ export class UsersService {
   async assignRole(id: string, dto: AssignRoleDTO): Promise<UserEntity> {
     const user = await this.findOne(id);
     user.roles = await Promise.all(dto.rolesIds.map((roleId) => this.roleService.findOne(roleId)));
-    return await this.userRepository.save(user);
+    const savedUser = await this.userRepository.save(user);
+    await this.sessionService.refreshSessionPermissions(savedUser.id, savedUser.permissionCodes);
+    return savedUser;
   }
 
   async forgotPassword(dto: ForgotPasswordDTO): Promise<{ message: string }> {
