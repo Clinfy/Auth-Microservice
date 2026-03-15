@@ -7,6 +7,7 @@ import { RolesRepository } from 'src/services/roles/roles.repository';
 import { PermissionsRepository } from 'src/services/permissions/permissions.repository';
 import { RoleEntity } from 'src/entities/role.entity';
 import { PermissionEntity } from 'src/entities/permission.entity';
+import { SessionsService } from 'src/services/sessions/sessions.service';
 import { IBackup, IMemoryDb, newDb } from 'pg-mem';
 import { entities } from 'src/entities';
 import { randomUUID } from 'crypto';
@@ -60,6 +61,13 @@ describe('RolesService (integration)', () => {
         PermissionsService,
         RolesRepository,
         PermissionsRepository,
+        {
+          provide: SessionsService,
+          useValue: {
+            refreshSessionPermissions: jest.fn().mockResolvedValue(undefined),
+            refreshSessionPermissionsByRole: jest.fn().mockResolvedValue(undefined),
+          },
+        },
         {
           provide: getRepositoryToken(RoleEntity),
           useValue: dataSource.getRepository(RoleEntity),
