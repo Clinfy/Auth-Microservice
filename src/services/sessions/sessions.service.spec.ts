@@ -7,8 +7,15 @@ describe('SessionsService', () => {
   let service: SessionsService;
   let redisService: { raw: any };
   let userRepository: jest.Mocked<Partial<Repository<UserEntity>>>;
+  let multiMock: { set: jest.Mock; sRem: jest.Mock; exec: jest.Mock };
 
   beforeEach(() => {
+    multiMock = {
+      set: jest.fn().mockReturnThis(),
+      sRem: jest.fn().mockReturnThis(),
+      exec: jest.fn().mockResolvedValue([]),
+    };
+
     redisService = {
       raw: {
         get: jest.fn(),
@@ -17,6 +24,7 @@ describe('SessionsService', () => {
         mGet: jest.fn(),
         sRem: jest.fn().mockResolvedValue(1),
         del: jest.fn().mockResolvedValue(1),
+        multi: jest.fn().mockReturnValue(multiMock),
       },
     };
 
@@ -118,13 +126,13 @@ describe('SessionsService', () => {
 
       await service.refreshSessionPermissions('user-1', ['NEW_PERM_A', 'NEW_PERM_B']);
 
-      expect(redisService.raw.set).toHaveBeenCalledTimes(2);
-      expect(redisService.raw.set).toHaveBeenCalledWith(
+      expect(multiMock.set).toHaveBeenCalledTimes(2);
+      expect(multiMock.set).toHaveBeenCalledWith(
         'auth_session:sid-1',
         expect.stringContaining('"permissions":["NEW_PERM_A","NEW_PERM_B"]'),
         { KEEPTTL: true },
       );
-      expect(redisService.raw.set).toHaveBeenCalledWith(
+      expect(multiMock.set).toHaveBeenCalledWith(
         'auth_session:sid-2',
         expect.stringContaining('"permissions":["NEW_PERM_A","NEW_PERM_B"]'),
         { KEEPTTL: true },
@@ -137,7 +145,7 @@ describe('SessionsService', () => {
       await service.refreshSessionPermissions('user-1', ['PERM']);
 
       expect(redisService.raw.mGet).not.toHaveBeenCalled();
-      expect(redisService.raw.set).not.toHaveBeenCalled();
+      expect(multiMock.set).not.toHaveBeenCalled();
     });
 
     it('cleans stale entries from the set', async () => {
@@ -160,9 +168,9 @@ describe('SessionsService', () => {
 
       await service.refreshSessionPermissions('user-1', ['NEW']);
 
-      expect(redisService.raw.sRem).toHaveBeenCalledWith('user_sessions:user-1', 'sid-stale');
-      expect(redisService.raw.set).toHaveBeenCalledTimes(1);
-      expect(redisService.raw.set).toHaveBeenCalledWith(
+      expect(multiMock.sRem).toHaveBeenCalledWith('user_sessions:user-1', 'sid-stale');
+      expect(multiMock.set).toHaveBeenCalledTimes(1);
+      expect(multiMock.set).toHaveBeenCalledWith(
         'auth_session:sid-valid',
         expect.stringContaining('"permissions":["NEW"]'),
         { KEEPTTL: true },
@@ -175,8 +183,8 @@ describe('SessionsService', () => {
 
       await service.refreshSessionPermissions('user-1', ['PERM']);
 
-      expect(redisService.raw.sRem).toHaveBeenCalledWith('user_sessions:user-1', 'sid-bad');
-      expect(redisService.raw.set).not.toHaveBeenCalled();
+      expect(multiMock.sRem).toHaveBeenCalledWith('user_sessions:user-1', 'sid-bad');
+      expect(multiMock.set).not.toHaveBeenCalled();
     });
   });
 
@@ -203,8 +211,8 @@ describe('SessionsService', () => {
 
       expect(userRepository.find).toHaveBeenCalledWith({
         where: { roles: { id: 'role-1' } },
+        relations: ['roles', 'roles.permissions'],
       });
-      expect(refreshSpy).toHaveBeenCalledTimes(2);
       expect(refreshSpy).toHaveBeenCalledWith('user-1', ['PERM_A']);
       expect(refreshSpy).toHaveBeenCalledWith('user-2', ['PERM_A', 'PERM_B']);
     });
@@ -217,6 +225,7 @@ describe('SessionsService', () => {
 
       expect(userRepository.find).toHaveBeenCalledWith({
         where: { roles: { id: 'role-nonexistent' } },
+        relations: ['roles', 'roles.permissions'],
       });
       expect(refreshSpy).not.toHaveBeenCalled();
     });
