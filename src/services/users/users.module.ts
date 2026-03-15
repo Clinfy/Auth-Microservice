@@ -8,11 +8,12 @@ import { IsUniqueEmailConstraint } from 'src/common/validators/unique-email.vali
 import { RolesModule } from 'src/services/roles/roles.module';
 import { EmailModule } from 'src/clients/email/email.module';
 import { UsersRepository } from 'src/services/users/users.repository';
+import { IsUniquePersonConstraint } from 'src/common/validators/unique-person.validator';
 
 @Module({
   imports: [TypeOrmModule.forFeature([UserEntity]), RolesModule, JwtModule, EmailModule],
   controllers: [UsersController],
-  providers: [UsersService, UsersRepository, IsUniqueEmailConstraint],
+  providers: [UsersService, UsersRepository, IsUniqueEmailConstraint, IsUniquePersonConstraint],
   exports: [UsersService],
 })
 export class UsersModule {}

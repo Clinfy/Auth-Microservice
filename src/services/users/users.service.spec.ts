@@ -7,6 +7,7 @@ import { RolesService } from '../roles/roles.service';
 import { EmailService } from 'src/clients/email/email.service';
 import { UserEntity, UserStatus } from 'src/entities/user.entity';
 import { RedisService } from 'src/common/redis/redis.service';
+import { RegisterUserDTO } from 'src/interfaces/DTO/register.dto';
 
 jest.mock('bcrypt', () => ({
   compare: jest.fn(),
@@ -58,6 +59,7 @@ describe('UsersService', () => {
     };
 
     emailService = {
+      sendRegistrationMail: jest.fn().mockResolvedValue(undefined),
       sendResetPasswordMail: jest.fn(),
       confirmPasswordChange: jest.fn(),
     };
@@ -345,7 +347,7 @@ describe('UsersService', () => {
 
   describe('register', () => {
     it('creates a user inside a transaction and returns a success message', async () => {
-      const dto = { email: 'new@example.com', password: 'P@ss1', person_id: 'p-1' };
+      const dto: RegisterUserDTO = { email: 'new@example.com', person_id: 'p-1' };
       const request = { user: { id: 'admin-1' } } as any;
 
       (dataSource.transaction as jest.Mock).mockImplementation(async (cb) => {
@@ -359,10 +361,12 @@ describe('UsersService', () => {
       expect(userRepository.create).toHaveBeenCalledWith(
         expect.objectContaining({
           email: dto.email,
-          password: dto.password,
           person_id: dto.person_id,
+          password: expect.any(String), // auto-generated hex password
+          created_by: request.user,
         }),
       );
+      expect(emailService.sendRegistrationMail).toHaveBeenCalledWith(dto.email, expect.any(String));
     });
   });
 
