@@ -77,7 +77,7 @@ export class MicroserviceGuard implements CanActivate {
    * IP/subnet verification (the request comes from a microservice, not the
    * original user).
    */
-  private async validateUserToken( request: RequestWithUser): Promise<void> {
+  private async validateUserToken(request: RequestWithUser): Promise<void> {
     const authorizationHeader = request.headers?.authorization;
     if (typeof authorizationHeader !== 'string' || authorizationHeader.trim().length === 0) {
       throw new AuthException('Authorization header missing', AuthErrorCodes.AUTH_HEADER_MISSING, HttpStatus.UNAUTHORIZED);

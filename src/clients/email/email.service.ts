@@ -14,7 +14,7 @@ export class EmailService {
     private readonly emailClient: ClientProxy,
   ) {}
 
-  async sendRegistrationMail(email: string, password: string){
+  async sendRegistrationMail(email: string, password: string) {
     const data = {
       APP_NAME: this.configService.get('APP_NAME'),
       APP_URL: this.configService.get('FRONTEND_URL'),
