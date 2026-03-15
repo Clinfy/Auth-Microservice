@@ -69,32 +69,37 @@ export class SessionsService {
 
     const sessionKeys = sids.map((sid) => `auth_session:${sid}`);
     const raws = await this.redis.raw.mGet(sessionKeys);
+    const multi = this.redis.raw.multi();
 
     for (let i = 0; i < sids.length; i++) {
       const raw = raws[i];
       const sid = sids[i];
 
       if (!raw) {
-        await this.redis.raw.sRem(indexKey, sid);
+        multi.sRem(indexKey, sid);
         continue;
       }
 
       try {
         const parsed = JSON.parse(raw) as Session;
         const updatedSession: Session = { ...parsed, permissions };
-        await this.redis.raw.set(`auth_session:${sid}`, JSON.stringify(updatedSession), {
+        multi.set(`auth_session:${sid}`, JSON.stringify(updatedSession), {
           KEEPTTL: true,
         });
       } catch {
-        await this.redis.raw.sRem(indexKey, sid);
+        multi.sRem(indexKey, sid);
       }
     }
+    await multi.exec();
   }
 
   async refreshSessionPermissionsByRole(roleId: string): Promise<void> {
     const users = await this.userRepository.find({
       where: { roles: { id: roleId } },
+      relations: ['roles', 'roles.permissions'],
     });
+
+    if (!users.length) return;
 
     for (const user of users) {
       await this.refreshSessionPermissions(user.id, user.permissionCodes);

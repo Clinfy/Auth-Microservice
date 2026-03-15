@@ -74,7 +74,12 @@ export class RolesService {
       const role = await this.findOne(roleId);
       role.permissions = await Promise.all(dto.permissionsIds.map((id) => this.permissionService.findOne(id)));
       const savedRole = await this.roleRepository.save(role);
-      await this.sessionService.refreshSessionPermissionsByRole(roleId);
+
+      try {
+        await this.sessionService.refreshSessionPermissionsByRole(roleId);
+      } catch (refreshError) {
+        console.error('Failed to refresh session permissions:', refreshError);
+      }
       return savedRole;
     } catch (error) {
       throw new RolesException(

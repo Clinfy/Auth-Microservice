@@ -190,7 +190,11 @@ export class UsersService {
     const user = await this.findOne(id);
     user.roles = await Promise.all(dto.rolesIds.map((roleId) => this.roleService.findOne(roleId)));
     const savedUser = await this.userRepository.save(user);
-    await this.sessionService.refreshSessionPermissions(savedUser.id, savedUser.permissionCodes);
+    try {
+      await this.sessionService.refreshSessionPermissions(savedUser.id, savedUser.permissionCodes);
+    } catch (error) {
+      console.error('Error refreshing session permissions:', error);
+    }
     return savedUser;
   }
 
