@@ -1,8 +1,8 @@
 import { CanActivate, ExecutionContext, HttpStatus, Injectable } from '@nestjs/common';
-import { Reflector } from '@nestjs/core';
+import { ModuleRef, Reflector } from '@nestjs/core';
 import { RequestWithUser } from 'src/interfaces/request-user';
 import { JwtService } from 'src/services/JWT/jwt.service';
-import { Permissions } from './decorators/permissions.decorator';
+import { EndpointKey } from './decorators/endpoint-key.decorator';
 import { RequestContextService } from 'src/common/context/request-context.service';
 import { Session } from 'src/interfaces/session.interface';
 import { AuthUser } from 'src/interfaces/auth-user.interface';
@@ -10,15 +10,18 @@ import { RedisService } from 'src/common/redis/redis.service';
 import { getClientIp } from 'src/common/tools/get-client-ip';
 import { sameSubnetCheck } from 'src/common/tools/same-subnet-check';
 import { AuthErrorCodes, AuthException } from 'src/middlewares/auth.exception.handler';
+import { EndpointPermissionRulesService } from 'src/services/endpoint-permission-rules/endpoint-permission-rules.service';
 
 @Injectable()
 export class AuthGuard implements CanActivate {
+  private endpointPermissionRulesService?: EndpointPermissionRulesService;
+
   constructor(
     private readonly jwtService: JwtService,
     private readonly reflector: Reflector,
     private readonly requestContextService: RequestContextService,
-
     private readonly redis: RedisService,
+    private readonly moduleRef: ModuleRef,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -65,18 +68,32 @@ export class AuthGuard implements CanActivate {
     request.user = authUser;
     this.requestContextService.setUser(authUser);
 
-    const permissions = this.reflector.getAllAndOverride<string[]>(Permissions, [context.getHandler(), context.getClass()]);
+    //Dynamic endpoint permission rules (@EndpointKey decorator)
+    const endpointKey = this.reflector.getAllAndOverride<string>(EndpointKey, [context.getHandler(), context.getClass()]);
 
-    if (!permissions || permissions.length === 0) {
-      return true;
+    if (endpointKey) {
+
+      this.endpointPermissionRulesService ??= this.moduleRef.get(EndpointPermissionRulesService, { strict: false });
+      const dynamicPermissions = await this.endpointPermissionRulesService.getPermissionsForEndpoint(endpointKey);
+
+      if (dynamicPermissions) {
+        if (dynamicPermissions.length == 0) {
+          return true;
+        }
+
+        const hasDynamicPermission = dynamicPermissions.some((permission) => session.permissions.includes(permission));
+
+        if (!hasDynamicPermission) {
+          throw new AuthException(
+            'Insufficient permissions',
+            AuthErrorCodes.INSUFFICIENT_PERMISSIONS,
+            HttpStatus.FORBIDDEN,
+          );
+        }
+
+          return true;
+      }
     }
-
-    const hasAllPermissions = permissions.some((permission) => session.permissions.includes(permission));
-
-    if (!hasAllPermissions) {
-      throw new AuthException('Insufficient permissions', AuthErrorCodes.INSUFFICIENT_PERMISSIONS, HttpStatus.FORBIDDEN);
-    }
-
     return true;
   }
 
