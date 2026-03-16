@@ -372,7 +372,6 @@ describe('EndpointPermissionRulesService', () => {
         // However, since the spy replaces the method entirely (bypassing the internal try/catch),
         // the outer create() catch will catch it. This tests the design that mutations
         // don't lose DB changes due to cache failure — the save() already succeeded.
-        const request = { user: { id: 'u-1', email: 'a@b.com' } } as any;
 
         // The real loadRuleToRedis has a try/catch inside. Let's test that the real method
         // handles failures gracefully by restoring and testing directly.
