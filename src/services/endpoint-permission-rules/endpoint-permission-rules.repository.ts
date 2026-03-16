@@ -18,7 +18,10 @@ export class EndpointPermissionRulesRepository {
     return this.ormRepository.create(endpointPermissionRule);
   }
 
-  async merge(endpointPermissionRule: EndpointPermissionRulesEntity, changes: Partial<EndpointPermissionRulesEntity>): Promise<EndpointPermissionRulesEntity> {
+  async merge(
+    endpointPermissionRule: EndpointPermissionRulesEntity,
+    changes: Partial<EndpointPermissionRulesEntity>,
+  ): Promise<EndpointPermissionRulesEntity> {
     return this.ormRepository.merge(endpointPermissionRule, changes);
   }
 
@@ -28,6 +31,18 @@ export class EndpointPermissionRulesRepository {
 
   async findAll(): Promise<EndpointPermissionRulesEntity[]> {
     return await this.ormRepository.find();
+  }
+
+  async findByEndpointKey(endpointKeyName: string): Promise<EndpointPermissionRulesEntity | null> {
+    return await this.ormRepository.findOne({
+      where: { endpoint_key_name: endpointKeyName },
+    });
+  }
+
+  async findAllEnabled(): Promise<EndpointPermissionRulesEntity[]> {
+    return await this.ormRepository.find({
+      where: { enabled: true },
+    });
   }
 
   async remove(endpointPermissionRule: EndpointPermissionRulesEntity): Promise<void> {
