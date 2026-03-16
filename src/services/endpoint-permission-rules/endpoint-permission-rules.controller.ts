@@ -1,7 +1,5 @@
-import { Body, Controller, Delete, Param, Patch, Post, Req, UseGuards } from '@nestjs/common';
-import {
-  EndpointPermissionRulesService
-} from 'src/services/endpoint-permission-rules/endpoint-permission-rules.service';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Req, UseGuards } from '@nestjs/common';
+import { EndpointPermissionRulesService } from 'src/services/endpoint-permission-rules/endpoint-permission-rules.service';
 import * as requestUser from 'src/interfaces/request-user';
 import {
   CreateEndpointPermissionRulesDTO,
@@ -10,12 +8,14 @@ import {
 import { EndpointPermissionRulesEntity } from 'src/entities/endpoint-permission-rules.entity';
 import { AuthGuard } from 'src/middlewares/auth.middleware';
 import { AssignPermissionDTO } from 'src/interfaces/DTO/assign.dto';
+import { EndpointKey } from 'src/middlewares/decorators/endpoint-key.decorator';
 
 @Controller('endpoint-permission-rules')
 export class EndpointPermissionRulesController {
   constructor(private readonly endpointPermissionRulesService: EndpointPermissionRulesService) {}
 
   @UseGuards(AuthGuard)
+  //@EndpointKey('endpoint-permission-rules.create')
   @Post('new')
   create(
     @Body() dto: CreateEndpointPermissionRulesDTO,
@@ -32,7 +32,7 @@ export class EndpointPermissionRulesController {
 
   @UseGuards(AuthGuard)
   @Patch('assign-permissions/:id')
-  assignPermissions(@Param('id') id: string, dto: AssignPermissionDTO): Promise<EndpointPermissionRulesEntity> {
+  assignPermissions(@Param('id') id: string, @Body() dto: AssignPermissionDTO): Promise<EndpointPermissionRulesEntity> {
     return this.endpointPermissionRulesService.assignPermissions(id, dto);
   }
 
@@ -52,5 +52,19 @@ export class EndpointPermissionRulesController {
   @Delete('delete/:id')
   delete(@Param('id') id: string): Promise<{ message: string }> {
     return this.endpointPermissionRulesService.delete(id);
+  }
+
+  @UseGuards(AuthGuard)
+  @EndpointKey('endpoint-permission-rules.find')
+  @Get('all')
+  findAll(): Promise<EndpointPermissionRulesEntity[]> {
+    return this.endpointPermissionRulesService.findAll();
+  }
+
+  @UseGuards(AuthGuard)
+  @EndpointKey('endpoint-permission-rules.find')
+  @Get('find/:id')
+  findOne(@Param('id') id: string): Promise<EndpointPermissionRulesEntity> {
+    return this.endpointPermissionRulesService.findOne(id);
   }
 }
