@@ -9,6 +9,7 @@ import { EndpointPermissionRulesEntity } from 'src/entities/endpoint-permission-
 import { AuthGuard } from 'src/middlewares/auth.middleware';
 import { AssignPermissionDTO } from 'src/interfaces/DTO/assign.dto';
 import { EndpointKey } from 'src/middlewares/decorators/endpoint-key.decorator';
+import { ApiKeyGuard } from 'src/middlewares/api-key.middleware';
 
 @Controller('endpoint-permission-rules')
 export class EndpointPermissionRulesController {
@@ -66,5 +67,11 @@ export class EndpointPermissionRulesController {
   @Get('find/:id')
   findOne(@Param('id') id: string): Promise<EndpointPermissionRulesEntity> {
     return this.endpointPermissionRulesService.findOne(id);
+  }
+
+  @UseGuards(ApiKeyGuard)
+  @Get('get-endpoint-permissions/:key')
+  getEndpointPermissions(@Param('key') key: string): Promise<string[] | null> {
+    return this.endpointPermissionRulesService.getPermissionsForEndpoint(key);
   }
 }
