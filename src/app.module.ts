@@ -25,6 +25,7 @@ import { WinstonModule } from 'nest-winston';
 import winston from 'winston';
 import { AllExceptionsFilter } from 'src/common/filters/all-exceptions.filter';
 import { ObservabilityModule } from 'src/observability/observability.module';
+import { EndpointPermissionRulesModule } from 'src/services/endpoint-permission-rules/endpoint-permission-rules.module';
 
 @Module({
   imports: [
@@ -88,6 +89,7 @@ import { ObservabilityModule } from 'src/observability/observability.module';
     JwtModule,
     EmailModule,
     ObservabilityModule,
+    EndpointPermissionRulesModule,
   ],
   controllers: [AppController],
   providers: [
