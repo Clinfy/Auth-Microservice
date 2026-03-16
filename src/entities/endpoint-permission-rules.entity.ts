@@ -13,12 +13,6 @@ import { ApiProperty } from '@nestjs/swagger';
 import type { AuthUser } from 'src/interfaces/auth-user.interface';
 import { PermissionEntity } from 'src/entities/permission.entity';
 
-export enum PermissionRuleMode {
-  ANY = 'ALLOW',
-  ALL = 'DENY',
-  NONE = 'NONE',
-}
-
 @Unique('UQ_endpoint_permission_key_name', ['endpoint_key_name'])
 
 @Entity('endpoint_permission_rules')
@@ -31,9 +25,9 @@ export class EndpointPermissionRulesEntity extends BaseEntity {
   @Column()
   endpoint_key_name: string;
 
-  @ApiProperty({ description: 'Permission rule mode', enum: PermissionRuleMode, example: PermissionRuleMode.ANY })
-  @Column({ type: 'enum', enum: PermissionRuleMode, default: PermissionRuleMode.ANY })
-  mode: PermissionRuleMode;
+  @ApiProperty({ description: 'Whether the rule is enabled or not', example: true })
+  @Column({ default: true})
+  enabled: boolean;
 
   @ApiProperty({ description: 'Permissions assigned to the role', type: () => [PermissionEntity] })
   @ManyToMany(() => PermissionEntity, (permission) => permission.roles, {
