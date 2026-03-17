@@ -72,7 +72,6 @@ export class AuthGuard implements CanActivate {
     const endpointKey = this.reflector.getAllAndOverride<string>(EndpointKey, [context.getHandler(), context.getClass()]);
 
     if (endpointKey) {
-
       this.endpointPermissionRulesService ??= this.moduleRef.get(EndpointPermissionRulesService, { strict: false });
       const dynamicPermissions = await this.endpointPermissionRulesService.getPermissionsForEndpoint(endpointKey);
 
@@ -84,14 +83,10 @@ export class AuthGuard implements CanActivate {
         const hasDynamicPermission = dynamicPermissions.some((permission) => session.permissions.includes(permission));
 
         if (!hasDynamicPermission) {
-          throw new AuthException(
-            'Insufficient permissions',
-            AuthErrorCodes.INSUFFICIENT_PERMISSIONS,
-            HttpStatus.FORBIDDEN,
-          );
+          throw new AuthException('Insufficient permissions', AuthErrorCodes.INSUFFICIENT_PERMISSIONS, HttpStatus.FORBIDDEN);
         }
 
-          return true;
+        return true;
       }
     }
     return true;

@@ -9,9 +9,7 @@ import { RedisService } from 'src/common/redis/redis.service';
 import { extractApiKey } from 'src/common/tools/extract-api-key';
 import { ApiKeysService } from 'src/services/api-keys/api-keys.service';
 import { AuthErrorCodes, AuthException } from 'src/middlewares/auth.exception.handler';
-import {
-  EndpointPermissionRulesService
-} from 'src/services/endpoint-permission-rules/endpoint-permission-rules.service';
+import { EndpointPermissionRulesService } from 'src/services/endpoint-permission-rules/endpoint-permission-rules.service';
 import { EndpointKey } from 'src/middlewares/decorators/endpoint-key.decorator';
 
 @Injectable()
@@ -68,7 +66,11 @@ export class MicroserviceGuard implements CanActivate {
         const hasDynamicPermission = dynamicPermissions.some((permission) => apiKey.permissionCodes.includes(permission));
 
         if (!hasDynamicPermission) {
-          throw new AuthException('Insufficient API Key permissions', AuthErrorCodes.INSUFFICIENT_PERMISSIONS, HttpStatus.FORBIDDEN);
+          throw new AuthException(
+            'Insufficient API Key permissions',
+            AuthErrorCodes.INSUFFICIENT_PERMISSIONS,
+            HttpStatus.FORBIDDEN,
+          );
         }
       }
     }
