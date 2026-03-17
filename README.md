@@ -109,13 +109,13 @@ Request → AuthGuard
            │     └─ NO  → fall through ↓
            │
            ├─ 2. (No dynamic rule matched)
-           │     └─ Access granted — no permissions required
+           │     └─ Access denyed — until rule creation on DB
            │
            └─ Result: allow or 403 Forbidden
 ```
 
 1. **Dynamic rule lookup** — If the endpoint has `@EndpointKey`, the guard queries `EndpointPermissionRulesService` for that key. If an enabled rule exists, its permission list is enforced against the user's session permissions.
-2. **No matching rule** — If no `@EndpointKey` is present or no enabled rule exists for the key, access is granted without permission checks.
+2. **No matching rule** — If no `@EndpointKey` is present access is denyed until rule creation on DB. This is for unintentionally leaving an endpoint unprotected. The idea is that every guarded endpoint should have a corresponding rule in the DB, even if it's just a placeholder with no permissions.
 
 ### The `@EndpointKey` Decorator
 
@@ -376,7 +376,6 @@ src/
 │   ├── auth.exception.handler.ts  # Auth error handling
 │   ├── request-context.middleware.ts
 │   └── decorators/
-│       ├── permissions.decorator.ts
 │       └── endpoint-key.decorator.ts
 ├── observability/
 │   ├── observability.module.ts
