@@ -84,7 +84,15 @@ export class EndpointPermissionRulesService implements OnModuleInit {
     // DB fallback
     try {
       const rule = await this.endpointPermissionRulesRepository.findByEndpointKey(endpointKey);
-      if (!rule?.enabled) {
+      if (!rule) {
+        throw new EndpointPRException(
+          'This endpoint does not have a permission rule defined and is temporally disabled.',
+          EndpointPermissionRulesErrorCodes.ENDPOINT_PERMISSION_RULE_NOT_FOUND,
+          HttpStatus.NOT_FOUND,
+        )
+      }
+
+      if (!rule.enabled) {
         return null;
       }
       const codes = rule.permissionCodes;
@@ -97,7 +105,7 @@ export class EndpointPermissionRulesService implements OnModuleInit {
       return codes;
     } catch (error) {
       console.error(`DB fallback failed for endpoint '${endpointKey}':`, error);
-      return null;
+      throw error;
     }
   }
 
@@ -190,7 +198,7 @@ export class EndpointPermissionRulesService implements OnModuleInit {
       await this.loadRuleToRedis(saved.endpoint_key_name);
       return saved;
     } catch (error) {
-      throw new EndpointPRException(
+      throw error ?? new EndpointPRException(
         'Endpoint Permission Rule permission assignment failed',
         EndpointPermissionRulesErrorCodes.ENDPOINT_PERMISSION_RULE_ASSIGN_FAILED,
         error.status ?? HttpStatus.INTERNAL_SERVER_ERROR,
