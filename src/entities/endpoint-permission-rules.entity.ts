@@ -12,6 +12,7 @@ import {
 import { ApiProperty } from '@nestjs/swagger';
 import type { AuthUser } from 'src/interfaces/auth-user.interface';
 import { PermissionEntity } from 'src/entities/permission.entity';
+import { Exclude } from 'class-transformer';
 
 @Unique('UQ_endpoint_permission_key_name', ['endpoint_key_name'])
 @Entity('endpoint_permission_rules')
@@ -40,14 +41,17 @@ export class EndpointPermissionRulesEntity extends BaseEntity {
 
   @ApiProperty({ description: 'Creation timestamp' })
   @CreateDateColumn()
+  @Exclude()
   created_at: Date;
 
   @ApiProperty({ description: 'Last update timestamp' })
   @UpdateDateColumn()
+  @Exclude()
   updated_at: Date;
 
   @ApiProperty({ description: 'User who created this role', required: false })
   @Column({ type: 'jsonb', nullable: true })
+  @Exclude()
   created_by?: AuthUser;
 
   get permissionCodes(): string[] {
