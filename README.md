@@ -12,6 +12,7 @@
 - [API Documentation](#api-documentation)
 - [Observability](#observability)
 - [Testing](#testing)
+- [Dynamic Endpoint Permissions](#dynamic-endpoint-permissions)
 - [Project Structure](#project-structure)
 
 ---
@@ -29,21 +30,21 @@ This microservice is responsible for managing:
 
 ## Tech Stack
 
-| Layer | Technology |
-|---|---|
-| Framework | NestJS 11 |
-| Language | TypeScript 5 |
-| Runtime | Node.js 24 |
-| Database | PostgreSQL (TypeORM) |
-| Cache | Redis |
-| Messaging | RabbitMQ (via `@nestjs/microservices`) |
-| Auth | JWT (`jsonwebtoken`) + bcrypt |
-| Logging | Winston (`nest-winston`) |
-| Metrics | Prometheus (`prom-client`) |
-| Visualization | Grafana |
-| API Docs | Swagger (`@nestjs/swagger`) |
-| Validation | `class-validator` + `class-transformer` |
-| Scheduling | `@nestjs/schedule` |
+| Layer         | Technology                              |
+| ------------- | --------------------------------------- |
+| Framework     | NestJS 11                               |
+| Language      | TypeScript 5                            |
+| Runtime       | Node.js 24                              |
+| Database      | PostgreSQL (TypeORM)                    |
+| Cache         | Redis                                   |
+| Messaging     | RabbitMQ (via `@nestjs/microservices`)  |
+| Auth          | JWT (`jsonwebtoken`) + bcrypt           |
+| Logging       | Winston (`nest-winston`)                |
+| Metrics       | Prometheus (`prom-client`)              |
+| Visualization | Grafana                                 |
+| API Docs      | Swagger (`@nestjs/swagger`)             |
+| Validation    | `class-validator` + `class-transformer` |
+| Scheduling    | `@nestjs/schedule`                      |
 
 ## Architecture
 
@@ -88,6 +89,128 @@ This microservice is responsible for managing:
 - **Global Exception Filter** — a centralized `AllExceptionsFilter` catches unhandled errors and logs them via Winston.
 - **Environment Validation** — startup fails fast if required environment variables are missing or malformed (`class-validator` schema in `src/config/env-validation.ts`).
 
+## Dynamic Endpoint Permissions
+
+### Overview
+
+The **Dynamic Endpoint Permissions** system allows changing which permissions an endpoint requires **at runtime**, without code changes or redeployment. Each controller method is tagged with an `@EndpointKey('unique.key')` decorator, and permission rules for those keys are managed via the API, stored in PostgreSQL, and cached in Redis.
+
+### How It Works — Three-Tier Permission Resolution
+
+The `AuthGuard` resolves required permissions using a three-tier chain:
+
+```
+Request → AuthGuard
+           │
+           ├─ 1. @EndpointKey found?
+           │     ├─ YES → look up dynamic rule in Redis (fallback: DB)
+           │     │         ├─ Rule found & enabled → enforce those permissions
+           │     │         └─ No rule / disabled   → fall through ↓
+           │     └─ NO  → fall through ↓
+           │
+           ├─ 2. (No dynamic rule matched)
+           │     └─ Access granted — no permissions required
+           │
+           └─ Result: allow or 403 Forbidden
+```
+
+1. **Dynamic rule lookup** — If the endpoint has `@EndpointKey`, the guard queries `EndpointPermissionRulesService` for that key. If an enabled rule exists, its permission list is enforced against the user's session permissions.
+2. **No matching rule** — If no `@EndpointKey` is present or no enabled rule exists for the key, access is granted without permission checks.
+
+### The `@EndpointKey` Decorator
+
+A thin metadata decorator built with NestJS `Reflector`:
+
+```ts
+// src/middlewares/decorators/endpoint-key.decorator.ts
+import { Reflector } from '@nestjs/core';
+
+export const EndpointKey = Reflector.createDecorator<string>();
+```
+
+#### Usage
+
+Place `@EndpointKey` on any guarded controller method, right after `@UseGuards`:
+
+```ts
+@UseGuards(AuthGuard)
+@EndpointKey('roles.create')
+@Post('new')
+create(@Body() dto: CreateRoleDTO): Promise<RoleEntity> {
+  return this.rolesService.create(dto);
+}
+```
+
+#### Key Naming Convention
+
+Keys follow a `<domain>.<action>` pattern. Related endpoints share the same key when they require the same level of access:
+
+| Key                                | Endpoints                                                                                          |
+| ---------------------------------- | -------------------------------------------------------------------------------------------------- |
+| `users.register`                   | `POST /users/register`                                                                             |
+| `users.update`                     | `POST /users/activate/:id`, `POST /users/deactivate/:id`, `POST /users/assign-role/:id`            |
+| `users.find`                       | `GET /users/all`                                                                                   |
+| `roles.create`                     | `POST /roles/new`                                                                                  |
+| `roles.update`                     | `PATCH /roles/edit/:id`, `PATCH /roles/assign-permissions/:id`                                     |
+| `roles.delete`                     | `DELETE /roles/delete/:id`                                                                         |
+| `roles.find`                       | `GET /roles/find/:id`, `GET /roles/all`                                                            |
+| `permission.create`                | `POST /permissions/new`                                                                            |
+| `permission.update`                | `PATCH /permissions/edit/:id`                                                                      |
+| `permission.delete`                | `DELETE /permissions/delete/:id`                                                                   |
+| `permission.find`                  | `GET /permissions/find/:id`, `GET /permissions/all`                                                |
+| `api-key.generate`                 | `POST /api-keys/generate`                                                                          |
+| `api-key.find`                     | `GET /api-keys/all`                                                                                |
+| `api-key.deactivate`               | `PATCH /api-keys/deactivate/:id`                                                                   |
+| `sessions.find`                    | `GET /sessions/all`                                                                                |
+| `sessions.deactivate`              | `PATCH /sessions/deactivate/:id`                                                                   |
+| `endpoint-permission-rules.create` | `POST /endpoint-permission-rules/new`                                                              |
+| `endpoint-permission-rules.update` | `PATCH /endpoint-permission-rules/edit/:id`, `enable/:id`, `disable/:id`, `assign-permissions/:id` |
+| `endpoint-permission-rules.delete` | `DELETE /endpoint-permission-rules/delete/:id`                                                     |
+| `endpoint-permission-rules.find`   | `GET /endpoint-permission-rules/all`, `find/:id`, `get-endpoint-permissions/:key`                  |
+| `metrics.get`                      | `GET /metrics`                                                                                     |
+
+### Data Model — `EndpointPermissionRulesEntity`
+
+Stored in the `endpoint_permission_rules` table:
+
+| Column              | Type                            | Description                                 |
+| ------------------- | ------------------------------- | ------------------------------------------- |
+| `id`                | UUID (PK)                       | Auto-generated identifier                   |
+| `endpoint_key_name` | string (unique)                 | Matches the value passed to `@EndpointKey`  |
+| `enabled`           | boolean                         | Whether the rule is active (default `true`) |
+| `permissions`       | ManyToMany → `PermissionEntity` | Permission codes required for this endpoint |
+| `created_at`        | timestamp                       | Creation time                               |
+| `updated_at`        | timestamp                       | Last modification time                      |
+| `created_by`        | jsonb                           | The `AuthUser` who created the rule         |
+
+A computed getter `permissionCodes` returns `string[]` of permission codes from the related entities.
+
+### Managing Rules via the API
+
+All CRUD operations are exposed under `/endpoint-permission-rules`:
+
+| Method   | Path                                                       | Description                                       |
+| -------- | ---------------------------------------------------------- | ------------------------------------------------- |
+| `POST`   | `/endpoint-permission-rules/new`                           | Create a new rule                                 |
+| `PATCH`  | `/endpoint-permission-rules/edit/:id`                      | Update rule fields                                |
+| `PATCH`  | `/endpoint-permission-rules/assign-permissions/:id`        | Assign permissions to a rule                      |
+| `PATCH`  | `/endpoint-permission-rules/enable/:id`                    | Enable a rule                                     |
+| `PATCH`  | `/endpoint-permission-rules/disable/:id`                   | Disable a rule                                    |
+| `DELETE` | `/endpoint-permission-rules/delete/:id`                    | Delete a rule                                     |
+| `GET`    | `/endpoint-permission-rules/all`                           | List all rules                                    |
+| `GET`    | `/endpoint-permission-rules/find/:id`                      | Get a rule by ID                                  |
+| `GET`    | `/endpoint-permission-rules/get-endpoint-permissions/:key` | Get resolved permissions for a key (API Key auth) |
+
+### Redis Caching
+
+Permissions are cached in Redis under the key `epr:<endpoint_key_name>` (e.g. `epr:roles.create`). The cache is:
+
+- **Warmed on startup** — `onModuleInit` loads all enabled rules into Redis.
+- **Updated on mutation** — every create/update/enable/assign operation refreshes the cache for the affected key.
+- **Invalidated on disable/delete** — the Redis key is removed when a rule is disabled or deleted.
+- **Backfilled on miss** — if a Redis lookup fails but the DB has an enabled rule, the result is written back to Redis.
+- **Resilient** — Redis errors are caught and logged; the service falls back to PostgreSQL without disrupting the request.
+
 ## Getting Started
 
 ### Prerequisites
@@ -127,20 +250,20 @@ Copy `example.env` to `.env` and fill in the values:
 cp example.env .env
 ```
 
-| Variable | Required | Description |
-|---|---|---|
-| `DATABASE_HOST` | ✅ | PostgreSQL connection URI |
-| `RABBITMQ_URL` | ✅ | RabbitMQ connection URI |
-| `REDIS_URL` | ✅ | Redis connection URI |
-| `PORT` | ✅ | Application port |
-| `APP_NAME` | ✅ | Application name |
-| `FRONTEND_URL` | ✅ | Frontend URL (used in email templates) |
-| `JWT_AUTH_SECRET` | ✅ | JWT signing secret for access tokens (min 32 chars) |
-| `JWT_REFRESH_SECRET` | ✅ | JWT signing secret for refresh tokens (min 32 chars) |
-| `JWT_AUTH_EXPIRES_IN` | ✅ | Access token TTL (e.g. `15m`) |
-| `JWT_REFRESH_EXPIRES_IN` | ✅ | Refresh token TTL (e.g. `7d`) |
-| `RESET_PASSWORD_EXPIRES_IN` | ✅ | Password-reset token TTL (e.g. `30m`) |
-| `METRICS_ENABLED` | ❌ | Enable Prometheus metrics (`true`/`false`, default `true`) |
+| Variable                    | Required | Description                                                |
+| --------------------------- | -------- | ---------------------------------------------------------- |
+| `DATABASE_HOST`             | ✅       | PostgreSQL connection URI                                  |
+| `RABBITMQ_URL`              | ✅       | RabbitMQ connection URI                                    |
+| `REDIS_URL`                 | ✅       | Redis connection URI                                       |
+| `PORT`                      | ✅       | Application port                                           |
+| `APP_NAME`                  | ✅       | Application name                                           |
+| `FRONTEND_URL`              | ✅       | Frontend URL (used in email templates)                     |
+| `JWT_AUTH_SECRET`           | ✅       | JWT signing secret for access tokens (min 32 chars)        |
+| `JWT_REFRESH_SECRET`        | ✅       | JWT signing secret for refresh tokens (min 32 chars)       |
+| `JWT_AUTH_EXPIRES_IN`       | ✅       | Access token TTL (e.g. `15m`)                              |
+| `JWT_REFRESH_EXPIRES_IN`    | ✅       | Refresh token TTL (e.g. `7d`)                              |
+| `RESET_PASSWORD_EXPIRES_IN` | ✅       | Password-reset token TTL (e.g. `30m`)                      |
+| `METRICS_ENABLED`           | ❌       | Enable Prometheus metrics (`true`/`false`, default `true`) |
 
 ## API Documentation
 
@@ -150,26 +273,27 @@ The OpenAPI spec is also exported as `openapi.json` at startup.
 
 ### Main Endpoints
 
-| Method | Path | Auth | Description |
-|---|---|---|---|
-| `POST` | `/users/register` | API Key | Register a new user |
-| `POST` | `/users/first-activation` | — | Activate user for the first time |
-| `POST` | `/users/activate/:id` | Bearer | Activate a user |
-| `POST` | `/users/deactivate/:id` | Bearer | Deactivate a user |
-| `POST` | `/users/login` | — | Log in |
-| `POST` | `/users/logout` | Bearer | Log out |
-| `GET`  | `/users/refresh-token` | Header | Refresh tokens |
-| `GET`  | `/users/me` | Bearer | Current user info |
-| `GET`  | `/users/can-do/:permission` | Bearer | Check permission |
-| `POST` | `/users/assign-role/:id` | Bearer | Assign roles to a user |
-| `POST` | `/users/forgot-password` | — | Request password reset email |
-| `POST` | `/users/reset-password` | Query | Reset password with token |
-| `GET`  | `/users/all` | Bearer | List all users |
-| `CRUD` | `/permissions/*` | Bearer | Manage permissions |
-| `CRUD` | `/roles/*` | Bearer | Manage roles |
-| `CRUD` | `/api-keys/*` | Bearer | Manage API keys |
-| `GET`  | `/sessions/*` | Bearer | View active sessions |
-| `GET`  | `/metrics` | API Key | Prometheus metrics |
+| Method | Path                           | Auth    | Description                              |
+| ------ | ------------------------------ | ------- | ---------------------------------------- |
+| `POST` | `/users/register`              | API Key | Register a new user                      |
+| `POST` | `/users/first-activation`      | —       | Activate user for the first time         |
+| `POST` | `/users/activate/:id`          | Bearer  | Activate a user                          |
+| `POST` | `/users/deactivate/:id`        | Bearer  | Deactivate a user                        |
+| `POST` | `/users/login`                 | —       | Log in                                   |
+| `POST` | `/users/logout`                | Bearer  | Log out                                  |
+| `GET`  | `/users/refresh-token`         | Header  | Refresh tokens                           |
+| `GET`  | `/users/me`                    | Bearer  | Current user info                        |
+| `GET`  | `/users/can-do/:permission`    | Bearer  | Check permission                         |
+| `POST` | `/users/assign-role/:id`       | Bearer  | Assign roles to a user                   |
+| `POST` | `/users/forgot-password`       | —       | Request password reset email             |
+| `POST` | `/users/reset-password`        | Query   | Reset password with token                |
+| `GET`  | `/users/all`                   | Bearer  | List all users                           |
+| `CRUD` | `/permissions/*`               | Bearer  | Manage permissions                       |
+| `CRUD` | `/roles/*`                     | Bearer  | Manage roles                             |
+| `CRUD` | `/api-keys/*`                  | Bearer  | Manage API keys                          |
+| `CRUD` | `/endpoint-permission-rules/*` | Bearer  | Manage dynamic endpoint permission rules |
+| `GET`  | `/sessions/*`                  | Bearer  | View active sessions                     |
+| `GET`  | `/metrics`                     | API Key | Prometheus metrics                       |
 
 ## Observability
 
@@ -177,13 +301,13 @@ The OpenAPI spec is also exported as `openapi.json` at startup.
 
 The `/metrics` endpoint exposes the following custom metrics (in addition to default Node.js / process metrics):
 
-| Metric | Type | Description |
-|---|---|---|
-| `auth_http_requests_total` | Counter | Total HTTP requests (labels: `method`, `route`, `status_code`) |
-| `auth_http_request_duration_seconds` | Histogram | HTTP request latency |
-| `auth_dependency_duration_seconds` | Histogram | External dependency call latency (labels: `dependency`, `operation`, `result`) |
-| `auth_dependency_errors_total` | Counter | Dependency error count |
-| `auth_outbox_batch_size` | Gauge | Pending outbox events per cron batch |
+| Metric                               | Type      | Description                                                                    |
+| ------------------------------------ | --------- | ------------------------------------------------------------------------------ |
+| `auth_http_requests_total`           | Counter   | Total HTTP requests (labels: `method`, `route`, `status_code`)                 |
+| `auth_http_request_duration_seconds` | Histogram | HTTP request latency                                                           |
+| `auth_dependency_duration_seconds`   | Histogram | External dependency call latency (labels: `dependency`, `operation`, `result`) |
+| `auth_dependency_errors_total`       | Counter   | Dependency error count                                                         |
+| `auth_outbox_batch_size`             | Gauge     | Pending outbox events per cron batch                                           |
 
 ### Local Monitoring Stack
 
@@ -194,10 +318,10 @@ cd ops/monitoring
 docker compose -f docker-compose.monitoring.yml up -d
 ```
 
-| Service | URL |
-|---|---|
-| Prometheus | http://localhost:9090 |
-| Grafana | http://localhost:3001 (admin / admin) |
+| Service    | URL                                   |
+| ---------- | ------------------------------------- |
+| Prometheus | http://localhost:9090                 |
+| Grafana    | http://localhost:3001 (admin / admin) |
 
 ## Testing
 
@@ -229,6 +353,7 @@ src/
 │   ├── role.entity.ts
 │   ├── permission.entity.ts
 │   ├── api-key.entity.ts
+│   ├── endpoint-permission-rules.entity.ts
 │   └── outbox.entity.ts
 ├── services/
 │   ├── users/                     # User CRUD, auth, password reset
@@ -236,6 +361,7 @@ src/
 │   ├── permissions/               # Permission CRUD
 │   ├── api-keys/                  # API key management
 │   ├── sessions/                  # Session management
+│   ├── endpoint-permission-rules/ # Dynamic endpoint permission management
 │   └── JWT/                       # Token generation & validation
 ├── clients/
 │   └── email/                     # Email client (RabbitMQ)
@@ -248,7 +374,8 @@ src/
 │   ├── auth.exception.handler.ts  # Auth error handling
 │   ├── request-context.middleware.ts
 │   └── decorators/
-│       └── permissions.decorator.ts
+│       ├── permissions.decorator.ts
+│       └── endpoint-key.decorator.ts
 ├── observability/
 │   ├── observability.module.ts
 │   ├── metrics.service.ts         # Prometheus metrics definitions
