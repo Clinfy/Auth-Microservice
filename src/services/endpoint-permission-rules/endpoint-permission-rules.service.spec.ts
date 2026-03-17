@@ -3,6 +3,7 @@ import { EndpointPermissionRulesRepository } from './endpoint-permission-rules.r
 import { PermissionsService } from 'src/services/permissions/permissions.service';
 import { RedisService } from 'src/common/redis/redis.service';
 import { EndpointPermissionRulesEntity } from 'src/entities/endpoint-permission-rules.entity';
+import { EndpointPRException } from 'src/services/endpoint-permission-rules/endpoint-permission-rules.exception.handler';
 
 // ────────────────────────────────────────────────────────────────
 // Helpers
@@ -226,13 +227,11 @@ describe('EndpointPermissionRulesService', () => {
       expect(redisService.raw.set).not.toHaveBeenCalled();
     });
 
-    it('returns null when both Redis and DB miss', async () => {
+    it('throws EndpointPRException when both Redis and DB miss', async () => {
       redisService.raw.get.mockResolvedValue(null);
       repository.findByEndpointKey.mockResolvedValue(null);
 
-      const result = await service.getPermissionsForEndpoint('users.create');
-
-      expect(result).toBeNull();
+      await expect(service.getPermissionsForEndpoint('users.create')).rejects.toBeInstanceOf(EndpointPRException);
     });
 
     it('falls back to DB when Redis throws, and returns codes', async () => {
@@ -245,13 +244,11 @@ describe('EndpointPermissionRulesService', () => {
       expect(result).toEqual(['USERS_CREATE']);
     });
 
-    it('returns null when both Redis and DB throw', async () => {
+    it('throws when both Redis and DB throw', async () => {
       redisService.raw.get.mockRejectedValue(new Error('Redis error'));
       repository.findByEndpointKey.mockRejectedValue(new Error('DB error'));
 
-      const result = await service.getPermissionsForEndpoint('users.create');
-
-      expect(result).toBeNull();
+      await expect(service.getPermissionsForEndpoint('users.create')).rejects.toThrow('DB error');
     });
   });
 
