@@ -168,6 +168,7 @@ export class UsersController {
   }
 
   @UseGuards(MicroserviceGuard)
+  @EndpointKey('users.find_api')
   @ApiSecurity('api-key')
   @ApiBearerAuth()
   @ApiOperation({
@@ -182,6 +183,7 @@ export class UsersController {
   }
 
   @UseGuards(MicroserviceGuard)
+  @EndpointKey('users.find_api')
   @ApiSecurity('api-key')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Return the authenticated user info' })
