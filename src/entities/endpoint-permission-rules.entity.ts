@@ -29,7 +29,7 @@ export class EndpointPermissionRulesEntity extends BaseEntity {
   @Column({ default: true })
   enabled: boolean;
 
-  @ApiProperty({ description: 'Permissions assigned to the role', type: () => [PermissionEntity] })
+  @ApiProperty({ description: 'Permissions assigned to the rule', type: () => [PermissionEntity] })
   @ManyToMany(() => PermissionEntity, (permission) => permission.endpoint_permission_rules, {
     nullable: true,
     eager: true,
