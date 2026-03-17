@@ -145,29 +145,31 @@ create(@Body() dto: CreateRoleDTO): Promise<RoleEntity> {
 
 Keys follow a `<domain>.<action>` pattern. Related endpoints share the same key when they require the same level of access:
 
-| Key                                | Endpoints                                                                                          |
-| ---------------------------------- | -------------------------------------------------------------------------------------------------- |
-| `users.register`                   | `POST /users/register`                                                                             |
-| `users.update`                     | `POST /users/activate/:id`, `POST /users/deactivate/:id`, `POST /users/assign-role/:id`            |
-| `users.find`                       | `GET /users/all`                                                                                   |
-| `roles.create`                     | `POST /roles/new`                                                                                  |
-| `roles.update`                     | `PATCH /roles/edit/:id`, `PATCH /roles/assign-permissions/:id`                                     |
-| `roles.delete`                     | `DELETE /roles/delete/:id`                                                                         |
-| `roles.find`                       | `GET /roles/find/:id`, `GET /roles/all`                                                            |
-| `permission.create`                | `POST /permissions/new`                                                                            |
-| `permission.update`                | `PATCH /permissions/edit/:id`                                                                      |
-| `permission.delete`                | `DELETE /permissions/delete/:id`                                                                   |
-| `permission.find`                  | `GET /permissions/find/:id`, `GET /permissions/all`                                                |
-| `api-key.generate`                 | `POST /api-keys/generate`                                                                          |
-| `api-key.find`                     | `GET /api-keys/all`                                                                                |
-| `api-key.deactivate`               | `PATCH /api-keys/deactivate/:id`                                                                   |
-| `sessions.find`                    | `GET /sessions/all`                                                                                |
-| `sessions.deactivate`              | `PATCH /sessions/deactivate/:id`                                                                   |
-| `endpoint-permission-rules.create` | `POST /endpoint-permission-rules/new`                                                              |
-| `endpoint-permission-rules.update` | `PATCH /endpoint-permission-rules/edit/:id`, `enable/:id`, `disable/:id`, `assign-permissions/:id` |
-| `endpoint-permission-rules.delete` | `DELETE /endpoint-permission-rules/delete/:id`                                                     |
-| `endpoint-permission-rules.find`   | `GET /endpoint-permission-rules/all`, `find/:id`, `get-endpoint-permissions/:key`                  |
-| `metrics.get`                      | `GET /metrics`                                                                                     |
+| Key                                  | Endpoints                                                                                          |
+|--------------------------------------|----------------------------------------------------------------------------------------------------|
+| `users.register`                     | `POST /users/register`                                                                             |
+| `users.update`                       | `POST /users/activate/:id`, `POST /users/deactivate/:id`, `POST /users/assign-role/:id`            |
+| `users.find`                         | `GET /users/all`                                                                                   |
+| `users.find_api`                     | `GET /users/me`, `GET /users/can-do/:permission`                                                   |
+| `roles.create`                       | `POST /roles/new`                                                                                  |
+| `roles.update`                       | `PATCH /roles/edit/:id`, `PATCH /roles/assign-permissions/:id`                                     |
+| `roles.delete`                       | `DELETE /roles/delete/:id`                                                                         |
+| `roles.find`                         | `GET /roles/find/:id`, `GET /roles/all`                                                            |
+| `permission.create`                  | `POST /permissions/new`                                                                            |
+| `permission.update`                  | `PATCH /permissions/edit/:id`                                                                      |
+| `permission.delete`                  | `DELETE /permissions/delete/:id`                                                                   |
+| `permission.find`                    | `GET /permissions/find/:id`, `GET /permissions/all`                                                |
+| `api-key.generate`                   | `POST /api-keys/generate`                                                                          |
+| `api-key.find`                       | `GET /api-keys/all`                                                                                |
+| `api-key.deactivate`                 | `PATCH /api-keys/deactivate/:id`                                                                   |
+| `sessions.find`                      | `GET /sessions/all`                                                                                |
+| `sessions.deactivate`                | `PATCH /sessions/deactivate/:id`                                                                   |
+| `endpoint-permission-rules.create`   | `POST /endpoint-permission-rules/new`                                                              |
+| `endpoint-permission-rules.update`   | `PATCH /endpoint-permission-rules/edit/:id`, `enable/:id`, `disable/:id`, `assign-permissions/:id` |
+| `endpoint-permission-rules.delete`   | `DELETE /endpoint-permission-rules/delete/:id`                                                     |
+| `endpoint-permission-rules.find`     | `GET /endpoint-permission-rules/all`, `find/:id`                                                   |
+| `endpoint-permission-rules.find_api` | `get-endpoint-permissions/:key`                                                                    |
+| `metrics.get`                        | `GET /metrics`                                                                                     |
 
 ### Data Model — `EndpointPermissionRulesEntity`
 
