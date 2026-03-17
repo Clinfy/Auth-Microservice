@@ -1,7 +1,6 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, Req, UseGuards } from '@nestjs/common';
 import { RolesService } from 'src/services/roles/roles.service';
 import { AuthGuard } from 'src/middlewares/auth.middleware';
-import { Permissions } from 'src/middlewares/decorators/permissions.decorator';
 import {
   ApiCookieAuth,
   ApiCreatedResponse,
@@ -17,6 +16,7 @@ import { AssignPermissionDTO } from 'src/interfaces/DTO/assign.dto';
 import { PatchRoleDTO } from 'src/interfaces/DTO/patch.dto';
 import * as requestUser from 'src/interfaces/request-user';
 import { CreateRoleDTO } from 'src/interfaces/DTO/create.dto';
+import { EndpointKey } from 'src/middlewares/decorators/endpoint-key.decorator';
 
 @ApiTags('Roles')
 @ApiCookieAuth('auth_token')
@@ -25,7 +25,7 @@ export class RolesController {
   constructor(private readonly rolesService: RolesService) {}
 
   @UseGuards(AuthGuard)
-  @Permissions(['ROLES_CREATE'])
+  @EndpointKey('roles.create')
   @ApiOperation({ summary: 'Create a new role' })
   @ApiCreatedResponse({ type: RoleEntity })
   @ApiUnauthorizedResponse({ description: 'Missing or invalid auth cookie' })
@@ -36,7 +36,7 @@ export class RolesController {
   }
 
   @UseGuards(AuthGuard)
-  @Permissions(['ROLES_UPDATE'])
+  @EndpointKey('roles.update')
   @ApiOperation({ summary: 'Update a role' })
   @ApiOkResponse({ type: RoleEntity })
   @ApiNotFoundResponse({ description: 'Role not found' })
@@ -48,7 +48,7 @@ export class RolesController {
   }
 
   @UseGuards(AuthGuard)
-  @Permissions(['ROLES_UPDATE'])
+  @EndpointKey('roles.update')
   @ApiOperation({ summary: 'Assign permissions to a role' })
   @ApiOkResponse({ type: RoleEntity })
   @ApiNotFoundResponse({ description: 'Role or permission not found' })
@@ -60,7 +60,7 @@ export class RolesController {
   }
 
   @UseGuards(AuthGuard)
-  @Permissions(['ROLES_DELETE'])
+  @EndpointKey('roles.delete')
   @ApiOperation({ summary: 'Delete a role' })
   @ApiOkResponse({
     schema: { type: 'object', properties: { message: { type: 'string' } } },
@@ -74,7 +74,7 @@ export class RolesController {
   }
 
   @UseGuards(AuthGuard)
-  @Permissions(['ROLES_READ'])
+  @EndpointKey('roles.find')
   @ApiOperation({ summary: 'Find a role by id number' })
   @ApiOkResponse({ type: RoleEntity })
   @ApiNotFoundResponse({ description: 'Role not found' })
@@ -86,7 +86,7 @@ export class RolesController {
   }
 
   @UseGuards(AuthGuard)
-  @Permissions(['ROLES_READ'])
+  @EndpointKey('roles.find')
   @ApiOperation({ summary: 'Find all roles' })
   @ApiOkResponse({ type: [RoleEntity] })
   @ApiUnauthorizedResponse({ description: 'Missing or invalid auth cookie' })

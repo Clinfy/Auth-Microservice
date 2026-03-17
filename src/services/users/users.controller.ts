@@ -14,7 +14,6 @@ import {
 } from '@nestjs/common';
 import { AuthGuard } from 'src/middlewares/auth.middleware';
 import { MicroserviceGuard } from 'src/middlewares/microservice.middleware';
-import { Permissions } from 'src/middlewares/decorators/permissions.decorator';
 import type { Request, Response } from 'express';
 import {
   ApiBearerAuth,
@@ -41,6 +40,7 @@ import { ForgotPasswordDTO, ResetPasswordDTO } from 'src/interfaces/DTO/reset-pa
 import { ActivateUserDTO } from 'src/interfaces/DTO/activate.dto';
 import { getAuthCookieOptions, getRefreshCookieOptions } from 'src/common/tools/cookie-options';
 import { UsersErrorCodes, UsersException } from 'src/services/users/users.exception.handler';
+import { EndpointKey } from 'src/middlewares/decorators/endpoint-key.decorator';
 
 @ApiTags('Users')
 @Controller('users')
@@ -48,7 +48,7 @@ export class UsersController {
   constructor(private readonly userService: UsersService) {}
 
   @UseGuards(ApiKeyGuard)
-  @Permissions(['USERS_CREATE'])
+  @EndpointKey('users.register')
   @ApiHeader({ name: 'x-api-key', required: true })
   @ApiOperation({ summary: 'Create a new user' })
   @ApiUnauthorizedResponse({ description: 'Missing or invalid API key' })
@@ -71,7 +71,7 @@ export class UsersController {
   }
 
   @UseGuards(AuthGuard)
-  @Permissions(['USERS_UPDATE'])
+  @EndpointKey('users.update')
   @ApiCookieAuth('auth_token')
   @ApiOperation({ summary: 'Activate a user' })
   @ApiOkResponse({
@@ -86,7 +86,7 @@ export class UsersController {
   }
 
   @UseGuards(AuthGuard)
-  @Permissions(['USERS_UPDATE'])
+  @EndpointKey('users.update')
   @ApiCookieAuth('auth_token')
   @ApiOperation({ summary: 'Deactivate a user' })
   @ApiOkResponse({
@@ -213,7 +213,7 @@ export class UsersController {
   }
 
   @UseGuards(AuthGuard)
-  @Permissions(['USERS_UPDATE'])
+  @EndpointKey('users.update')
   @UseInterceptors(ClassSerializerInterceptor)
   @ApiCookieAuth('auth_token')
   @ApiOperation({ summary: 'Assign roles to a user' })
@@ -251,7 +251,7 @@ export class UsersController {
   }
 
   @UseGuards(AuthGuard)
-  @Permissions(['USERS_READ_ALL'])
+  @EndpointKey('users.find')
   @UseInterceptors(ClassSerializerInterceptor)
   @ApiCookieAuth('auth_token')
   @ApiOperation({ summary: 'Find all users' })

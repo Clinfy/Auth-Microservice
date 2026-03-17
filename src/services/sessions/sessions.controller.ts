@@ -2,7 +2,6 @@ import { Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
 import { SessionsService } from 'src/services/sessions/sessions.service';
 import { SessionWithSid } from 'src/interfaces/session.interface';
 import { AuthGuard } from 'src/middlewares/auth.middleware';
-import { Permissions } from 'src/middlewares/decorators/permissions.decorator';
 import {
   ApiCookieAuth,
   ApiForbiddenResponse,
@@ -12,6 +11,7 @@ import {
   ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
+import { EndpointKey } from 'src/middlewares/decorators/endpoint-key.decorator';
 
 @ApiTags('Sessions')
 @ApiCookieAuth('auth_token')
@@ -20,7 +20,7 @@ export class SessionsController {
   constructor(private readonly sessionsService: SessionsService) {}
 
   @UseGuards(AuthGuard)
-  @Permissions(['SESSIONS_READ'])
+  @EndpointKey('sessions.find')
   @ApiOperation({ summary: 'Get all active sessions for a user' })
   @ApiOkResponse({
     schema: {
@@ -38,7 +38,7 @@ export class SessionsController {
   }
 
   @UseGuards(AuthGuard)
-  @Permissions(['SESSIONS_DEACTIVATE'])
+  @EndpointKey('sessions.deactivate')
   @ApiOperation({ summary: 'Deactivate a session' })
   @ApiOkResponse({
     schema: { type: 'object', properties: { message: { type: 'string' } } },

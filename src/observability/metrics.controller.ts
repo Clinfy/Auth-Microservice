@@ -4,7 +4,7 @@ import { ApiExcludeController } from '@nestjs/swagger';
 import type { Response } from 'express';
 import { MetricsService } from './metrics.service.js';
 import { ApiKeyGuard } from 'src/middlewares/api-key.middleware';
-import { Permissions } from 'src/middlewares/decorators/permissions.decorator';
+import { EndpointKey } from 'src/middlewares/decorators/endpoint-key.decorator';
 
 @ApiExcludeController()
 @Controller('metrics')
@@ -16,7 +16,7 @@ export class MetricsController {
 
   @Get()
   @UseGuards(ApiKeyGuard)
-  @Permissions(['METRICS_READ'])
+  @EndpointKey('metrics.get')
   async getMetrics(@Res() res: Response) {
     const enabled = this.config.get<string>('METRICS_ENABLED', 'true');
 

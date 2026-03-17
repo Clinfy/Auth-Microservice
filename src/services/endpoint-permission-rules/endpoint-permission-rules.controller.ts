@@ -16,7 +16,7 @@ export class EndpointPermissionRulesController {
   constructor(private readonly endpointPermissionRulesService: EndpointPermissionRulesService) {}
 
   @UseGuards(AuthGuard)
-  //@EndpointKey('endpoint-permission-rules.create')
+  @EndpointKey('endpoint-permission-rules.create')
   @Post('new')
   create(
     @Body() dto: CreateEndpointPermissionRulesDTO,
@@ -26,30 +26,35 @@ export class EndpointPermissionRulesController {
   }
 
   @UseGuards(AuthGuard)
+  @EndpointKey('endpoint-permission-rules.update')
   @Patch('edit/:id')
   edit(@Param('id') id: string, @Body() dto: PatchEndpointPermissionRulesDTO): Promise<EndpointPermissionRulesEntity> {
     return this.endpointPermissionRulesService.update(id, dto);
   }
 
   @UseGuards(AuthGuard)
+  @EndpointKey('endpoint-permission-rules.update')
   @Patch('assign-permissions/:id')
   assignPermissions(@Param('id') id: string, @Body() dto: AssignPermissionDTO): Promise<EndpointPermissionRulesEntity> {
     return this.endpointPermissionRulesService.assignPermissions(id, dto);
   }
 
   @UseGuards(AuthGuard)
+  @EndpointKey('endpoint-permission-rules.update')
   @Patch('enable/:id')
   enableRule(@Param('id') id: string): Promise<{ message: string }> {
     return this.endpointPermissionRulesService.enableRule(id);
   }
 
   @UseGuards(AuthGuard)
+  @EndpointKey('endpoint-permission-rules.update')
   @Patch('disable/:id')
   disableRule(@Param('id') id: string): Promise<{ message: string }> {
     return this.endpointPermissionRulesService.disableRule(id);
   }
 
   @UseGuards(AuthGuard)
+  @EndpointKey('endpoint-permission-rules.delete')
   @Delete('delete/:id')
   delete(@Param('id') id: string): Promise<{ message: string }> {
     return this.endpointPermissionRulesService.delete(id);
@@ -70,6 +75,7 @@ export class EndpointPermissionRulesController {
   }
 
   @UseGuards(ApiKeyGuard)
+  @EndpointKey('endpoint-permission-rules.find')
   @Get('get-endpoint-permissions/:key')
   getEndpointPermissions(@Param('key') key: string): Promise<string[] | null> {
     return this.endpointPermissionRulesService.getPermissionsForEndpoint(key);
