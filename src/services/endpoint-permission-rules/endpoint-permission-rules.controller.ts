@@ -1,4 +1,16 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Req, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  ClassSerializerInterceptor,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Req,
+  UseGuards,
+  UseInterceptors,
+} from '@nestjs/common';
 import { EndpointPermissionRulesService } from 'src/services/endpoint-permission-rules/endpoint-permission-rules.service';
 import * as requestUser from 'src/interfaces/request-user';
 import {
@@ -17,6 +29,7 @@ export class EndpointPermissionRulesController {
 
   @UseGuards(AuthGuard)
   @EndpointKey('endpoint-permission-rules.create')
+  @UseInterceptors(ClassSerializerInterceptor)
   @Post('new')
   create(
     @Body() dto: CreateEndpointPermissionRulesDTO,
@@ -27,6 +40,7 @@ export class EndpointPermissionRulesController {
 
   @UseGuards(AuthGuard)
   @EndpointKey('endpoint-permission-rules.update')
+  @UseInterceptors(ClassSerializerInterceptor)
   @Patch('edit/:id')
   edit(@Param('id') id: string, @Body() dto: PatchEndpointPermissionRulesDTO): Promise<EndpointPermissionRulesEntity> {
     return this.endpointPermissionRulesService.update(id, dto);
@@ -34,6 +48,7 @@ export class EndpointPermissionRulesController {
 
   @UseGuards(AuthGuard)
   @EndpointKey('endpoint-permission-rules.update')
+  @UseInterceptors(ClassSerializerInterceptor)
   @Patch('assign-permissions/:id')
   assignPermissions(@Param('id') id: string, @Body() dto: AssignPermissionDTO): Promise<EndpointPermissionRulesEntity> {
     return this.endpointPermissionRulesService.assignPermissions(id, dto);
@@ -75,7 +90,7 @@ export class EndpointPermissionRulesController {
   }
 
   @UseGuards(ApiKeyGuard)
-  @EndpointKey('endpoint-permission-rules.find')
+  @EndpointKey('endpoint-permission-rules.find_api')
   @Get('get-endpoint-permissions/:key')
   getEndpointPermissions(@Param('key') key: string): Promise<string[] | null> {
     return this.endpointPermissionRulesService.getPermissionsForEndpoint(key);
