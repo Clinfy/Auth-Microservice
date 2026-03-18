@@ -26,6 +26,7 @@ import { UsersErrorCodes, UsersException } from 'src/services/users/users.except
 import { SessionsService } from 'src/services/sessions/sessions.service';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { Logger } from 'winston';
+import { serializeError } from 'src/common/tools/logger-format';
 
 @Injectable()
 export class UsersService {
@@ -203,7 +204,7 @@ export class UsersService {
         context: 'UsersService',
         operation: 'assignRole',
         userId: savedUser.id,
-        error: error instanceof Error ? error.message : String(error),
+        error: serializeError(error),
       });
     }
     return savedUser;

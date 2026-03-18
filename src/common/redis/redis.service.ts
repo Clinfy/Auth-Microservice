@@ -4,6 +4,7 @@ import { ConfigService } from '@nestjs/config';
 import { MetricsService } from 'src/observability/metrics.service';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { Logger } from 'winston';
+import { serializeError } from 'src/common/tools/logger-format';
 
 @Injectable()
 export class RedisService implements OnModuleInit, OnModuleDestroy {
@@ -27,7 +28,7 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
       this.logger.warn('Redis connection error', {
         context: 'RedisService',
         operation: 'connection',
-        error: err instanceof Error ? err.message : String(err),
+        error: serializeError(err),
       });
       this.metrics.dependencyErrorsTotal.inc({
         dependency: 'redis',

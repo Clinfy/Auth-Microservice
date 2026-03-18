@@ -7,6 +7,7 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 import { MetricsService } from 'src/observability/metrics.service';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { Logger } from 'winston';
+import { serializeError } from 'src/common/tools/logger-format';
 
 @Injectable()
 export class OutboxPublisherService {
@@ -45,7 +46,7 @@ export class OutboxPublisherService {
           operation: 'handleAuditEvents',
           eventId: event.id,
           pattern: event.pattern,
-          error: error instanceof Error ? error.message : String(error),
+          error: serializeError(error),
         });
       }
     }

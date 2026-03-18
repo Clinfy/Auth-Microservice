@@ -10,6 +10,7 @@ import { RolesErrorCodes, RolesException } from 'src/services/roles/roles.except
 import { SessionsService } from 'src/services/sessions/sessions.service';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { Logger } from 'winston';
+import { serializeError } from 'src/common/tools/logger-format';
 
 @Injectable()
 export class RolesService {
@@ -95,7 +96,7 @@ export class RolesService {
           context: 'RolesService',
           operation: 'assignPermissions',
           roleId,
-          error: refreshError instanceof Error ? refreshError.message : String(refreshError),
+          error: serializeError(refreshError),
         });
       }
       return savedRole;

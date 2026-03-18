@@ -15,6 +15,7 @@ import { AssignPermissionDTO } from 'src/interfaces/DTO/assign.dto';
 import { RedisService } from 'src/common/redis/redis.service';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { Logger } from 'winston';
+import { serializeError } from 'src/common/tools/logger-format';
 
 @Injectable()
 export class EndpointPermissionRulesService implements OnModuleInit {
@@ -37,7 +38,7 @@ export class EndpointPermissionRulesService implements OnModuleInit {
       this.logger.warn('Failed to warm up endpoint permission rules cache on init', {
         context: 'EndpointPermissionRulesService',
         operation: 'onModuleInit',
-        error: error instanceof Error ? error.message : String(error),
+        error: serializeError(error),
       });
     }
   }
@@ -56,7 +57,7 @@ export class EndpointPermissionRulesService implements OnModuleInit {
       this.logger.warn('Failed to warm up endpoint permission rules cache', {
         context: 'EndpointPermissionRulesService',
         operation: 'warmUpCache',
-        error: error instanceof Error ? error.message : String(error),
+        error: serializeError(error),
       });
     }
   }
@@ -92,7 +93,7 @@ export class EndpointPermissionRulesService implements OnModuleInit {
     }
   }
 
-  async getPermissionsForEndpoint(endpointKey: string): Promise<string[] | null> {
+  async getPermissionsForEndpoint(endpointKey: string): Promise<string[]> {
     // Try Redis first
     try {
       const cached = await this.redis.raw.get(this.redisKey(endpointKey));
@@ -121,7 +122,7 @@ export class EndpointPermissionRulesService implements OnModuleInit {
 
       if (!rule.enabled) {
         throw new EndpointPRException(
-          'This endpoint is temporally disabled. Please try again later.',
+          'This endpoint is temporarily disabled. Please try again later.',
           EndpointPermissionRulesErrorCodes.ENDPOINT_PERMISSION_RULE_NOT_FOUND,
           HttpStatus.NOT_FOUND,
         );
