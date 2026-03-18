@@ -1,4 +1,4 @@
-import { HttpStatus, Injectable } from '@nestjs/common';
+import { HttpStatus, Inject, Injectable } from '@nestjs/common';
 import { RoleEntity } from 'src/entities/role.entity';
 import { PermissionsService } from 'src/services/permissions/permissions.service';
 import { CreateRoleDTO } from 'src/interfaces/DTO/create.dto';
@@ -8,6 +8,8 @@ import { RequestWithUser } from 'src/interfaces/request-user';
 import { RolesRepository } from 'src/services/roles/roles.repository';
 import { RolesErrorCodes, RolesException } from 'src/services/roles/roles.exception.handler';
 import { SessionsService } from 'src/services/sessions/sessions.service';
+import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
+import { Logger } from 'winston';
 
 @Injectable()
 export class RolesService {
@@ -15,6 +17,8 @@ export class RolesService {
     private readonly roleRepository: RolesRepository,
     private readonly permissionService: PermissionsService,
     private readonly sessionService: SessionsService,
+    @Inject(WINSTON_MODULE_PROVIDER)
+    private readonly logger: Logger,
   ) {}
 
   async create(dto: CreateRoleDTO, request: RequestWithUser): Promise<RoleEntity> {
@@ -25,6 +29,7 @@ export class RolesService {
         'Role creation failed',
         RolesErrorCodes.ROLES_NOT_CREATED,
         error.status ?? HttpStatus.INTERNAL_SERVER_ERROR,
+        error,
       );
     }
   }
@@ -37,6 +42,7 @@ export class RolesService {
         'Role update failed',
         RolesErrorCodes.ROLES_NOT_UPDATED,
         error.status ?? HttpStatus.INTERNAL_SERVER_ERROR,
+        error,
       );
     }
   }
@@ -51,6 +57,7 @@ export class RolesService {
         'Role deletion failed',
         RolesErrorCodes.ROLES_NOT_DELETED,
         error.status ?? HttpStatus.INTERNAL_SERVER_ERROR,
+        error,
       );
     }
   }
@@ -65,7 +72,12 @@ export class RolesService {
     try {
       return await this.roleRepository.findAll();
     } catch (error) {
-      throw new RolesException('Roles not found', RolesErrorCodes.ROLES_NOT_FOUND, error.status ?? HttpStatus.NOT_FOUND);
+      throw new RolesException(
+        'Roles not found',
+        RolesErrorCodes.ROLES_NOT_FOUND,
+        error.status ?? HttpStatus.NOT_FOUND,
+        error,
+      );
     }
   }
 
@@ -78,7 +90,13 @@ export class RolesService {
       try {
         await this.sessionService.refreshSessionPermissionsByRole(roleId);
       } catch (refreshError) {
-        console.error('Failed to refresh session permissions:', refreshError);
+        // Silent catch - log warning but don't fail the operation
+        this.logger.warn('Failed to refresh session permissions', {
+          context: 'RolesService',
+          operation: 'assignPermissions',
+          roleId,
+          error: refreshError instanceof Error ? refreshError.message : String(refreshError),
+        });
       }
       return savedRole;
     } catch (error) {
@@ -86,6 +104,7 @@ export class RolesService {
         'Permission assignment failed',
         RolesErrorCodes.ROLES_ASSIGN_ERROR,
         error.status ?? HttpStatus.INTERNAL_SERVER_ERROR,
+        error,
       );
     }
   }
