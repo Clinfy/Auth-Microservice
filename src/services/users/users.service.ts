@@ -1,4 +1,4 @@
-import { HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
+import { HttpStatus, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { UserEntity, UserStatus } from 'src/entities/user.entity';
 import { DataSource } from 'typeorm';
 import { JwtService } from 'src/services/JWT/jwt.service';
@@ -24,6 +24,8 @@ import { UsersRepository } from 'src/services/users/users.repository';
 import { ActivateUserDTO } from 'src/interfaces/DTO/activate.dto';
 import { UsersErrorCodes, UsersException } from 'src/services/users/users.exception.handler';
 import { SessionsService } from 'src/services/sessions/sessions.service';
+import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
+import { Logger } from 'winston';
 
 @Injectable()
 export class UsersService {
@@ -36,6 +38,8 @@ export class UsersService {
     private readonly roleService: RolesService,
     private readonly emailService: EmailService,
     private readonly sessionService: SessionsService,
+    @Inject(WINSTON_MODULE_PROVIDER)
+    private readonly logger: Logger,
   ) {}
 
   async refreshToken(refreshToken: string): Promise<AuthInterface> {
@@ -100,6 +104,7 @@ export class UsersService {
         'User registration failed',
         UsersErrorCodes.USER_NOT_REGISTERED,
         error.status ?? HttpStatus.INTERNAL_SERVER_ERROR,
+        error,
       );
     }
   }
@@ -169,6 +174,7 @@ export class UsersService {
         'Unable to issue authentication tokens',
         UsersErrorCodes.TOKENS_ISSUE_ERROR,
         error.status ?? HttpStatus.INTERNAL_SERVER_ERROR,
+        error,
       );
     }
   }
@@ -193,7 +199,12 @@ export class UsersService {
     try {
       await this.sessionService.refreshSessionPermissions(savedUser.id, savedUser.permissionCodes);
     } catch (error) {
-      console.error('Error refreshing session permissions:', error);
+      this.logger.warn('Error refreshing session permissions', {
+        context: 'UsersService',
+        operation: 'assignRole',
+        userId: savedUser.id,
+        error: error instanceof Error ? error.message : String(error),
+      });
     }
     return savedUser;
   }
