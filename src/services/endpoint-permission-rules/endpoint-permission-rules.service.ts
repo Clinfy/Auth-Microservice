@@ -93,7 +93,11 @@ export class EndpointPermissionRulesService implements OnModuleInit {
       }
 
       if (!rule.enabled) {
-        return null;
+        throw new EndpointPRException(
+          'This endpoint does not have a permission rule defined and is temporally disabled.',
+          EndpointPermissionRulesErrorCodes.ENDPOINT_PERMISSION_RULE_NOT_FOUND,
+          HttpStatus.NOT_FOUND,
+        );
       }
       const codes = rule.permissionCodes;
       // Backfill cache
