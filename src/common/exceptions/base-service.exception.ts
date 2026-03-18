@@ -23,14 +23,24 @@ export abstract class BaseServiceException extends HttpException {
 
   static getDeepestHttpExceptionMessage(error: Error): string {
     let current: Error | undefined = error;
-    let deepestHttpExceptionMessage: string =
-      error instanceof HttpException ? error.message : 'An unexpected error occurred';
+    let deepestHttpExceptionMessage: string = 'An unexpected error occurred';
+
+    const extractMessage = (err: HttpException): string => {
+      const response = err.getResponse();
+      if (typeof response === 'string') return response;
+
+      const msg = (response as any).message;
+      return Array.isArray(msg) ? msg.join(', ') : msg || err.message;
+    };
+
+    if (error instanceof HttpException) {
+      deepestHttpExceptionMessage = extractMessage(error);
+    }
 
     while (current?.cause instanceof Error) {
       current = current.cause;
       if (current instanceof HttpException) {
-        const response = current.getResponse();
-        deepestHttpExceptionMessage = typeof response === 'string' ? response : (response as any).message || current.message;
+        deepestHttpExceptionMessage = extractMessage(current);
       }
     }
 
