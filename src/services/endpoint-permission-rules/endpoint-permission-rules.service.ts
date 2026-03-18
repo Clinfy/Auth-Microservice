@@ -75,7 +75,7 @@ export class EndpointPermissionRulesService implements OnModuleInit {
         context: 'EndpointPermissionRulesService',
         operation: 'loadRuleToRedis',
         endpointKeyName,
-        error: error instanceof Error ? error.message : String(error),
+        error: serializeError(error),
       });
     }
   }
@@ -140,7 +140,7 @@ export class EndpointPermissionRulesService implements OnModuleInit {
         context: 'EndpointPermissionRulesService',
         operation: 'getPermissionsForEndpoint',
         endpointKey,
-        error: error instanceof Error ? error.message : String(error),
+        error: serializeError(error),
       });
       throw error;
     }
