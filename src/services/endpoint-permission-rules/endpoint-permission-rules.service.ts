@@ -89,7 +89,7 @@ export class EndpointPermissionRulesService implements OnModuleInit {
           'This endpoint does not have a permission rule defined and is temporally disabled.',
           EndpointPermissionRulesErrorCodes.ENDPOINT_PERMISSION_RULE_NOT_FOUND,
           HttpStatus.NOT_FOUND,
-        )
+        );
       }
 
       if (!rule.enabled) {
@@ -198,10 +198,13 @@ export class EndpointPermissionRulesService implements OnModuleInit {
       await this.loadRuleToRedis(saved.endpoint_key_name);
       return saved;
     } catch (error) {
-      throw error ?? new EndpointPRException(
-        'Endpoint Permission Rule permission assignment failed',
-        EndpointPermissionRulesErrorCodes.ENDPOINT_PERMISSION_RULE_ASSIGN_FAILED,
-        error.status ?? HttpStatus.INTERNAL_SERVER_ERROR,
+      throw (
+        error ??
+        new EndpointPRException(
+          'Endpoint Permission Rule permission assignment failed',
+          EndpointPermissionRulesErrorCodes.ENDPOINT_PERMISSION_RULE_ASSIGN_FAILED,
+          error.status ?? HttpStatus.INTERNAL_SERVER_ERROR,
+        )
       );
     }
   }
