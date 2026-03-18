@@ -11,6 +11,7 @@ import { SessionsService } from 'src/services/sessions/sessions.service';
 import { IBackup, IMemoryDb, newDb } from 'pg-mem';
 import { entities } from 'src/entities';
 import { randomUUID } from 'crypto';
+import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 
 describe('RolesService (integration)', () => {
   let moduleRef: TestingModule;
@@ -79,6 +80,14 @@ describe('RolesService (integration)', () => {
         {
           provide: DataSource,
           useValue: dataSource,
+        },
+        {
+          provide: WINSTON_MODULE_PROVIDER,
+          useValue: {
+            warn: jest.fn(),
+            error: jest.fn(),
+            info: jest.fn(),
+          },
         },
       ],
     }).compile();

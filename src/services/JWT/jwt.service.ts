@@ -4,7 +4,7 @@ import { JsonWebTokenError, NotBeforeError, sign, SignOptions, TokenExpiredError
 import dayjs from 'dayjs';
 import { Payload } from 'src/interfaces/payload';
 import { StringValue } from 'ms';
-import { JwtErrorCodes, JwtException } from 'src/services/JWT/jwt.excpetion.handler';
+import { JwtErrorCodes, JwtException } from 'src/services/JWT/jwt.exception.handler';
 
 type TokenType = 'refresh' | 'auth';
 
@@ -50,6 +50,7 @@ export class JwtService {
         'Failed to generate token',
         JwtErrorCodes.TOKEN_GENERATION_FAILED,
         error.status ?? HttpStatus.INTERNAL_SERVER_ERROR,
+        error,
       );
     }
   }
@@ -80,6 +81,7 @@ export class JwtService {
         'Invalid refresh token',
         JwtErrorCodes.INVALID_REFRESH_TOKEN,
         error.status ?? HttpStatus.UNAUTHORIZED,
+        error,
       );
     }
   }

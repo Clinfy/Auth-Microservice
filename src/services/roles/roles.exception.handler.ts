@@ -1,4 +1,5 @@
-import { HttpException, HttpStatus } from '@nestjs/common';
+import { HttpStatus } from '@nestjs/common';
+import { BaseServiceException } from 'src/common/exceptions/base-service.exception';
 
 export enum RolesErrorCodes {
   ROLES_NOT_FOUND = 'ROLE_NOT_FOUND',
@@ -9,15 +10,8 @@ export enum RolesErrorCodes {
   ROLES_NOT_CREATED = 'ROLE_NOT_CREATED',
 }
 
-export class RolesException extends HttpException {
-  constructor(message: string, errorCode: RolesErrorCodes, status: HttpStatus) {
-    super(
-      {
-        message,
-        errorCode,
-        statusCode: status,
-      },
-      status,
-    );
+export class RolesException extends BaseServiceException {
+  constructor(message: string, errorCode: RolesErrorCodes, status: HttpStatus, cause?: Error) {
+    super(message, errorCode, status, cause);
   }
 }

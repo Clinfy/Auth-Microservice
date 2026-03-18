@@ -1,7 +1,10 @@
-import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
+import { Inject, Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { createClient, RedisClientType } from 'redis';
 import { ConfigService } from '@nestjs/config';
 import { MetricsService } from 'src/observability/metrics.service';
+import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
+import { Logger } from 'winston';
+import { serializeError } from 'src/common/tools/logger-format';
 
 @Injectable()
 export class RedisService implements OnModuleInit, OnModuleDestroy {
@@ -10,6 +13,8 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
   constructor(
     private readonly config: ConfigService,
     private readonly metrics: MetricsService,
+    @Inject(WINSTON_MODULE_PROVIDER)
+    private readonly logger: Logger,
   ) {}
 
   async onModuleInit() {
@@ -20,7 +25,11 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     this.client = createClient({ url });
 
     this.client.on('error', (err) => {
-      console.error('Redis error: ', err);
+      this.logger.warn('Redis connection error', {
+        context: 'RedisService',
+        operation: 'connection',
+        error: serializeError(err),
+      });
       this.metrics.dependencyErrorsTotal.inc({
         dependency: 'redis',
         operation: 'connection',

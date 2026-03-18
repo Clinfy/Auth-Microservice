@@ -1,4 +1,5 @@
-import { HttpException, HttpStatus } from '@nestjs/common';
+import { HttpStatus } from '@nestjs/common';
+import { BaseServiceException } from 'src/common/exceptions/base-service.exception';
 
 export enum AuthErrorCodes {
   AUTH_HEADER_MISSING = 'AUTH_HEADER_MISSING',
@@ -15,8 +16,8 @@ export enum AuthErrorCodes {
   API_KEY_HEADER_INVALID = 'API_KEY_HEADER_INVALID',
 }
 
-export class AuthException extends HttpException {
-  constructor(message: string, errorCode: AuthErrorCodes, status: HttpStatus) {
-    super({ message, errorCode, statusCode: status }, status);
+export class AuthException extends BaseServiceException {
+  constructor(message: string, errorCode: AuthErrorCodes, status: HttpStatus, cause?: Error) {
+    super(message, errorCode, status, cause);
   }
 }

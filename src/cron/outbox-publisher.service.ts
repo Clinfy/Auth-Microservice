@@ -5,6 +5,9 @@ import { Repository } from 'typeorm';
 import { ClientProxy } from '@nestjs/microservices';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { MetricsService } from 'src/observability/metrics.service';
+import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
+import { Logger } from 'winston';
+import { serializeError } from 'src/common/tools/logger-format';
 
 @Injectable()
 export class OutboxPublisherService {
@@ -16,6 +19,9 @@ export class OutboxPublisherService {
     private readonly auditClient: ClientProxy,
 
     private readonly metrics: MetricsService,
+
+    @Inject(WINSTON_MODULE_PROVIDER)
+    private readonly logger: Logger,
   ) {}
 
   @Cron(CronExpression.EVERY_10_SECONDS)
@@ -35,7 +41,13 @@ export class OutboxPublisherService {
           });
         });
       } catch (error) {
-        console.error('Error publishing event:', error);
+        this.logger.warn('Error publishing event', {
+          context: 'OutboxPublisherService',
+          operation: 'handleAuditEvents',
+          eventId: event.id,
+          pattern: event.pattern,
+          error: serializeError(error),
+        });
       }
     }
   }

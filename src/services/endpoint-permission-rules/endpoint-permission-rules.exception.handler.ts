@@ -1,4 +1,5 @@
-import { HttpException, HttpStatus } from '@nestjs/common';
+import { HttpStatus } from '@nestjs/common';
+import { BaseServiceException } from 'src/common/exceptions/base-service.exception';
 
 export enum EndpointPermissionRulesErrorCodes {
   ENDPOINT_PERMISSION_RULE_NOT_CREATED = 'ENDPOINT_PERMISSION_RULE_NOT_CREATED',
@@ -11,15 +12,8 @@ export enum EndpointPermissionRulesErrorCodes {
   ENDPOINT_PERMISSION_RULE_NOT_FOUND = 'ENDPOINT_PERMISSION_RULE_NOT_FOUND',
 }
 
-export class EndpointPRException extends HttpException {
-  constructor(message: string, errorCode: EndpointPermissionRulesErrorCodes, status: HttpStatus) {
-    super(
-      {
-        message,
-        errorCode,
-        statusCode: status,
-      },
-      status,
-    );
+export class EndpointPRException extends BaseServiceException {
+  constructor(message: string, errorCode: EndpointPermissionRulesErrorCodes, status: HttpStatus, cause?: Error) {
+    super(message, errorCode, status, cause);
   }
 }

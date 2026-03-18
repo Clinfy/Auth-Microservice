@@ -1,4 +1,4 @@
-import { HttpStatus, Injectable, OnModuleInit } from '@nestjs/common';
+import { HttpStatus, Inject, Injectable, OnModuleInit } from '@nestjs/common';
 import { EndpointPermissionRulesRepository } from 'src/services/endpoint-permission-rules/endpoint-permission-rules.repository';
 import { PermissionsService } from 'src/services/permissions/permissions.service';
 import {
@@ -13,6 +13,9 @@ import {
 } from 'src/services/endpoint-permission-rules/endpoint-permission-rules.exception.handler';
 import { AssignPermissionDTO } from 'src/interfaces/DTO/assign.dto';
 import { RedisService } from 'src/common/redis/redis.service';
+import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
+import { Logger } from 'winston';
+import { serializeError } from 'src/common/tools/logger-format';
 
 @Injectable()
 export class EndpointPermissionRulesService implements OnModuleInit {
@@ -20,6 +23,8 @@ export class EndpointPermissionRulesService implements OnModuleInit {
     private readonly endpointPermissionRulesRepository: EndpointPermissionRulesRepository,
     private readonly permissionsService: PermissionsService,
     private readonly redis: RedisService,
+    @Inject(WINSTON_MODULE_PROVIDER)
+    private readonly logger: Logger,
   ) {}
 
   private redisKey(endpointKeyName: string): string {
@@ -30,7 +35,11 @@ export class EndpointPermissionRulesService implements OnModuleInit {
     try {
       await this.warmUpCache();
     } catch (error) {
-      console.error('Failed to warm up endpoint permission rules cache on init:', error);
+      this.logger.warn('Failed to warm up endpoint permission rules cache on init', {
+        context: 'EndpointPermissionRulesService',
+        operation: 'onModuleInit',
+        error: serializeError(error),
+      });
     }
   }
 
@@ -45,7 +54,11 @@ export class EndpointPermissionRulesService implements OnModuleInit {
       }
       await multi.exec();
     } catch (error) {
-      console.error('Failed to warm up endpoint permission rules cache:', error);
+      this.logger.warn('Failed to warm up endpoint permission rules cache', {
+        context: 'EndpointPermissionRulesService',
+        operation: 'warmUpCache',
+        error: serializeError(error),
+      });
     }
   }
 
@@ -58,7 +71,12 @@ export class EndpointPermissionRulesService implements OnModuleInit {
         await this.invalidateRuleCache(endpointKeyName);
       }
     } catch (error) {
-      console.error(`Failed to load rule '${endpointKeyName}' to Redis:`, error);
+      this.logger.warn('Failed to load rule to Redis', {
+        context: 'EndpointPermissionRulesService',
+        operation: 'loadRuleToRedis',
+        endpointKeyName,
+        error: serializeError(error),
+      });
     }
   }
 
@@ -66,11 +84,16 @@ export class EndpointPermissionRulesService implements OnModuleInit {
     try {
       await this.redis.raw.del(this.redisKey(endpointKeyName));
     } catch (error) {
-      console.error(`Failed to invalidate cache for '${endpointKeyName}':`, error);
+      this.logger.warn('Failed to invalidate cache', {
+        context: 'EndpointPermissionRulesService',
+        operation: 'invalidateRuleCache',
+        endpointKeyName,
+        error: error instanceof Error ? error.message : String(error),
+      });
     }
   }
 
-  async getPermissionsForEndpoint(endpointKey: string): Promise<string[] | null> {
+  async getPermissionsForEndpoint(endpointKey: string): Promise<string[]> {
     // Try Redis first
     try {
       const cached = await this.redis.raw.get(this.redisKey(endpointKey));
@@ -78,7 +101,12 @@ export class EndpointPermissionRulesService implements OnModuleInit {
         return JSON.parse(cached) as string[];
       }
     } catch (error) {
-      console.error(`Redis error for endpoint '${endpointKey}', falling back to DB:`, error);
+      this.logger.warn('Redis error, falling back to DB', {
+        context: 'EndpointPermissionRulesService',
+        operation: 'getPermissionsForEndpoint',
+        endpointKey,
+        error: error instanceof Error ? error.message : String(error),
+      });
     }
 
     // DB fallback
@@ -94,7 +122,7 @@ export class EndpointPermissionRulesService implements OnModuleInit {
 
       if (!rule.enabled) {
         throw new EndpointPRException(
-          'This endpoint does not have a permission rule defined and is temporally disabled.',
+          'This endpoint is temporarily disabled. Please try again later.',
           EndpointPermissionRulesErrorCodes.ENDPOINT_PERMISSION_RULE_NOT_FOUND,
           HttpStatus.NOT_FOUND,
         );
@@ -108,7 +136,12 @@ export class EndpointPermissionRulesService implements OnModuleInit {
       }
       return codes;
     } catch (error) {
-      console.error(`DB fallback failed for endpoint '${endpointKey}':`, error);
+      this.logger.warn('DB fallback failed', {
+        context: 'EndpointPermissionRulesService',
+        operation: 'getPermissionsForEndpoint',
+        endpointKey,
+        error: serializeError(error),
+      });
       throw error;
     }
   }
@@ -125,6 +158,7 @@ export class EndpointPermissionRulesService implements OnModuleInit {
         'Endpoint Permission Rule creation failed',
         EndpointPermissionRulesErrorCodes.ENDPOINT_PERMISSION_RULE_NOT_CREATED,
         error.status ?? HttpStatus.INTERNAL_SERVER_ERROR,
+        error,
       );
     }
   }
@@ -149,6 +183,7 @@ export class EndpointPermissionRulesService implements OnModuleInit {
         'Endpoint Permission Rule update failed',
         EndpointPermissionRulesErrorCodes.ENDPOINT_PERMISSION_RULE_NOT_UPDATED,
         error.status ?? HttpStatus.INTERNAL_SERVER_ERROR,
+        error,
       );
     }
   }
@@ -164,6 +199,7 @@ export class EndpointPermissionRulesService implements OnModuleInit {
         'Endpoint Permission Rule delete failed',
         EndpointPermissionRulesErrorCodes.ENDPOINT_PERMISSION_RULE_NOT_DELETED,
         error.status ?? HttpStatus.INTERNAL_SERVER_ERROR,
+        error,
       );
     }
   }
@@ -188,6 +224,7 @@ export class EndpointPermissionRulesService implements OnModuleInit {
         'Endpoint Permission Rules not found',
         EndpointPermissionRulesErrorCodes.ENDPOINT_PERMISSION_RULE_NOT_FOUND,
         error.status ?? HttpStatus.NOT_FOUND,
+        error,
       );
     }
   }
@@ -202,13 +239,11 @@ export class EndpointPermissionRulesService implements OnModuleInit {
       await this.loadRuleToRedis(saved.endpoint_key_name);
       return saved;
     } catch (error) {
-      throw (
-        error ??
-        new EndpointPRException(
-          'Endpoint Permission Rule permission assignment failed',
-          EndpointPermissionRulesErrorCodes.ENDPOINT_PERMISSION_RULE_ASSIGN_FAILED,
-          error.status ?? HttpStatus.INTERNAL_SERVER_ERROR,
-        )
+      throw new EndpointPRException(
+        'Endpoint Permission Rule permission assignment failed',
+        EndpointPermissionRulesErrorCodes.ENDPOINT_PERMISSION_RULE_ASSIGN_FAILED,
+        error.status ?? HttpStatus.INTERNAL_SERVER_ERROR,
+        error,
       );
     }
   }
