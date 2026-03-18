@@ -1,6 +1,6 @@
 {
   "name": "clinfy-auth-microservice",
-  "version": "2.2.1",
+  "version": "2.3.3",
   "description": "Microservice for users, API, permissions, roles and authentication.",
   "author": "Agustín Liendo Ortiz",
   "private": true,
@@ -18,7 +18,8 @@
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config test/e2e/jest-e2e.json",
-    "heroku-postbuild": "npm run build"
+    "heroku-postbuild": "npm run build",
+    "seed": "npx ts-node -r tsconfig-paths/register src/database/seed/seed.command.ts"
   },
   "dependencies": {
     "@nestjs/cache-manager": "^3.1.0",

@@ -13,7 +13,6 @@ import {
 } from '@nestjs/common';
 import { PermissionsService } from 'src/services/permissions/permissions.service';
 import { AuthGuard } from 'src/middlewares/auth.middleware';
-import { Permissions } from 'src/middlewares/decorators/permissions.decorator';
 import {
   ApiCookieAuth,
   ApiCreatedResponse,
@@ -27,6 +26,7 @@ import {
 import { PermissionEntity } from 'src/entities/permission.entity';
 import { CreatePermissionDTO } from 'src/interfaces/DTO/create.dto';
 import * as requestUser from 'src/interfaces/request-user';
+import { EndpointKey } from 'src/middlewares/decorators/endpoint-key.decorator';
 
 @ApiTags('Permissions')
 @ApiCookieAuth('auth_token')
@@ -35,7 +35,7 @@ export class PermissionsController {
   constructor(private readonly permissionService: PermissionsService) {}
 
   @UseGuards(AuthGuard)
-  @Permissions(['PERMISSIONS_CREATE'])
+  @EndpointKey('permission.create')
   @UseInterceptors(ClassSerializerInterceptor)
   @ApiOperation({ summary: 'Create a new permission' })
   @ApiCreatedResponse({ type: PermissionEntity })
@@ -47,7 +47,7 @@ export class PermissionsController {
   }
 
   @UseGuards(AuthGuard)
-  @Permissions(['PERMISSIONS_UPDATE'])
+  @EndpointKey('permission.update')
   @UseInterceptors(ClassSerializerInterceptor)
   @ApiOperation({ summary: 'Update a permission' })
   @ApiOkResponse({ type: PermissionEntity })
@@ -60,7 +60,7 @@ export class PermissionsController {
   }
 
   @UseGuards(AuthGuard)
-  @Permissions(['PERMISSIONS_DELETE'])
+  @EndpointKey('permission.delete')
   @UseInterceptors(ClassSerializerInterceptor)
   @ApiOperation({ summary: 'Delete a permission' })
   @ApiOkResponse({
@@ -75,7 +75,7 @@ export class PermissionsController {
   }
 
   @UseGuards(AuthGuard)
-  @Permissions(['PERMISSIONS_READ'])
+  @EndpointKey('permission.find')
   @UseInterceptors(ClassSerializerInterceptor)
   @ApiOperation({ summary: 'Find a permission by id number' })
   @ApiOkResponse({ type: PermissionEntity })
@@ -88,7 +88,7 @@ export class PermissionsController {
   }
 
   @UseGuards(AuthGuard)
-  @Permissions(['PERMISSIONS_READ'])
+  @EndpointKey('permission.find')
   @UseInterceptors(ClassSerializerInterceptor)
   @ApiOperation({ summary: 'Find all permissions' })
   @ApiOkResponse({ type: [PermissionEntity] })

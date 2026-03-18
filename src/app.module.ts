@@ -25,6 +25,8 @@ import { WinstonModule } from 'nest-winston';
 import winston from 'winston';
 import { AllExceptionsFilter } from 'src/common/filters/all-exceptions.filter';
 import { ObservabilityModule } from 'src/observability/observability.module';
+import { EndpointPermissionRulesModule } from 'src/services/endpoint-permission-rules/endpoint-permission-rules.module';
+import { IsUniqueEndpointKeyNameConstraint } from 'src/common/validators/unique-endpoint-key.validator';
 
 @Module({
   imports: [
@@ -88,6 +90,7 @@ import { ObservabilityModule } from 'src/observability/observability.module';
     JwtModule,
     EmailModule,
     ObservabilityModule,
+    EndpointPermissionRulesModule,
   ],
   controllers: [AppController],
   providers: [
@@ -95,6 +98,7 @@ import { ObservabilityModule } from 'src/observability/observability.module';
     AllExceptionsFilter,
     IsUniquePermissionCodeConstraint,
     IsUniqueRoleNameConstraint,
+    IsUniqueEndpointKeyNameConstraint,
     OutboxPublisherService,
     OutboxSubscriberService,
   ],
