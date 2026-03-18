@@ -1,4 +1,5 @@
-import { HttpException, HttpStatus } from '@nestjs/common';
+import { HttpStatus } from '@nestjs/common';
+import { BaseServiceException } from 'src/common/exceptions/base-service.exception';
 
 export enum JwtErrorCodes {
   TOKEN_EXPIRED = 'TOKEN_EXPIRED',
@@ -10,15 +11,8 @@ export enum JwtErrorCodes {
   INVALID_PAYLOAD = 'INVALID_PAYLOAD',
 }
 
-export class JwtException extends HttpException {
-  constructor(message: string, errorCode: JwtErrorCodes, status: HttpStatus) {
-    super(
-      {
-        message,
-        errorCode,
-        statusCode: status,
-      },
-      status,
-    );
+export class JwtException extends BaseServiceException {
+  constructor(message: string, errorCode: JwtErrorCodes, status: HttpStatus, cause?: Error) {
+    super(message, errorCode, status, cause);
   }
 }

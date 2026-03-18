@@ -1,4 +1,5 @@
-import { HttpException, HttpStatus } from '@nestjs/common';
+import { HttpStatus } from '@nestjs/common';
+import { BaseServiceException } from 'src/common/exceptions/base-service.exception';
 
 export enum PermissionsErrorCodes {
   CREATE_PERMISSION_FAILED = 'CREATE_PERMISSION_FAILED',
@@ -8,8 +9,8 @@ export enum PermissionsErrorCodes {
   PERMISSION_ALREADY_EXISTS = 'PERMISSION_ALREADY_EXISTS',
 }
 
-export class PermissionsException extends HttpException {
-  constructor(message: string, errorCode: PermissionsErrorCodes, status: HttpStatus) {
-    super({ message, errorCode, statusCode: status }, status);
+export class PermissionsException extends BaseServiceException {
+  constructor(message: string, errorCode: PermissionsErrorCodes, status: HttpStatus, cause?: Error) {
+    super(message, errorCode, status, cause);
   }
 }
