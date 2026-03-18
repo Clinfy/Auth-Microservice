@@ -50,6 +50,7 @@ export class JwtService {
         'Failed to generate token',
         JwtErrorCodes.TOKEN_GENERATION_FAILED,
         error.status ?? HttpStatus.INTERNAL_SERVER_ERROR,
+        error,
       );
     }
   }
@@ -80,6 +81,7 @@ export class JwtService {
         'Invalid refresh token',
         JwtErrorCodes.INVALID_REFRESH_TOKEN,
         error.status ?? HttpStatus.UNAUTHORIZED,
+        error,
       );
     }
   }
