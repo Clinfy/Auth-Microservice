@@ -10,6 +10,7 @@ import { PermissionEntity } from 'src/entities/permission.entity';
 import { SessionsService } from 'src/services/sessions/sessions.service';
 import { entities } from 'src/entities';
 import { PostgreSqlContainer, StartedPostgreSqlContainer } from '@testcontainers/postgresql';
+import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 
 describe('RolesService (integration)', () => {
   let moduleRef: TestingModule;
@@ -65,6 +66,14 @@ describe('RolesService (integration)', () => {
         {
           provide: DataSource,
           useValue: dataSource,
+        },
+        {
+          provide: WINSTON_MODULE_PROVIDER,
+          useValue: {
+            warn: jest.fn(),
+            error: jest.fn(),
+            info: jest.fn(),
+          },
         },
       ],
     }).compile();

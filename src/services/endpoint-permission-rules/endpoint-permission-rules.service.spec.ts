@@ -4,6 +4,7 @@ import { PermissionsService } from 'src/services/permissions/permissions.service
 import { RedisService } from 'src/common/redis/redis.service';
 import { EndpointPermissionRulesEntity } from 'src/entities/endpoint-permission-rules.entity';
 import { EndpointPRException } from 'src/services/endpoint-permission-rules/endpoint-permission-rules.exception.handler';
+import { Logger } from 'winston';
 
 // ────────────────────────────────────────────────────────────────
 // Helpers
@@ -35,6 +36,7 @@ describe('EndpointPermissionRulesService', () => {
   let permissionsService: Record<string, jest.Mock>;
   let redisService: { raw: Record<string, jest.Mock> };
   let multiMock: { set: jest.Mock; del: jest.Mock; exec: jest.Mock };
+  let loggerMock: Partial<Logger>;
 
   beforeEach(() => {
     multiMock = {
@@ -67,14 +69,18 @@ describe('EndpointPermissionRulesService', () => {
       },
     };
 
+    loggerMock = {
+      warn: jest.fn(),
+      error: jest.fn(),
+      info: jest.fn(),
+    };
+
     service = new EndpointPermissionRulesService(
       repository as unknown as EndpointPermissionRulesRepository,
       permissionsService as unknown as PermissionsService,
       redisService as unknown as RedisService,
+      loggerMock as Logger,
     );
-
-    // Suppress console.error noise in tests
-    jest.spyOn(console, 'error').mockImplementation(() => {});
   });
 
   afterEach(() => {
@@ -217,13 +223,11 @@ describe('EndpointPermissionRulesService', () => {
       expect(redisService.raw.set).toHaveBeenCalledWith('epr:users.create', '["USERS_CREATE"]');
     });
 
-    it('returns null on DB hit with disabled rule — no Redis write', async () => {
+    it('throws EndpointPRException on DB hit with disabled rule', async () => {
       redisService.raw.get.mockResolvedValue(null);
       repository.findByEndpointKey.mockResolvedValue(makeRule({ enabled: false }));
 
-      const result = await service.getPermissionsForEndpoint('users.create');
-
-      expect(result).toBeNull();
+      await expect(service.getPermissionsForEndpoint('users.create')).rejects.toBeInstanceOf(EndpointPRException);
       expect(redisService.raw.set).not.toHaveBeenCalled();
     });
 
