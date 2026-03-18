@@ -8,11 +8,13 @@
 - [Tech Stack](#tech-stack)
 - [Architecture](#architecture)
 - [Getting Started](#getting-started)
+  - [Database Seeding](#database-seeding-required-for-first-run)
 - [Environment Variables](#environment-variables)
 - [API Documentation](#api-documentation)
 - [Observability](#observability)
 - [Testing](#testing)
 - [Dynamic Endpoint Permissions](#dynamic-endpoint-permissions)
+  - [Security Behavior: Fail-Closed](#security-behavior-fail-closed-by-design)
 - [Project Structure](#project-structure)
 
 ---
@@ -128,6 +130,21 @@ import { Reflector } from '@nestjs/core';
 export const EndpointKey = Reflector.createDecorator<string>();
 ```
 
+#### Security Behavior: Fail-Closed by Design
+
+The `@EndpointKey` system implements a **fail-closed** security model. This is an intentional design decision to prevent accidentally exposing sensitive endpoints:
+
+| Scenario                                        | Behavior                                                                                                    |
+| ----------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `@EndpointKey` present + rule exists + enabled  | Permission check enforced                                                                                   |
+| `@EndpointKey` present + rule exists + disabled | Access denied (fall-through, returns `null`)                                                                |
+| `@EndpointKey` present + **no rule in DB**      | **Access denied** (HTTP 404: "endpoint does not have a permission rule defined and is temporally disabled") |
+| No `@EndpointKey` decorator                     | Access allowed (endpoint not protected by dynamic rules)                                                    |
+
+**Why this matters**: When a developer adds `@EndpointKey('some.key')` to an endpoint but forgets to create the corresponding rule in the database, the endpoint becomes **inaccessible** rather than unprotected. This prevents security gaps caused by missing configuration.
+
+**Implementation**: See `src/services/endpoint-permission-rules/endpoint-permission-rules.service.ts:73-110` — the `getPermissionsForEndpoint()` method throws an exception when no rule is found for a registered endpoint key.
+
 #### Usage
 
 Place `@EndpointKey` on any guarded controller method, right after `@UseGuards`:
@@ -146,7 +163,7 @@ create(@Body() dto: CreateRoleDTO): Promise<RoleEntity> {
 Keys follow a `<domain>.<action>` pattern. Related endpoints share the same key when they require the same level of access:
 
 | Key                                  | Endpoints                                                                                          |
-|--------------------------------------|----------------------------------------------------------------------------------------------------|
+| ------------------------------------ | -------------------------------------------------------------------------------------------------- |
 | `users.register`                     | `POST /users/register`                                                                             |
 | `users.update`                       | `POST /users/activate/:id`, `POST /users/deactivate/:id`, `POST /users/assign-role/:id`            |
 | `users.find`                         | `GET /users/all`                                                                                   |
@@ -227,6 +244,74 @@ Permissions are cached in Redis under the key `epr:<endpoint_key_name>` (e.g. `e
 ```bash
 npm install
 ```
+
+### Database Seeding (Required for First Run)
+
+Since all endpoints are protected by the Dynamic Endpoint Permissions system, you **must** run the database seeder before using the application. Without seeding, no endpoint will be accessible.
+
+```bash
+npm run seed
+```
+
+#### What Gets Seeded
+
+The seeder (`src/database/seed/`) creates the following within a single transaction:
+
+| Entity                        | Count | Description                                                 |
+| ----------------------------- | ----- | ----------------------------------------------------------- |
+| **Permissions**               | 23    | All permission codes required by endpoint rules             |
+| **Endpoint Permission Rules** | 23    | Mappings from `@EndpointKey` values to required permissions |
+| **Roles**                     | 1     | `SUPER_ADMIN` role with all permissions                     |
+| **Users**                     | 1     | Admin user with `SUPER_ADMIN` role                          |
+
+#### Default Admin Credentials
+
+| Field    | Value             |
+| -------- | ----------------- |
+| Email    | `admin@admin.com` |
+| Password | `admin`           |
+| Status   | `ACTIVE`          |
+| Role     | `SUPER_ADMIN`     |
+
+**Important**: Change these credentials immediately in production environments.
+
+#### Idempotent Seeding
+
+The seeder uses `upsert` operations with conflict resolution, making it safe to run multiple times:
+
+- Existing permissions are updated (not duplicated)
+- Existing roles retain their permission assignments
+- The admin user's password is only set on first creation (not re-hashed on re-runs)
+
+#### Seeded Endpoint Rules
+
+All 23 endpoint keys are pre-configured with their required permissions:
+
+| Endpoint Key                         | Required Permission                |
+| ------------------------------------ | ---------------------------------- |
+| `users.register`                     | `USERS_CREATE`                     |
+| `users.update`                       | `USERS_UPDATE`                     |
+| `users.find`                         | `USERS_READ`                       |
+| `users.find_api`                     | `API_KEY_ACCESS`                   |
+| `roles.create`                       | `ROLES_CREATE`                     |
+| `roles.update`                       | `ROLES_UPDATE`                     |
+| `roles.delete`                       | `ROLES_DELETE`                     |
+| `roles.find`                         | `ROLES_READ`                       |
+| `permission.create`                  | `PERMISSIONS_CREATE`               |
+| `permission.update`                  | `PERMISSIONS_UPDATE`               |
+| `permission.delete`                  | `PERMISSIONS_DELETE`               |
+| `permission.find`                    | `PERMISSIONS_READ`                 |
+| `api-key.generate`                   | `API_KEYS_CREATE`                  |
+| `api-key.find`                       | `API_KEYS_READ`                    |
+| `api-key.deactivate`                 | `API_KEYS_DEACTIVATE`              |
+| `sessions.find`                      | `SESSIONS_READ`                    |
+| `sessions.deactivate`                | `SESSIONS_DEACTIVATE`              |
+| `endpoint-permission-rules.create`   | `ENDPOINT-PERMISSION-RULES_CREATE` |
+| `endpoint-permission-rules.update`   | `ENDPOINT-PERMISSION-RULES_UPDATE` |
+| `endpoint-permission-rules.delete`   | `ENDPOINT-PERMISSION-RULES_DELETE` |
+| `endpoint-permission-rules.find`     | `ENDPOINT-PERMISSION-RULES_READ`   |
+| `endpoint-permission-rules.find_api` | `API_KEY_ACCESS`                   |
+| `metrics.get`                        | `METRICS_READ`                     |
 
 ### Running the Application
 
