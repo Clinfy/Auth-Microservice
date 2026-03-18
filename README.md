@@ -50,34 +50,34 @@ This microservice is responsible for managing:
 
 ```
 ┌────────────────────────────────────────────────────────────────────┐
-│                        NestJS Application                         │
+│                   NestJS - Auth-Microservice                       │
 │                                                                    │
-│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐          │
-│  │  Users   │  │  Roles   │  │Permissions│  │ API Keys │          │
-│  │Controller│  │Controller│  │Controller │  │Controller│          │
-│  └────┬─────┘  └────┬─────┘  └────┬──────┘  └────┬─────┘         │
+│  ┌──────────┐  ┌──────────┐  ┌───────────┐  ┌──────────┐           │
+│  │  Users   │  │  Roles   │  │Permissions│  │ API Keys │           │
+│  │Controller│  │Controller│  │Controller │  │Controller│           │
+│  └────┬─────┘  └─────┬────┘  └─────┬─────┘  └──────┬───┘           │
 │       │              │             │               │               │
-│  ┌────▼─────┐  ┌────▼─────┐  ┌────▼──────┐  ┌────▼─────┐        │
-│  │  Users   │  │  Roles   │  │Permissions │  │ API Keys │        │
-│  │ Service  │  │ Service  │  │  Service   │  │ Service  │        │
-│  └────┬─────┘  └────┬─────┘  └────┬──────┘  └────┬─────┘        │
+│  ┌────▼─────┐  ┌────▼─────┐  ┌─────▼──────┐  ┌─────▼────┐          │
+│  │  Users   │  │  Roles   │  │Permissions │  │ API Keys │          │
+│  │ Service  │  │ Service  │  │  Service   │  │ Service  │          │
+│  └────┬─────┘  └─────┬────┘  └─────┬──────┘  └─────┬────┘          │
 │       │              │             │               │               │
-│  ┌────▼──────────────▼─────────────▼───────────────▼──────┐       │
-│  │                     TypeORM (PostgreSQL)                │       │
-│  └────────────────────────────────────────────────────────┘       │
+│  ┌────▼──────────────▼─────────────▼───────────────▼──────┐        │
+│  │                     TypeORM (PostgreSQL)               │        │
+│  └────────────────────────────────────────────────────────┘        │
 │                                                                    │
-│  ┌──────────────┐  ┌─────────────┐  ┌──────────────────┐         │
-│  │   Sessions   │  │  JWT Service │  │  Email Client    │         │
-│  │   Service    │  │             │   │  (RabbitMQ)      │         │
-│  └──────┬───────┘  └─────────────┘  └──────────────────┘         │
+│  ┌──────────────┐  ┌─────────────┐  ┌──────────────────┐           │
+│  │   Sessions   │  │ JWT Service │  │  Email Client    │           │
+│  │   Service    │  │             │  │  (RabbitMQ)      │           │
+│  └──────┬───────┘  └─────────────┘  └──────────────────┘           │
 │         │                                                          │
-│    ┌────▼────┐         ┌──────────────────────────────┐           │
-│    │  Redis  │         │ Outbox Pattern (Cron → RMQ)  │           │
-│    └─────────┘         └──────────────────────────────┘           │
+│    ┌────▼────┐         ┌──────────────────────────────┐            │
+│    │  Redis  │         │ Outbox Pattern (Cron → RMQ)  │            │
+│    └─────────┘         └──────────────────────────────┘            │
 │                                                                    │
-│  ┌──────────────────────────────────────┐                         │
-│  │  Observability (Prometheus + Grafana) │                        │
-│  └──────────────────────────────────────┘                         │
+│  ┌───────────────────────────────────────┐                         │
+│  │  Observability (Prometheus + Grafana) │                         │
+│  └───────────────────────────────────────┘                         │
 └────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -115,7 +115,7 @@ Request → AuthGuard
 ```
 
 1. **Dynamic rule lookup** — If the endpoint has `@EndpointKey`, the guard queries `EndpointPermissionRulesService` for that key. If an enabled rule exists, its permission list is enforced against the user's session permissions.
-2. **No matching rule** — If no `@EndpointKey` is present access is denyed until rule creation on DB. This is for unintentionally leaving an endpoint unprotected. The idea is that every guarded endpoint should have a corresponding rule in the DB, even if it's just a placeholder with no permissions.
+2. **No matching rule** — If no `@EndpointKey` is present access is denyed until rule creation on DB. This is to avoid any situation where unintentionally leaving an endpoint unprotected. The idea is that every guarded endpoint should have a corresponding rule in the DB, even if it's just a placeholder with no permissions.
 
 ### The `@EndpointKey` Decorator
 
