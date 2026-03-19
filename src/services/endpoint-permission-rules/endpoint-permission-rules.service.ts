@@ -51,6 +51,7 @@ export class EndpointPermissionRulesService implements OnModuleInit {
       const multi = this.redis.raw.multi();
       for (const rule of rules) {
         multi.set(this.redisKey(rule.endpoint_key_name), JSON.stringify(rule.permissionCodes));
+        multi.sAdd('epr_keys', rule.endpoint_key_name);
       }
       await multi.exec();
     } catch (error) {
@@ -67,6 +68,7 @@ export class EndpointPermissionRulesService implements OnModuleInit {
       const rule = await this.endpointPermissionRulesRepository.findByEndpointKey(endpointKeyName);
       if (rule?.enabled) {
         await this.redis.raw.set(this.redisKey(endpointKeyName), JSON.stringify(rule.permissionCodes));
+        await this.redis.raw.sAdd('epr_keys', endpointKeyName);
       } else {
         await this.invalidateRuleCache(endpointKeyName);
       }
@@ -83,6 +85,7 @@ export class EndpointPermissionRulesService implements OnModuleInit {
   async invalidateRuleCache(endpointKeyName: string): Promise<void> {
     try {
       await this.redis.raw.del(this.redisKey(endpointKeyName));
+      await this.redis.raw.sRem('epr_keys', endpointKeyName);
     } catch (error) {
       this.logger.warn('Failed to invalidate cache', {
         context: 'EndpointPermissionRulesService',
@@ -105,7 +108,7 @@ export class EndpointPermissionRulesService implements OnModuleInit {
         context: 'EndpointPermissionRulesService',
         operation: 'getPermissionsForEndpoint',
         endpointKey,
-        error: error instanceof Error ? error.message : String(error),
+        error: serializeError(error),
       });
     }
 
@@ -131,6 +134,7 @@ export class EndpointPermissionRulesService implements OnModuleInit {
       // Backfill cache
       try {
         await this.redis.raw.set(this.redisKey(endpointKey), JSON.stringify(codes));
+        await this.redis.raw.sAdd('epr_keys', endpointKey);
       } catch {
         /* non-blocking backfill */
       }
