@@ -1,7 +1,7 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
 import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
 import { compare, hash } from 'bcrypt';
-import { randomBytes } from 'crypto';
+import { randomBytes } from 'node:crypto';
 import { DataSource, Repository } from 'typeorm';
 import { ApiKeyEntity } from 'src/entities/api-key.entity';
 import { CreateApiKeyDTO } from 'src/interfaces/DTO/api-key.dto';
@@ -25,7 +25,7 @@ export class ApiKeysService {
 
   async create(dto: CreateApiKeyDTO, response: RequestWithUser): Promise<{ apiKey: string; id: string; client: string }> {
     try {
-      return this.dataSource.transaction(async (transactionManager) => {
+      return await this.dataSource.transaction(async (transactionManager) => {
         const permissions = await Promise.all(dto.permissionIds.map((id) => this.permissionService.findOne(id)));
 
         const plainApiKey = this.generatePlainKey();
@@ -47,18 +47,20 @@ export class ApiKeysService {
         'Failed to create API key',
         ApiKeyErrorCodes.API_KEY_NOT_CREATED,
         error.status ?? HttpStatus.INTERNAL_SERVER_ERROR,
+        error,
       );
     }
   }
 
   async findAll(): Promise<ApiKeyEntity[]> {
     try {
-      return this.apiKeyRepository.find({ relations: ['permissions'] });
+      return await this.apiKeyRepository.find({ relations: ['permissions'] });
     } catch (error) {
       throw new ApiKeyException(
         'Api keys not found',
         ApiKeyErrorCodes.API_KEY_NOT_FOUND,
         error.status ?? HttpStatus.INTERNAL_SERVER_ERROR,
+        error,
       );
     }
   }

@@ -3,11 +3,13 @@ import { RolesService } from './roles.service';
 import { PermissionsService } from '../permissions/permissions.service';
 import { RolesException } from './roles.exception.handler';
 import { SessionsService } from 'src/services/sessions/sessions.service';
+import { Logger } from 'winston';
 
 describe('RolesService', () => {
   let roleRepository: jest.Mocked<Partial<RolesRepository>>;
   let permissionsService: jest.Mocked<Partial<PermissionsService>>;
   let sessionService: jest.Mocked<Partial<SessionsService>>;
+  let logger: jest.Mocked<Partial<Logger>>;
   let service: RolesService;
   const roleId = '11111111-1111-1111-1111-111111111111';
   const otherRoleId = '22222222-2222-2222-2222-222222222222';
@@ -35,7 +37,13 @@ describe('RolesService', () => {
       refreshSessionPermissionsByRole: jest.fn().mockResolvedValue(undefined),
     };
 
-    service = new RolesService(roleRepository as any, permissionsService as any, sessionService as any);
+    logger = {
+      warn: jest.fn(),
+      error: jest.fn(),
+      info: jest.fn(),
+    };
+
+    service = new RolesService(roleRepository as any, permissionsService as any, sessionService as any, logger as any);
   });
 
   it('creates a role', async () => {

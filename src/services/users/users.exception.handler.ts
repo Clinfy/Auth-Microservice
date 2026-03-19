@@ -1,4 +1,5 @@
-import { HttpException, HttpStatus } from '@nestjs/common';
+import { HttpStatus } from '@nestjs/common';
+import { BaseServiceException } from 'src/common/exceptions/base-service.exception';
 
 export enum UsersErrorCodes {
   SESSION_INVALID = 'SESSION_INVALID',
@@ -18,8 +19,8 @@ export enum UsersErrorCodes {
   REFRESH_TOKEN_MISSING = 'REFRESH_TOKEN_MISSING',
 }
 
-export class UsersException extends HttpException {
-  constructor(message: string, errorCode: UsersErrorCodes, status: HttpStatus) {
-    super({ message, errorCode, statusCode: status }, status);
+export class UsersException extends BaseServiceException {
+  constructor(message: string, errorCode: UsersErrorCodes, status: HttpStatus, cause?: Error) {
+    super(message, errorCode, status, cause);
   }
 }

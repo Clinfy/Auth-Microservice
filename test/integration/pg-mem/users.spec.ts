@@ -17,6 +17,7 @@ import { entities } from 'src/entities';
 import { randomUUID } from 'crypto';
 import { RedisService } from 'src/common/redis/redis.service';
 import { SessionsService } from 'src/services/sessions/sessions.service';
+import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 
 describe('UsersService (integration)', () => {
   let moduleRef: TestingModule;
@@ -131,6 +132,14 @@ describe('UsersService (integration)', () => {
         {
           provide: DataSource,
           useValue: dataSource,
+        },
+        {
+          provide: WINSTON_MODULE_PROVIDER,
+          useValue: {
+            warn: jest.fn(),
+            error: jest.fn(),
+            info: jest.fn(),
+          },
         },
       ],
     }).compile();

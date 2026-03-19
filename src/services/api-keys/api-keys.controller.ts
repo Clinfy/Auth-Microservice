@@ -22,12 +22,12 @@ import {
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { ApiKeyEntity } from 'src/entities/api-key.entity';
-import { Permissions } from 'src/middlewares/decorators/permissions.decorator';
 import { AuthGuard } from 'src/middlewares/auth.middleware';
 import { CreateApiKeyDTO } from 'src/interfaces/DTO/api-key.dto';
 import { ApiKeysService } from './api-keys.service';
 import * as requestWithApi from 'src/interfaces/request-api-key';
 import * as requestUser from 'src/interfaces/request-user';
+import { EndpointKey } from 'src/middlewares/decorators/endpoint-key.decorator';
 
 @ApiTags('API Keys')
 @Controller('api-keys')
@@ -47,7 +47,7 @@ export class ApiKeysController {
   }
 
   @UseGuards(AuthGuard)
-  @Permissions(['API_KEYS_CREATE'])
+  @EndpointKey('api-key.generate')
   @ApiCookieAuth('auth_token')
   @ApiOperation({ summary: 'Create a new API key' })
   @ApiCreatedResponse({
@@ -72,7 +72,7 @@ export class ApiKeysController {
   }
 
   @UseGuards(AuthGuard)
-  @Permissions(['API_KEYS_READ'])
+  @EndpointKey('api-key.find')
   @UseInterceptors(ClassSerializerInterceptor)
   @ApiCookieAuth('auth_token')
   @ApiOperation({ summary: 'List all API keys' })
@@ -85,7 +85,7 @@ export class ApiKeysController {
   }
 
   @UseGuards(AuthGuard)
-  @Permissions(['API_KEYS_DEACTIVATE'])
+  @EndpointKey('api-key.deactivate')
   @ApiCookieAuth('auth_token')
   @ApiOperation({ summary: 'Deactivate an API key' })
   @ApiOkResponse({

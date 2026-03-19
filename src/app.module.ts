@@ -16,6 +16,7 @@ import { ClientsModule, Transport } from '@nestjs/microservices';
 import { ScheduleModule } from '@nestjs/schedule';
 import { OutboxPublisherService } from 'src/cron/outbox-publisher.service';
 import { OutboxSubscriberService } from 'src/cron/outbox-subscriber.service';
+import { EprCacheReconciliationService } from 'src/cron/epr-cache-reconciliation.service';
 import { RequestContextMiddleware } from 'src/middlewares/request-context.middleware';
 import { RequestContextModule } from 'src/common/context/request-context.module';
 import { RedisModule } from 'src/common/redis/redis.module';
@@ -25,6 +26,8 @@ import { WinstonModule } from 'nest-winston';
 import winston from 'winston';
 import { AllExceptionsFilter } from 'src/common/filters/all-exceptions.filter';
 import { ObservabilityModule } from 'src/observability/observability.module';
+import { EndpointPermissionRulesModule } from 'src/services/endpoint-permission-rules/endpoint-permission-rules.module';
+import { IsUniqueEndpointKeyNameConstraint } from 'src/common/validators/unique-endpoint-key.validator';
 
 @Module({
   imports: [
@@ -88,6 +91,7 @@ import { ObservabilityModule } from 'src/observability/observability.module';
     JwtModule,
     EmailModule,
     ObservabilityModule,
+    EndpointPermissionRulesModule,
   ],
   controllers: [AppController],
   providers: [
@@ -95,8 +99,10 @@ import { ObservabilityModule } from 'src/observability/observability.module';
     AllExceptionsFilter,
     IsUniquePermissionCodeConstraint,
     IsUniqueRoleNameConstraint,
+    IsUniqueEndpointKeyNameConstraint,
     OutboxPublisherService,
     OutboxSubscriberService,
+    EprCacheReconciliationService,
   ],
 })
 export class AppModule implements NestModule {

@@ -23,6 +23,7 @@ export class PermissionsService {
         'Permission creation failed',
         PermissionsErrorCodes.CREATE_PERMISSION_FAILED,
         error.status ?? HttpStatus.INTERNAL_SERVER_ERROR,
+        error,
       );
     }
   }
@@ -35,6 +36,7 @@ export class PermissionsService {
         'Permission update failed',
         PermissionsErrorCodes.UPDATE_PERMISSION_FAILED,
         error.status ?? HttpStatus.INTERNAL_SERVER_ERROR,
+        error,
       );
     }
   }
@@ -49,6 +51,7 @@ export class PermissionsService {
         'Permission deletion failed',
         PermissionsErrorCodes.DELETE_PERMISSION_FAILED,
         error.status ?? HttpStatus.INTERNAL_SERVER_ERROR,
+        error,
       );
     }
   }
@@ -72,6 +75,7 @@ export class PermissionsService {
         'Permissions not found',
         PermissionsErrorCodes.PERMISSION_NOT_FOUND,
         error.status ?? HttpStatus.NOT_FOUND,
+        error,
       );
     }
   }
