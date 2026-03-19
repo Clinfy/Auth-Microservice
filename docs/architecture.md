@@ -15,7 +15,7 @@ Technical architecture documentation for the Auth-Microservice.
 
 ## Module Structure
 
-![Module Structure](diagrams/module-structure.puml)
+![Module Structure](diagrams/images/Module%20Structure.svg)
 
 ### Dependency Rules
 
@@ -29,11 +29,11 @@ Technical architecture documentation for the Auth-Microservice.
 
 Every incoming HTTP request passes through this pipeline:
 
-![Request Lifecycle Pipeline](diagrams/request-lifecycle.puml)
+![Request Lifecycle Pipeline](diagrams/images/Request%20Lifecycle%20Pipeline.svg)
 
 ### Guard Architecture
 
-![Guard Architecture](diagrams/guard-architecture.puml)
+![Guard Architecture](diagrams/images/Guard%20Architecture.svg)
 
 ---
 
@@ -41,7 +41,7 @@ Every incoming HTTP request passes through this pipeline:
 
 ### Exception Hierarchy
 
-![Exception Hierarchy](diagrams/exception-hierarchy.puml)
+![Exception Hierarchy](diagrams/images/Exception%20Hierarchy.svg)
 
 ### Cause Chaining Pattern
 
@@ -60,7 +60,7 @@ catch (error) {
 
 ### AllExceptionsFilter Processing
 
-![AllExceptionsFilter Processing](diagrams/all-exceptions-filter-processing.puml)
+![AllExceptionsFilter Processing](diagrams/images/AllExceptionsFilter%20Processing.svg)
 
 The filter traverses the full cause chain:
 
@@ -108,13 +108,13 @@ All cron jobs are registered as providers in `AppModule`:
 
 ### Outbox Pattern
 
-![Outbox Pattern](diagrams/outbox-pattern.puml)
+![Outbox Pattern](diagrams/images/Outbox%20Pattern.svg)
 
 Audit events are persisted to the `outbox` PostgreSQL table transactionally with the business operation. A cron job then publishes them to RabbitMQ asynchronously. This ensures at-least-once delivery even if RabbitMQ is temporarily unavailable.
 
 ### EPR Cache Reconciliation
 
-![EPR Cache Reconciliation](diagrams/epr-cache-reconciliation.puml)
+![EPR Cache Reconciliation](diagrams/images/EPR%20Cache%20Reconciliation.svg)
 
 Runs hourly to handle edge cases (Redis restarts, missed invalidations, manual DB edits):
 
@@ -128,7 +128,7 @@ All operations use structured Winston logging with `serializeError()` for failur
 
 ## External Dependencies
 
-![External Dependencies](diagrams/external-dependencies.puml)
+![External Dependencies](diagrams/images/External%20Dependencies.svg)
 
 ### PostgreSQL (via TypeORM)
 

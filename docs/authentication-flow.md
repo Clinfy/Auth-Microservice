@@ -40,7 +40,7 @@ Tokens are **never** returned in response bodies. The frontend has zero JavaScri
 **Endpoint:** `POST /users/login`  
 **Auth:** None (public)
 
-![Login Flow](diagrams/login-flow.puml)
+![Login Flow](diagrams/images/Login%20Flow.svg)
 
 **Key points:**
 
@@ -53,7 +53,7 @@ Tokens are **never** returned in response bodies. The frontend has zero JavaScri
 
 **Guard:** `AuthGuard` (reads `auth_token` cookie)
 
-![Authenticated Request Flow](diagrams/authenticated-request-flow.puml)
+![Authenticated Request Flow](diagrams/images/Authenticated%20Request%20Flow.svg)
 
 **Validation steps in AuthGuard:**
 
@@ -69,7 +69,7 @@ Tokens are **never** returned in response bodies. The frontend has zero JavaScri
 **Endpoint:** `GET /users/refresh-token`  
 **Auth:** Refresh token cookie (automatically sent because `path` matches)
 
-![Token Refresh Flow](diagrams/token-refresh-flow.puml)
+![Token Refresh Flow](diagrams/images/Token%20Refresh%20Flow.svg)
 
 **Key points:**
 
@@ -82,7 +82,7 @@ Tokens are **never** returned in response bodies. The frontend has zero JavaScri
 **Endpoint:** `POST /users/logout`  
 **Auth:** Cookie (`auth_token`)
 
-![Logout Flow](diagrams/logout-flow.puml)
+![Logout Flow](diagrams/images/Logout%20Flow.svg)
 
 **Steps:**
 
@@ -92,7 +92,7 @@ Tokens are **never** returned in response bodies. The frontend has zero JavaScri
 
 ### Password Reset Flow
 
-![Password Reset Flow](diagrams/password-reset-flow.puml)
+![Password Reset Flow](diagrams/images/Password%20Reset%20Flow.svg)
 
 1. `POST /users/forgot-password` — sends a password reset email via RabbitMQ with a time-limited token.
 2. `POST /users/reset-password?token=<token>` — validates the token and updates the password.
@@ -114,7 +114,7 @@ Used for endpoints that other microservices consume on behalf of a user:
 
 ### Full Flow
 
-![Inter-Service Authentication Flow](diagrams/inter-service-auth-flow.puml)
+![Inter-Service Authentication Flow](diagrams/images/Inter-Service%20Authentication%20Flow.svg)
 
 ### Dual Authentication Steps
 
@@ -180,7 +180,7 @@ When roles or permissions change, active sessions are updated immediately:
 
 The per-role method finds all users with that role, resolves their current `permissionCodes`, and updates each user's sessions. Uses `KEEPTTL` to preserve session expiry.
 
-![Real-Time Permission Refresh](diagrams/realtime-permission-refresh.puml)
+![Real-Time Permission Refresh](diagrams/images/Real-Time%20Permission%20Refresh.svg)
 
 ---
 

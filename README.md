@@ -58,7 +58,7 @@ This microservice is responsible for managing:
 
 ## Architecture
 
-![High-Level Architecture](docs/diagrams/high-level-architecture.puml)
+![High-Level Architecture](docs/diagrams/images/High-Level%20Architecture.svg)
 
 ### Key Patterns
 
@@ -82,15 +82,15 @@ All browser-facing authentication uses HTTP-only cookies. Tokens are **never** r
 
 #### Login
 
-![Login Flow](docs/diagrams/login-flow-compact.puml)
+![Login Flow](docs/diagrams/images/README%20Login%20Flow.svg)
 
 #### Token Refresh
 
-![Token Refresh Flow](docs/diagrams/token-refresh-compact.puml)
+![Token Refresh Flow](docs/diagrams/images/README%20Token%20Refresh%20Flow.svg)
 
 #### Logout
 
-![Logout Flow](docs/diagrams/logout-compact.puml)
+![Logout Flow](docs/diagrams/images/README%20Logout%20Flow.svg)
 
 #### Cookie Configuration
 
@@ -109,7 +109,7 @@ With `sameSite: strict`, cookies are **never** sent on cross-origin requests of 
 
 Endpoints consumed by other microservices use **dual authentication** — both the calling service and the end user must be authenticated:
 
-![Inter-Service Auth Flow](docs/diagrams/inter-service-auth-compact.puml)
+![Inter-Service Auth Flow](docs/diagrams/images/README%20Inter-Service%20Auth.svg)
 
 **How it works:**
 
@@ -157,7 +157,7 @@ The **Dynamic Endpoint Permissions** system allows changing which permissions an
 
 The `AuthGuard` resolves required permissions using a lookup chain:
 
-![Dynamic Endpoint Permission Resolution](docs/diagrams/dynamic-permission-resolution.puml)
+![Dynamic Endpoint Permission Resolution](docs/diagrams/images/Dynamic%20Endpoint%20Permission%20Resolution.svg)
 
 1. **Dynamic rule lookup** — If the endpoint has `@EndpointKey`, the guard queries `EndpointPermissionRulesService` for that key. If an enabled rule exists, its permission list is enforced against the user's session permissions.
 2. **No matching rule** — If `@EndpointKey` is present but no rule exists in the DB, access is **denied**. This fail-closed design prevents accidental exposure of unprotected endpoints.
