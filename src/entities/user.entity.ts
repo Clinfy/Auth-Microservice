@@ -79,7 +79,7 @@ export class UserEntity extends BaseEntity implements UserI {
   @BeforeUpdate()
   async hashPassword() {
     if (this.password && !this.password.startsWith('$2')) {
-      this.password = await hashSync(this.password, 10);
+      this.password = hashSync(this.password, 10);
     }
   }
 }
