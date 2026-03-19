@@ -35,13 +35,14 @@ describe('EndpointPermissionRulesService', () => {
   let repository: Record<string, jest.Mock>;
   let permissionsService: Record<string, jest.Mock>;
   let redisService: { raw: Record<string, jest.Mock> };
-  let multiMock: { set: jest.Mock; del: jest.Mock; exec: jest.Mock };
+  let multiMock: { set: jest.Mock; del: jest.Mock; sAdd: jest.Mock; exec: jest.Mock };
   let loggerMock: Partial<Logger>;
 
   beforeEach(() => {
     multiMock = {
       set: jest.fn().mockReturnThis(),
       del: jest.fn().mockReturnThis(),
+      sAdd: jest.fn().mockReturnThis(),
       exec: jest.fn().mockResolvedValue([]),
     };
 
@@ -65,6 +66,8 @@ describe('EndpointPermissionRulesService', () => {
         get: jest.fn(),
         set: jest.fn().mockResolvedValue('OK'),
         del: jest.fn().mockResolvedValue(1),
+        sAdd: jest.fn().mockResolvedValue(1),
+        sRem: jest.fn().mockResolvedValue(1),
         multi: jest.fn().mockReturnValue(multiMock),
       },
     };
