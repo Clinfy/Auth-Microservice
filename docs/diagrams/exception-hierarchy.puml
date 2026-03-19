@@ -1,0 +1,71 @@
+@startuml Exception Hierarchy
+skinparam backgroundColor white
+skinparam classArrowThickness 2
+skinparam classFontStyle bold
+hide empty methods
+
+class Error {
+  +message: string
+  +cause?: Error
+  +stack: string
+}
+
+class HttpException <<NestJS>> {
+  +status: number
+  +getResponse()
+  +getStatus()
+}
+
+abstract class BaseServiceException {
+  +getErrorCode(): string
+  {static} +getDeepestHttpExceptionMessage(error): string
+  {static} +getCauseChain(error): Array
+  {static} +getDeepestErrorCode(error): string
+}
+
+class UsersException {
+  errorCode: UsersErrorCodes
+}
+
+class RolesException {
+  errorCode: RolesErrorCodes
+}
+
+class PermissionsException {
+  errorCode: PermissionsErrorCodes
+}
+
+class AuthException {
+  errorCode: AuthErrorCodes
+}
+
+class JwtException {
+  errorCode: JwtErrorCodes
+}
+
+class ApiKeyException {
+  errorCode: ApiKeyErrorCodes
+}
+
+class EndpointPRException {
+  errorCode: EndpointPermissionRulesErrorCodes
+}
+
+Error <|-- HttpException
+HttpException <|-- BaseServiceException
+
+BaseServiceException <|-- UsersException
+BaseServiceException <|-- RolesException
+BaseServiceException <|-- PermissionsException
+BaseServiceException <|-- AuthException
+BaseServiceException <|-- JwtException
+BaseServiceException <|-- ApiKeyException
+BaseServiceException <|-- EndpointPRException
+
+note bottom of BaseServiceException
+  Every service exception uses ES2022
+  **Error.cause** for chain traversal.
+  The AllExceptionsFilter traverses the
+  chain to find the most specific message.
+end note
+@enduml

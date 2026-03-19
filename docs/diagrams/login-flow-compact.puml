@@ -1,0 +1,17 @@
+@startuml README Login Flow
+skinparam backgroundColor white
+skinparam sequenceArrowThickness 2
+
+actor Browser as browser
+participant "Auth-MS" as auth
+database "Redis" as redis
+
+browser -> auth : POST /users/login\n{email, password}
+activate auth
+
+auth -> auth : Validate credentials (bcrypt)
+auth -> redis : Create session\nSET auth_session:{sid}
+auth -> auth : Generate access + refresh JWTs
+auth --> browser : Set-Cookie: auth_token (httpOnly, secure, strict, path=/)\nSet-Cookie: refresh_token (httpOnly, secure, strict, path=/users/refresh-token)\n{message: "Login successful"}
+deactivate auth
+@enduml

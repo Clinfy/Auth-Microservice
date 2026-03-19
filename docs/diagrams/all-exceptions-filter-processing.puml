@@ -1,0 +1,40 @@
+@startuml AllExceptionsFilter Processing
+skinparam backgroundColor white
+skinparam activityArrowThickness 2
+
+start
+:Exception caught by\nAllExceptionsFilter;
+
+if (instanceof HttpException?) then (yes)
+  :status = exception.getStatus();
+else (no)
+  :status = 500\n(INTERNAL_SERVER_ERROR);
+endif
+
+if (instanceof BaseServiceException?) then (yes)
+  :errorCode = exception.getErrorCode();
+else (instanceof HttpException?)
+  :errorCode = response.errorCode\n|| 'INTERNAL_ERROR';
+endif
+
+:Traverse cause chain\n(getDeepestErrorCode);
+if (causeCode == errorCode?) then (yes)
+  :causeCode = undefined\n(omit from response);
+else (no)
+  :Include causeCode\nin response;
+endif
+
+:userMessage = getDeepestHttpExceptionMessage()\n→ most specific message from\ndeepest HttpException in chain;
+
+:Log to Winston:
+- exceptionType
+- method, url, ip
+- errorCode, causeCode
+- causeChain[]
+- stack trace;
+
+:Return JSON response:
+{statusCode, timestamp, path,
+ errorCode, causeCode?, message};
+stop
+@enduml

@@ -1,0 +1,31 @@
+@startuml Logout Flow
+skinparam backgroundColor white
+skinparam sequenceArrowThickness 2
+
+actor Browser as browser
+participant "AuthGuard" as guard
+participant "UsersController" as ctrl
+participant "UsersService" as svc
+database "Redis" as redis
+
+browser -> guard : POST /users/logout\nCookie: auth_token
+activate guard
+guard -> guard : Validate cookie\nLoad session (see AuthGuard flow)
+guard --> ctrl : request.user = AuthUser
+deactivate guard
+
+activate ctrl
+ctrl -> svc : logOut(user)
+activate svc
+
+svc -> redis : DEL auth_session:{sid}
+activate redis
+redis --> svc
+deactivate redis
+
+svc --> ctrl
+deactivate svc
+
+ctrl --> browser : clearCookie('auth_token', {path: '/'})\nclearCookie('refresh_token', {path: '/users/refresh-token'})\n{message: "Logged out"}
+deactivate ctrl
+@enduml

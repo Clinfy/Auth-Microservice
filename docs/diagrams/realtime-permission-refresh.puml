@@ -1,0 +1,67 @@
+@startuml Real-Time Permission Refresh
+skinparam backgroundColor white
+skinparam sequenceArrowThickness 2
+
+actor Admin as admin
+participant "RolesController" as ctrl
+participant "RolesService" as roleSvc
+participant "SessionsService" as sessSvc
+database "PostgreSQL" as db
+database "Redis" as redis
+
+admin -> ctrl : PATCH /roles/assign-permissions/:id\n{permissionIds}
+activate ctrl
+ctrl -> roleSvc : assignPermissions(roleId, permissionIds)
+activate roleSvc
+
+roleSvc -> db : Update role-permission\nassociations
+activate db
+db --> roleSvc
+deactivate db
+
+roleSvc -> sessSvc : refreshSessionPermissionsByRole(roleId)
+activate sessSvc
+
+sessSvc -> db : Find all users\nwith this role
+activate db
+db --> sessSvc : User[] (with roles & permissions)
+deactivate db
+
+loop for each affected user
+  sessSvc -> sessSvc : Resolve full\npermissionCodes[]
+
+  sessSvc -> redis : SMEMBERS user_sessions:{userId}
+  activate redis
+  redis --> sessSvc : [sid1, sid2, ...]
+  deactivate redis
+
+  loop for each active session
+    sessSvc -> redis : GET auth_session:{sid}
+    activate redis
+    redis --> sessSvc : session JSON
+    deactivate redis
+
+    sessSvc -> sessSvc : Update session.permissions
+
+    sessSvc -> redis : SET auth_session:{sid}\n(KEEPTTL)
+    activate redis
+    redis --> sessSvc
+    deactivate redis
+  end
+end
+
+sessSvc --> roleSvc
+deactivate sessSvc
+
+roleSvc --> ctrl
+deactivate roleSvc
+
+ctrl --> admin : {updated role}
+deactivate ctrl
+
+note right of redis
+  KEEPTTL preserves the
+  original session expiry.
+  No re-login required.
+end note
+@enduml
