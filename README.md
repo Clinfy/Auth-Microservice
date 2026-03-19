@@ -456,9 +456,9 @@ src/
 │   ├── outbox-publisher.service.ts  # Publishes outbox events to RMQ
 │   └── outbox-subscriber.service.ts # Consumes RMQ events
 ├── middlewares/
-│   ├── auth.middleware.ts         # JWT bearer auth guard
-│   ├── api-key.middleware.ts      # API key auth guard
-│   ├── auth.exception.handler.ts  # Auth error handling
+│   ├── auth.guard.ts         # JWT bearer auth guard
+│   ├── api-key.guard.ts      # API key auth guard
+│   ├── auth.exception.ts  # Auth error handling
 │   ├── request-context.middleware.ts
 │   └── decorators/
 │       └── endpoint-key.decorator.ts

@@ -4,7 +4,7 @@ import { CreatePermissionDTO } from 'src/interfaces/DTO/create.dto';
 import { PatchPermissionDTO } from 'src/interfaces/DTO/patch.dto';
 import { RequestWithUser } from 'src/interfaces/request-user';
 import { PermissionsRepository } from 'src/services/permissions/permissions.repository';
-import { PermissionsErrorCodes, PermissionsException } from 'src/services/permissions/permissions.exception.handler';
+import { PermissionsErrorCodes, PermissionsException } from 'src/services/permissions/permissions.exception';
 
 @Injectable()
 export class PermissionsService {

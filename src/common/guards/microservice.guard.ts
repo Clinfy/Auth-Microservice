@@ -1,16 +1,16 @@
 import { CanActivate, ExecutionContext, HttpStatus, Injectable } from '@nestjs/common';
 import { ModuleRef, Reflector } from '@nestjs/core';
 import { RequestWithUser } from 'src/interfaces/request-user';
-import { JwtService } from 'src/services/JWT/jwt.service';
+import { JwtService } from 'src/services/jwt/jwt.service';
 import { RequestContextService } from 'src/common/context/request-context.service';
 import { Session } from 'src/interfaces/session.interface';
 import { AuthUser } from 'src/interfaces/auth-user.interface';
 import { RedisService } from 'src/common/redis/redis.service';
-import { extractApiKey } from 'src/common/tools/extract-api-key';
+import { extractApiKey } from 'src/common/utils/extract-api-key.util';
 import { ApiKeysService } from 'src/services/api-keys/api-keys.service';
-import { AuthErrorCodes, AuthException } from 'src/middlewares/auth.exception.handler';
+import { AuthErrorCodes, AuthException } from 'src/common/guards/auth.exception';
 import { EndpointPermissionRulesService } from 'src/services/endpoint-permission-rules/endpoint-permission-rules.service';
-import { EndpointKey } from 'src/middlewares/decorators/endpoint-key.decorator';
+import { EndpointKey } from 'src/common/decorators/endpoint-key.decorator';
 
 @Injectable()
 export class MicroserviceGuard implements CanActivate {

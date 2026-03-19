@@ -3,8 +3,8 @@ import { ConfigService } from '@nestjs/config';
 import { ApiExcludeController } from '@nestjs/swagger';
 import type { Response } from 'express';
 import { MetricsService } from './metrics.service.js';
-import { ApiKeyGuard } from 'src/middlewares/api-key.middleware';
-import { EndpointKey } from 'src/middlewares/decorators/endpoint-key.decorator';
+import { ApiKeyGuard } from 'src/common/guards/api-key.guard';
+import { EndpointKey } from 'src/common/decorators/endpoint-key.decorator';
 
 @ApiExcludeController()
 @Controller('metrics')

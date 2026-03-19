@@ -4,7 +4,7 @@ import { JsonWebTokenError, NotBeforeError, sign, SignOptions, TokenExpiredError
 import dayjs from 'dayjs';
 import { Payload } from 'src/interfaces/payload';
 import { StringValue } from 'ms';
-import { JwtErrorCodes, JwtException } from 'src/services/JWT/jwt.exception.handler';
+import { JwtErrorCodes, JwtException } from 'src/services/jwt/jwt.exception';
 
 type TokenType = 'refresh' | 'auth';
 

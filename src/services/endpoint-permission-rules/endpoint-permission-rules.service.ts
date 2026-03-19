@@ -10,12 +10,12 @@ import { EndpointPermissionRulesEntity } from 'src/entities/endpoint-permission-
 import {
   EndpointPermissionRulesErrorCodes,
   EndpointPRException,
-} from 'src/services/endpoint-permission-rules/endpoint-permission-rules.exception.handler';
+} from 'src/services/endpoint-permission-rules/endpoint-permission-rules.exception';
 import { AssignPermissionDTO } from 'src/interfaces/DTO/assign.dto';
 import { RedisService } from 'src/common/redis/redis.service';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { Logger } from 'winston';
-import { serializeError } from 'src/common/tools/logger-format';
+import { serializeError } from 'src/common/utils/logger-format.util';
 
 @Injectable()
 export class EndpointPermissionRulesService implements OnModuleInit {

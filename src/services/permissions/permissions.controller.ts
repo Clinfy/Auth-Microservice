@@ -12,7 +12,7 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { PermissionsService } from 'src/services/permissions/permissions.service';
-import { AuthGuard } from 'src/middlewares/auth.middleware';
+import { AuthGuard } from 'src/common/guards/auth.guard';
 import {
   ApiCookieAuth,
   ApiCreatedResponse,
@@ -26,7 +26,7 @@ import {
 import { PermissionEntity } from 'src/entities/permission.entity';
 import { CreatePermissionDTO } from 'src/interfaces/DTO/create.dto';
 import * as requestUser from 'src/interfaces/request-user';
-import { EndpointKey } from 'src/middlewares/decorators/endpoint-key.decorator';
+import { EndpointKey } from 'src/common/decorators/endpoint-key.decorator';
 
 @ApiTags('Permissions')
 @ApiCookieAuth('auth_token')

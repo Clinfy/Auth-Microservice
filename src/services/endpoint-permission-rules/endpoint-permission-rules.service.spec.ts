@@ -3,7 +3,7 @@ import { EndpointPermissionRulesRepository } from './endpoint-permission-rules.r
 import { PermissionsService } from 'src/services/permissions/permissions.service';
 import { RedisService } from 'src/common/redis/redis.service';
 import { EndpointPermissionRulesEntity } from 'src/entities/endpoint-permission-rules.entity';
-import { EndpointPRException } from 'src/services/endpoint-permission-rules/endpoint-permission-rules.exception.handler';
+import { EndpointPRException } from 'src/services/endpoint-permission-rules/endpoint-permission-rules.exception';
 import { Logger } from 'winston';
 
 // ────────────────────────────────────────────────────────────────

@@ -6,11 +6,11 @@ import { AssignPermissionDTO } from 'src/interfaces/DTO/assign.dto';
 import { PatchRoleDTO } from 'src/interfaces/DTO/patch.dto';
 import { RequestWithUser } from 'src/interfaces/request-user';
 import { RolesRepository } from 'src/services/roles/roles.repository';
-import { RolesErrorCodes, RolesException } from 'src/services/roles/roles.exception.handler';
+import { RolesErrorCodes, RolesException } from 'src/services/roles/roles.exception';
 import { SessionsService } from 'src/services/sessions/sessions.service';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { Logger } from 'winston';
-import { serializeError } from 'src/common/tools/logger-format';
+import { serializeError } from 'src/common/utils/logger-format.util';
 
 @Injectable()
 export class RolesService {

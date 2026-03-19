@@ -8,7 +8,7 @@ import {
 import { DataSource, Not } from 'typeorm';
 import { UserEntity } from 'src/entities/user.entity';
 import { Injectable } from '@nestjs/common';
-import { UsersErrorCodes } from 'src/services/users/users.exception.handler';
+import { UsersErrorCodes } from 'src/services/users/users.exception';
 
 @ValidatorConstraint({ name: 'IsUniqueEmail', async: true })
 @Injectable()

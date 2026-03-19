@@ -1,6 +1,6 @@
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from './jwt.service';
-import { JwtException } from 'src/services/JWT/jwt.exception.handler';
+import { JwtException } from 'src/services/jwt/jwt.exception';
 
 jest.mock('jsonwebtoken', () => {
   const sign = jest.fn();

@@ -1,6 +1,6 @@
 import { Request } from 'express';
 import { HttpStatus } from '@nestjs/common';
-import { AuthErrorCodes, AuthException } from 'src/middlewares/auth.exception.handler';
+import { AuthErrorCodes, AuthException } from 'src/common/guards/auth.exception';
 
 export function extractApiKey(request: Request): string {
   const headerValue = request.headers['x-api-key'];

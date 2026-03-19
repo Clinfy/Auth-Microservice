@@ -5,7 +5,7 @@ import { useContainer } from 'class-validator';
 import { BadRequestException, HttpStatus, ValidationPipe } from '@nestjs/common';
 import { writeFileSync } from 'node:fs';
 import { AllExceptionsFilter } from 'src/common/filters/all-exceptions.filter';
-import { findFirstErrorCode, findFirstMessage } from 'src/common/tools/find-errors-data';
+import { findFirstErrorCode, findFirstMessage } from 'src/common/utils/find-errors-data.util';
 import cookieParser from 'cookie-parser';
 
 async function bootstrap() {

@@ -1,11 +1,11 @@
 import { CanActivate, ExecutionContext, HttpStatus, Injectable } from '@nestjs/common';
 import { ModuleRef, Reflector } from '@nestjs/core';
 import { RequestWithApiKey } from 'src/interfaces/request-api-key';
-import { extractApiKey } from 'src/common/tools/extract-api-key';
+import { extractApiKey } from 'src/common/utils/extract-api-key.util';
 import { ApiKeysService } from 'src/services/api-keys/api-keys.service';
-import { AuthErrorCodes, AuthException } from 'src/middlewares/auth.exception.handler';
+import { AuthErrorCodes, AuthException } from 'src/common/guards/auth.exception';
 import { EndpointPermissionRulesService } from 'src/services/endpoint-permission-rules/endpoint-permission-rules.service';
-import { EndpointKey } from 'src/middlewares/decorators/endpoint-key.decorator';
+import { EndpointKey } from 'src/common/decorators/endpoint-key.decorator';
 
 @Injectable()
 export class ApiKeyGuard implements CanActivate {
