@@ -1,8 +1,8 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
-import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
+import { InjectDataSource } from '@nestjs/typeorm';
 import { compare, hash } from 'bcrypt';
 import { randomBytes } from 'node:crypto';
-import { DataSource, Repository } from 'typeorm';
+import { DataSource } from 'typeorm';
 import { ApiKeyEntity } from 'src/entities/api-key.entity';
 import { CreateApiKeyDTO } from 'src/interfaces/DTO/api-key.dto';
 import { PermissionsService } from 'src/services/permissions/permissions.service';
@@ -10,12 +10,12 @@ import { RequestWithApiKey } from 'src/interfaces/request-api-key';
 import { extractApiKey } from 'src/common/utils/extract-api-key.util';
 import { RequestWithUser } from 'src/interfaces/request-user';
 import { ApiKeyErrorCodes, ApiKeyException } from 'src/services/api-keys/api-keys.exception.handler';
+import { ApiKeysRepository } from 'src/services/api-keys/api-keys.repository';
 
 @Injectable()
 export class ApiKeysService {
   constructor(
-    @InjectRepository(ApiKeyEntity)
-    private readonly apiKeyRepository: Repository<ApiKeyEntity>,
+    private readonly apiKeysRepository: ApiKeysRepository,
 
     @InjectDataSource()
     private readonly dataSource: DataSource,
@@ -54,7 +54,7 @@ export class ApiKeysService {
 
   async findAll(): Promise<ApiKeyEntity[]> {
     try {
-      return await this.apiKeyRepository.find({ relations: ['permissions'] });
+      return await this.apiKeysRepository.findAll();
     } catch (error) {
       throw new ApiKeyException(
         'Api keys not found',
@@ -66,12 +66,13 @@ export class ApiKeysService {
   }
 
   async findOne(id: string): Promise<ApiKeyEntity> {
-    const apiKey = await this.apiKeyRepository.findOne({
-      where: { id },
-      relations: ['permissions'],
-    });
+    const apiKey = await this.apiKeysRepository.findOneById(id);
     if (!apiKey) {
-      throw new ApiKeyException(`API key with id: ${id} not found`, ApiKeyErrorCodes.API_KEY_NOT_FOUND, HttpStatus.NOT_FOUND);
+      throw new ApiKeyException(
+        `API key with id: ${id} not found`,
+        ApiKeyErrorCodes.API_KEY_NOT_FOUND,
+        HttpStatus.NOT_FOUND,
+      );
     }
     return apiKey;
   }
@@ -88,7 +89,7 @@ export class ApiKeysService {
     }
 
     apiKey.active = false;
-    await this.apiKeyRepository.save(apiKey);
+    await this.apiKeysRepository.save(apiKey);
 
     return { message: `API key ${id} ${apiKey.client} deactivated` };
   }
@@ -102,10 +103,7 @@ export class ApiKeysService {
   }
 
   async findActiveByPlainKey(rawApiKey: string): Promise<ApiKeyEntity> {
-    const activeKeys = await this.apiKeyRepository.find({
-      where: { active: true },
-      relations: ['permissions'],
-    });
+    const activeKeys = await this.apiKeysRepository.findAllActive();
 
     for (const apiKey of activeKeys) {
       const isMatch = await compare(rawApiKey, apiKey.key_hash);
