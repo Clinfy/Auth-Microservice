@@ -1,0 +1,46 @@
+@startuml Outbox Pattern
+skinparam backgroundColor white
+skinparam sequenceArrowThickness 2
+
+participant "Service\n(Business Op)" as svc
+database "PostgreSQL" as db
+participant "OutboxPublisher\n(Cron: every 10s)" as cron
+queue "RabbitMQ\n(audit_queue)" as rmq
+
+== Business Operation ==
+
+svc -> db : BEGIN transaction
+activate db
+svc -> db : Business write\n(e.g. create user)
+svc -> db : INSERT INTO outbox\n(event data, status=PENDING)
+svc -> db : COMMIT
+deactivate db
+
+note right of svc
+  Event is persisted atomically
+  with the business operation.
+end note
+
+== Asynchronous Publishing (every 10s) ==
+
+cron -> db : SELECT * FROM outbox\nWHERE status = PENDING
+activate db
+db --> cron : pending events[]
+deactivate db
+
+loop for each pending event
+  cron -> rmq : Publish event
+  activate rmq
+  rmq --> cron : ack
+  deactivate rmq
+
+  cron -> db : UPDATE outbox\nSET status = SENT
+end
+
+note right of cron
+  At-least-once delivery:
+  If RabbitMQ is unavailable,
+  events remain PENDING and
+  are retried next cycle.
+end note
+@enduml

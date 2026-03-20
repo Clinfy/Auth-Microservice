@@ -10,7 +10,7 @@ import { PermissionsRepository } from 'src/services/permissions/permissions.repo
 import { UserEntity } from 'src/entities/user.entity';
 import { RoleEntity } from 'src/entities/role.entity';
 import { PermissionEntity } from 'src/entities/permission.entity';
-import { JwtService } from 'src/services/JWT/jwt.service';
+import { JwtService } from 'src/services/jwt/jwt.service';
 import { EmailService } from 'src/clients/email/email.service';
 import { IBackup, IMemoryDb, newDb } from 'pg-mem';
 import { entities } from 'src/entities';

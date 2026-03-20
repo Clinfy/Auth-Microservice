@@ -1,6 +1,6 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, Req, UseGuards } from '@nestjs/common';
 import { RolesService } from 'src/services/roles/roles.service';
-import { AuthGuard } from 'src/middlewares/auth.middleware';
+import { AuthGuard } from 'src/common/guards/auth.guard';
 import {
   ApiCookieAuth,
   ApiCreatedResponse,
@@ -16,7 +16,7 @@ import { AssignPermissionDTO } from 'src/interfaces/DTO/assign.dto';
 import { PatchRoleDTO } from 'src/interfaces/DTO/patch.dto';
 import * as requestUser from 'src/interfaces/request-user';
 import { CreateRoleDTO } from 'src/interfaces/DTO/create.dto';
-import { EndpointKey } from 'src/middlewares/decorators/endpoint-key.decorator';
+import { EndpointKey } from 'src/common/decorators/endpoint-key.decorator';
 
 @ApiTags('Roles')
 @ApiCookieAuth('auth_token')

@@ -5,7 +5,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { EndpointPermissionRulesEntity } from 'src/entities/endpoint-permission-rules.entity';
 import { PermissionsModule } from 'src/services/permissions/permissions.module';
 import { EndpointPermissionRulesRepository } from 'src/services/endpoint-permission-rules/endpoint-permission-rules.repository';
-import { JwtModule } from 'src/services/JWT/jwt.module';
+import { JwtModule } from 'src/services/jwt/jwt.module';
 
 @Module({
   imports: [TypeOrmModule.forFeature([EndpointPermissionRulesEntity]), PermissionsModule, JwtModule],

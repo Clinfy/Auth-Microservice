@@ -1,15 +1,15 @@
 import { CanActivate, ExecutionContext, HttpStatus, Injectable } from '@nestjs/common';
 import { ModuleRef, Reflector } from '@nestjs/core';
 import { RequestWithUser } from 'src/interfaces/request-user';
-import { JwtService } from 'src/services/JWT/jwt.service';
-import { EndpointKey } from './decorators/endpoint-key.decorator';
+import { JwtService } from 'src/services/jwt/jwt.service';
+import { EndpointKey } from 'src/common/decorators/endpoint-key.decorator';
 import { RequestContextService } from 'src/common/context/request-context.service';
 import { Session } from 'src/interfaces/session.interface';
 import { AuthUser } from 'src/interfaces/auth-user.interface';
 import { RedisService } from 'src/common/redis/redis.service';
-import { getClientIp } from 'src/common/tools/get-client-ip';
-import { sameSubnetCheck } from 'src/common/tools/same-subnet-check';
-import { AuthErrorCodes, AuthException } from 'src/middlewares/auth.exception.handler';
+import { getClientIp } from 'src/common/utils/get-client-ip.util';
+import { sameSubnetCheck } from 'src/common/utils/same-subnet-check.util';
+import { AuthErrorCodes, AuthException } from 'src/common/guards/auth.exception';
 import { EndpointPermissionRulesService } from 'src/services/endpoint-permission-rules/endpoint-permission-rules.service';
 
 @Injectable()

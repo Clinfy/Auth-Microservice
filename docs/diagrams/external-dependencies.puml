@@ -1,0 +1,65 @@
+@startuml External Dependencies
+skinparam backgroundColor white
+skinparam componentStyle uml2
+
+package "Auth-Microservice" as app {
+  [UsersService] as users
+  [RolesService] as roles
+  [PermissionsService] as perms
+  [ApiKeysService] as apiKeys
+  [SessionsService] as sessions
+  [EPR Service] as epr
+  [OutboxPublisher\n(Cron)] as outbox
+  [EmailModule] as email
+}
+
+database "PostgreSQL\n(TypeORM)" as pg {
+  collections "Users" as pgUsers
+  collections "Roles" as pgRoles
+  collections "Permissions" as pgPerms
+  collections "API Keys" as pgKeys
+  collections "EPR Rules" as pgEpr
+  collections "Outbox" as pgOutbox
+}
+
+database "Redis" as redis {
+  collections "auth_session:{sid}\n(Session JSON + TTL)" as rSess
+  collections "user_sessions:{userId}\n(Session ID Set)" as rUserSess
+  collections "epr:{endpoint_key}\n(Permission Codes)" as rEpr
+  collections "epr_keys\n(Key Tracking Set)" as rEprKeys
+}
+
+queue "RabbitMQ" as rmq {
+  collections "audit_queue" as rmqAudit
+  collections "email_queue" as rmqEmail
+}
+
+' PostgreSQL connections
+users --> pgUsers
+roles --> pgRoles
+perms --> pgPerms
+apiKeys --> pgKeys
+epr --> pgEpr
+outbox --> pgOutbox
+
+' Redis connections
+sessions --> rSess
+sessions --> rUserSess
+epr --> rEpr
+epr --> rEprKeys
+
+' RabbitMQ connections
+outbox --> rmqAudit : publish events
+email --> rmqEmail : publish email requests
+
+note bottom of pg
+  Source of truth for all entities.
+  Outbox table ensures at-least-once
+  delivery to RabbitMQ.
+end note
+
+note bottom of redis
+  All Redis operations are resilient.
+  Failures fall back to PostgreSQL.
+end note
+@enduml

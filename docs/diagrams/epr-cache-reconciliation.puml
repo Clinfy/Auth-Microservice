@@ -1,0 +1,35 @@
+@startuml EPR Cache Reconciliation
+skinparam backgroundColor white
+skinparam sequenceArrowThickness 2
+
+participant "EprCacheReconciliation\n(Cron: every hour)" as cron
+database "Redis" as redis
+database "PostgreSQL" as db
+
+cron -> redis : SMEMBERS epr_keys
+activate redis
+redis --> cron : [key1, key2, ...]
+deactivate redis
+
+group Redis MULTI pipeline
+  cron -> redis : DEL epr:key1, epr:key2, ...
+  cron -> redis : DEL epr_keys
+end
+
+cron -> db : SELECT * FROM endpoint_permission_rules\nWHERE enabled = true
+activate db
+db --> cron : enabled rules[]
+deactivate db
+
+loop for each enabled rule
+  cron -> redis : SET epr:{endpoint_key_name}\n(permission codes JSON)
+  cron -> redis : SADD epr_keys {endpoint_key_name}
+end
+
+note right of cron
+  Handles edge cases:
+  - Redis restarts
+  - Missed invalidations
+  - Manual DB edits
+end note
+@enduml

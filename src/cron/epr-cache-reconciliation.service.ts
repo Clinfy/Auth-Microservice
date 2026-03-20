@@ -4,7 +4,7 @@ import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { Logger } from 'winston';
 import { RedisService } from 'src/common/redis/redis.service';
 import { EndpointPermissionRulesService } from 'src/services/endpoint-permission-rules/endpoint-permission-rules.service';
-import { serializeError } from 'src/common/tools/logger-format';
+import { serializeError } from 'src/common/utils/logger-format.util';
 
 @Injectable()
 export class EprCacheReconciliationService {

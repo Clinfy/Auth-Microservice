@@ -8,7 +8,7 @@ import {
 import { DataSource, Not } from 'typeorm';
 import { RoleEntity } from 'src/entities/role.entity';
 import { Injectable } from '@nestjs/common';
-import { RolesErrorCodes } from 'src/services/roles/roles.exception.handler';
+import { RolesErrorCodes } from 'src/services/roles/roles.exception';
 
 @ValidatorConstraint({ name: 'IsUniqueRoleName', async: true })
 @Injectable()

@@ -6,11 +6,11 @@ import { AssignPermissionDTO } from 'src/interfaces/DTO/assign.dto';
 import { PatchRoleDTO } from 'src/interfaces/DTO/patch.dto';
 import { RequestWithUser } from 'src/interfaces/request-user';
 import { RolesRepository } from 'src/services/roles/roles.repository';
-import { RolesErrorCodes, RolesException } from 'src/services/roles/roles.exception.handler';
+import { RolesErrorCodes, RolesException } from 'src/services/roles/roles.exception';
 import { SessionsService } from 'src/services/sessions/sessions.service';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { Logger } from 'winston';
-import { serializeError } from 'src/common/tools/logger-format';
+import { serializeError } from 'src/common/utils/logger-format.util';
 
 @Injectable()
 export class RolesService {
@@ -65,7 +65,7 @@ export class RolesService {
 
   async findOne(id: string): Promise<RoleEntity> {
     const role = await this.roleRepository.findOneById(id);
-    if (!role) throw new RolesException('Role not found', RolesErrorCodes.ROLES_NOT_FOUND, HttpStatus.NOT_FOUND);
+    if (!role) throw new RolesException(`Role with id ${id} not found`, RolesErrorCodes.ROLES_NOT_FOUND, HttpStatus.NOT_FOUND);
     return role;
   }
 

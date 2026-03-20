@@ -1,8 +1,8 @@
-import { UsersException } from './users.exception.handler';
+import { UsersException } from './users.exception';
 import { DataSource } from 'typeorm';
 import { UsersRepository } from './users.repository';
 import { UsersService } from './users.service';
-import { JwtService } from '../JWT/jwt.service';
+import { JwtService } from 'src/services/jwt/jwt.service';
 import { RolesService } from '../roles/roles.service';
 import { EmailService } from 'src/clients/email/email.service';
 import { UserEntity, UserStatus } from 'src/entities/user.entity';
@@ -82,6 +82,7 @@ describe('UsersService', () => {
       roleService as any,
       emailService as any,
       sessionService as any,
+      { info: jest.fn(), warn: jest.fn(), error: jest.fn() } as any,
     );
   });
 

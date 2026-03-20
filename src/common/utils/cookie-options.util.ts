@@ -1,5 +1,5 @@
 import { CookieOptions } from 'express';
-import { getTtlFromEnv } from './get-ttl';
+import { getTtlFromEnv } from './get-ttl.util';
 
 export function getAuthCookieOptions(): CookieOptions {
   return {

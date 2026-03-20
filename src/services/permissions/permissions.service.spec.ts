@@ -1,6 +1,6 @@
 import { PermissionsRepository } from './permissions.repository';
 import { PermissionsService } from './permissions.service';
-import { PermissionsException } from './permissions.exception.handler';
+import { PermissionsException } from './permissions.exception';
 
 describe('PermissionsService', () => {
   let permissionRepository: jest.Mocked<Partial<PermissionsRepository>>;

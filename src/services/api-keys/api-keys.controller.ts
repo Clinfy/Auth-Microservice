@@ -22,12 +22,12 @@ import {
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { ApiKeyEntity } from 'src/entities/api-key.entity';
-import { AuthGuard } from 'src/middlewares/auth.middleware';
+import { AuthGuard } from 'src/common/guards/auth.guard';
 import { CreateApiKeyDTO } from 'src/interfaces/DTO/api-key.dto';
 import { ApiKeysService } from './api-keys.service';
 import * as requestWithApi from 'src/interfaces/request-api-key';
 import * as requestUser from 'src/interfaces/request-user';
-import { EndpointKey } from 'src/middlewares/decorators/endpoint-key.decorator';
+import { EndpointKey } from 'src/common/decorators/endpoint-key.decorator';
 
 @ApiTags('API Keys')
 @Controller('api-keys')

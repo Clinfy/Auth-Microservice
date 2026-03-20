@@ -4,7 +4,7 @@ import { CreatePermissionDTO } from 'src/interfaces/DTO/create.dto';
 import { PatchPermissionDTO } from 'src/interfaces/DTO/patch.dto';
 import { RequestWithUser } from 'src/interfaces/request-user';
 import { PermissionsRepository } from 'src/services/permissions/permissions.repository';
-import { PermissionsErrorCodes, PermissionsException } from 'src/services/permissions/permissions.exception.handler';
+import { PermissionsErrorCodes, PermissionsException } from 'src/services/permissions/permissions.exception';
 
 @Injectable()
 export class PermissionsService {
@@ -60,7 +60,7 @@ export class PermissionsService {
     const permission = await this.permissionRepository.findOneById(id);
     if (!permission)
       throw new PermissionsException(
-        'Permission not found',
+        `Permission with id ${id} not found`,
         PermissionsErrorCodes.PERMISSION_NOT_FOUND,
         HttpStatus.NOT_FOUND,
       );

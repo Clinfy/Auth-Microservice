@@ -1,0 +1,46 @@
+@startuml Guard Architecture
+skinparam backgroundColor white
+skinparam classArrowThickness 2
+hide empty methods
+
+interface "CanActivate" <<NestJS>> {
+  +canActivate(context): Promise<boolean>
+}
+
+class AuthGuard {
+  -endpointPermissionRulesService?: EPRService
+  +canActivate(context): Promise<boolean>
+  -extractToken(req): string | null
+  __
+  Cookie: auth_token
+  IP/subnet check: **Yes**
+}
+
+class MicroserviceGuard {
+  -endpointPermissionRulesService?: EPRService
+  +canActivate(context): Promise<boolean>
+  -validateApiKey(context, req): Promise<void>
+  -validateUserToken(req): Promise<void>
+  __
+  x-api-key + Authorization: Bearer
+  IP/subnet check: **No**
+}
+
+class ApiKeyGuard {
+  -endpointPermissionRulesService?: EPRService
+  +canActivate(context): Promise<boolean>
+  __
+  x-api-key header
+  IP/subnet check: **No**
+}
+
+CanActivate <|.. AuthGuard
+CanActivate <|.. MicroserviceGuard
+CanActivate <|.. ApiKeyGuard
+
+note "All guards resolve\nEPRService lazily via\nModuleRef.get({strict: false})\nto avoid circular imports" as N1
+
+AuthGuard .. N1
+MicroserviceGuard .. N1
+ApiKeyGuard .. N1
+@enduml

@@ -7,7 +7,7 @@ import { ApiKeyEntity } from 'src/entities/api-key.entity';
 import { CreateApiKeyDTO } from 'src/interfaces/DTO/api-key.dto';
 import { PermissionsService } from 'src/services/permissions/permissions.service';
 import { RequestWithApiKey } from 'src/interfaces/request-api-key';
-import { extractApiKey } from 'src/common/tools/extract-api-key';
+import { extractApiKey } from 'src/common/utils/extract-api-key.util';
 import { RequestWithUser } from 'src/interfaces/request-user';
 import { ApiKeyErrorCodes, ApiKeyException } from 'src/services/api-keys/api-keys.exception.handler';
 
@@ -71,7 +71,7 @@ export class ApiKeysService {
       relations: ['permissions'],
     });
     if (!apiKey) {
-      throw new ApiKeyException('API key not found', ApiKeyErrorCodes.API_KEY_NOT_FOUND, HttpStatus.NOT_FOUND);
+      throw new ApiKeyException(`API key with id: ${id} not found`, ApiKeyErrorCodes.API_KEY_NOT_FOUND, HttpStatus.NOT_FOUND);
     }
     return apiKey;
   }

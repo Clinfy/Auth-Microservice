@@ -1,0 +1,54 @@
+@startuml Inter-Service Authentication Flow
+skinparam backgroundColor white
+skinparam sequenceArrowThickness 2
+
+actor Browser as browser
+participant "Other\nMicroservice" as other
+participant "MicroserviceGuard" as guard
+participant "ApiKeysService" as apiSvc
+participant "JwtService" as jwt
+database "Redis" as redis
+
+browser -> other : Request\nCookie: auth_token
+activate other
+
+other -> other : Extract token from cookie
+
+other -> guard : GET /users/me\nx-api-key: <service_key>\nAuthorization: Bearer <user_token>
+activate guard
+
+== Step 1: Validate API Key ==
+
+guard -> apiSvc : findActiveByPlainKey(rawKey)
+activate apiSvc
+apiSvc --> guard : ApiKeyEntity (with permissionCodes)
+deactivate apiSvc
+
+guard -> guard : Resolve @EndpointKey\nCheck API key permissions\nagainst dynamic rules
+
+== Step 2: Validate User Token ==
+
+guard -> jwt : getPayload(bearerToken, 'auth')
+activate jwt
+jwt --> guard : {email, sid, ...}
+deactivate jwt
+
+guard -> redis : GET auth_session:{sid}
+activate redis
+redis --> guard : session JSON
+deactivate redis
+
+guard -> guard : Verify:\n- session.active\n- email match\n**NO IP/subnet check**
+
+guard --> other : request.user = {id, email,\nperson_id, session_id}
+deactivate guard
+
+other --> browser : Response
+deactivate other
+
+note right of guard
+  No IP check because the request
+  originates from a microservice,
+  not the user's browser.
+end note
+@enduml
