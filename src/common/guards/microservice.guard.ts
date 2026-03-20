@@ -47,8 +47,8 @@ export class MicroserviceGuard implements CanActivate {
     const apiKeysService = this.moduleRef.get(ApiKeysService, {
       strict: false,
     });
-    const apiKey = await apiKeysService.findActiveByPlainKey(rawApiKey);
-    if (!apiKey) {
+    const apiKeyPermissions = await apiKeysService.findActiveByPlainKey(rawApiKey);
+    if (!apiKeyPermissions) {
       throw new AuthException('Invalid API key', AuthErrorCodes.API_KEY_INVALID, HttpStatus.UNAUTHORIZED);
     }
 
@@ -63,7 +63,7 @@ export class MicroserviceGuard implements CanActivate {
           return;
         }
 
-        const hasDynamicPermission = dynamicPermissions.some((permission) => apiKey.permissionCodes.includes(permission));
+        const hasDynamicPermission = dynamicPermissions.some((permission) => apiKeyPermissions.includes(permission));
 
         if (!hasDynamicPermission) {
           throw new AuthException(
