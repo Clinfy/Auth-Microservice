@@ -11,6 +11,6 @@ import { JwtModule } from 'src/services/jwt/jwt.module';
   imports: [TypeOrmModule.forFeature([ApiKeyEntity]), PermissionsModule, JwtModule],
   controllers: [ApiKeysController],
   providers: [ApiKeysService, ApiKeysRepository],
-  exports: [ApiKeysService],
+  exports: [ApiKeysService, ApiKeysRepository],
 })
 export class ApiKeysModule {}
