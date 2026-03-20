@@ -60,7 +60,7 @@ export class PermissionsService {
     const permission = await this.permissionRepository.findOneById(id);
     if (!permission)
       throw new PermissionsException(
-        'Permission not found',
+        `Permission with id ${id} not found`,
         PermissionsErrorCodes.PERMISSION_NOT_FOUND,
         HttpStatus.NOT_FOUND,
       );

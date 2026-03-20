@@ -316,7 +316,7 @@ export class UsersService {
 
   private async findOne(id: string): Promise<UserEntity> {
     const user = await this.userRepository.findOneById(id);
-    if (!user) throw new UsersException('User not found', UsersErrorCodes.USER_NOT_FOUND, HttpStatus.NOT_FOUND);
+    if (!user) throw new UsersException(`User with id ${id} not found`, UsersErrorCodes.USER_NOT_FOUND, HttpStatus.NOT_FOUND);
     return user;
   }
 

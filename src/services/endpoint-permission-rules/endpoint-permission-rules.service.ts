@@ -213,7 +213,7 @@ export class EndpointPermissionRulesService implements OnModuleInit {
 
     if (!endpointPermissionRule)
       throw new EndpointPRException(
-        'Endpoint Permission Rule not found',
+        `Endpoint Permission Rule with id: ${id} not found`,
         EndpointPermissionRulesErrorCodes.ENDPOINT_PERMISSION_RULE_NOT_FOUND,
         HttpStatus.NOT_FOUND,
       );

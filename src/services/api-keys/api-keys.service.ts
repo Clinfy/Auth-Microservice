@@ -71,7 +71,7 @@ export class ApiKeysService {
       relations: ['permissions'],
     });
     if (!apiKey) {
-      throw new ApiKeyException('API key not found', ApiKeyErrorCodes.API_KEY_NOT_FOUND, HttpStatus.NOT_FOUND);
+      throw new ApiKeyException(`API key with id: ${id} not found`, ApiKeyErrorCodes.API_KEY_NOT_FOUND, HttpStatus.NOT_FOUND);
     }
     return apiKey;
   }
