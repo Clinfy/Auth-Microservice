@@ -16,6 +16,7 @@ import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { Logger } from 'winston';
 import { serializeError } from 'src/common/utils/logger-format.util';
 import { ApiCache } from 'src/interfaces/api-cache.interface';
+import { AssignPermissionDTO } from 'src/interfaces/DTO/assign.dto';
 
 @Injectable()
 export class ApiKeysService implements OnModuleInit {
@@ -112,9 +113,46 @@ export class ApiKeysService implements OnModuleInit {
     }
 
     apiKey.active = false;
+    await this.invalidateApiKeyCache(apiKey);
     await this.apiKeysRepository.save(apiKey);
 
     return { message: `API key ${id} ${apiKey.client} deactivated` };
+  }
+
+  async activate(id: string): Promise<{ message: string }> {
+    const apiKey = await this.findOne(id);
+
+    if (apiKey.active) {
+      throw new ApiKeyException(
+        'Api Key already activated',
+        ApiKeyErrorCodes.API_KEY_ALREADY_ACTIVATE,
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    apiKey.active = true;
+    await this.loadApiKeyToRedis(apiKey);
+    await this.apiKeysRepository.save(apiKey);
+
+    return { message: `API key ${id} ${apiKey.client} activated` };
+  }
+
+  async changePermissions(id: string, dto: AssignPermissionDTO): Promise<ApiKeyEntity> {
+    try {
+      const apiKey = await this.findOne(id);
+
+      apiKey.permissions = await Promise.all(dto.permissionsIds.map((id) => this.permissionService.findOne(id)));
+      await this.invalidateApiKeyCache(apiKey);
+      await this.apiKeysRepository.save(apiKey);
+      return apiKey;
+    } catch (error) {
+      throw new ApiKeyException(
+        'Failed to change API key permissions',
+        ApiKeyErrorCodes.API_KEY_PERMISSIONS_ASSIGN_FAILED,
+        error.status ?? HttpStatus.INTERNAL_SERVER_ERROR,
+        error,
+      );
+    }
   }
 
   async canDo(rawApiKey: RequestWithApiKey, permissionCode: string): Promise<boolean> {
@@ -219,6 +257,42 @@ export class ApiKeysService implements OnModuleInit {
         operation: 'warmUpCache',
         error: serializeError(error),
       });
+    }
+  }
+
+  private async loadApiKeyToRedis(apiKey: ApiKeyEntity): Promise<void> {
+    try {
+      const cache: ApiCache = {
+        client: apiKey.client,
+        permissionCodes: apiKey.permissionCodes,
+      }
+      const multi = this.redis.raw.multi();
+      multi.set(this.redisKey(apiKey.key_fingerprint), JSON.stringify(cache));
+      multi.sAdd('api_keys', apiKey.key_fingerprint);
+      await multi.exec();
+    } catch (error) {
+      this.logger.warn('Failed to load API key to Redis', {
+        context: 'ApiKeysService',
+        operation: 'loadApiKeyToRedis',
+        error: serializeError(error),
+      });
+    }
+  }
+
+  private async invalidateApiKeyCache(apiKey: ApiKeyEntity): Promise<void> {
+    try {
+      const multi = this.redis.raw.multi();
+      multi.del(this.redisKey(apiKey.key_fingerprint));
+      multi.sRem('api_keys', apiKey.key_fingerprint);
+      await multi.exec();
+    } catch (error) {
+      this.logger.warn('Failed to invalidate API key cache', {
+        context: 'ApiKeysService',
+        operation: 'invalidateApiKeyCache',
+        error: serializeError(error),
+      });
+
+      throw error;
     }
   }
 
