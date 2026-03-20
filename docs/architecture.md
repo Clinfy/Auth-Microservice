@@ -132,7 +132,7 @@ All operations use structured Winston logging with `serializeError()` for failur
 
 ### PostgreSQL (via TypeORM)
 
-Source of truth for all entities. Uses `synchronize: true` (schema auto-sync from entities). Entities:
+Source of truth for all entities. Entities:
 
 - `UserEntity`, `RoleEntity`, `PermissionEntity`, `ApiKeyEntity`
 - `EndpointPermissionRulesEntity`, `OutboxEntity`
