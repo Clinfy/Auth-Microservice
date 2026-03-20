@@ -36,6 +36,17 @@ export class ApiKeysRepository {
     });
   }
 
+  /**
+   * Finds an API key by its HMAC fingerprint.
+   * Uses indexed O(1) lookup on key_fingerprint column.
+   */
+  async findByFingerprint(fingerprint: string): Promise<ApiKeyEntity | null> {
+    return await this.ormRepository.findOne({
+      where: { key_fingerprint: fingerprint, active: true },
+      relations: ['permissions'],
+    });
+  }
+
   private getManager(manager?: EntityManager): Repository<ApiKeyEntity> {
     return manager ? manager.getRepository(ApiKeyEntity) : this.ormRepository;
   }
