@@ -24,7 +24,7 @@ export class ApiKeyEntity extends BaseEntity {
   @Exclude()
   @Index({ unique: true })
   @Column()
-  key_hash: string;
+  key_fingerprint: string;
 
   @ApiProperty({ description: 'Client name', example: 'my-app' })
   @Column()
