@@ -37,8 +37,8 @@ export class MicroserviceGuard implements CanActivate {
 
   /**
    * Validates the API key from the `x-api-key` header.
-   * Replicates the logic from ApiKeyGuard: extracts the key, checks it against
-   * the database via bcrypt comparison, and verifies required permissions.
+   * Replicates the logic from ApiKeyGuard: extracts the key, validates via
+   * HMAC-SHA256 fingerprint with Redis-first caching, and verifies required permissions.
    */
   private async validateApiKey(context: ExecutionContext, request: RequestWithUser): Promise<void> {
     const rawApiKey = extractApiKey(request);
