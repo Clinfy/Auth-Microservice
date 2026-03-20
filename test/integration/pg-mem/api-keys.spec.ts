@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
 import { ApiKeysService } from 'src/services/api-keys/api-keys.service';
+import { ApiKeysRepository } from 'src/services/api-keys/api-keys.repository';
 import { PermissionsService } from 'src/services/permissions/permissions.service';
 import { PermissionsRepository } from 'src/services/permissions/permissions.repository';
 import { ApiKeyEntity } from 'src/entities/api-key.entity';
@@ -57,6 +58,7 @@ describe('ApiKeysService (integration)', () => {
       imports: [],
       providers: [
         ApiKeysService,
+        ApiKeysRepository,
         PermissionsService,
         PermissionsRepository,
         {
