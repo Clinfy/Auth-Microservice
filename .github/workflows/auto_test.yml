@@ -6,12 +6,12 @@ on:
   pull_request:
     branches: [ "main","develop" ]
 
-  permissions:
-    contents: read
-
 jobs:
   run-tests-and-build:
     runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
 
     steps:
       #1. Set up Docker
