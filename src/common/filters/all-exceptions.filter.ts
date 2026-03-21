@@ -1,9 +1,10 @@
-import { ExceptionFilter, Catch, ArgumentsHost, HttpException, HttpStatus, Inject } from '@nestjs/common';
+import { ExceptionFilter, Catch, ArgumentsHost, HttpException, HttpStatus, Inject, Injectable } from '@nestjs/common';
 import { Response, Request } from 'express';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { Logger } from 'winston';
 import { BaseServiceException } from 'src/common/exceptions/base-service.exception';
 
+@Injectable()
 @Catch()
 export class AllExceptionsFilter implements ExceptionFilter {
   constructor(

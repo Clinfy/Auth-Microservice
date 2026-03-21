@@ -8,7 +8,7 @@ import { PermissionsModule } from './services/permissions/permissions.module';
 import { ApiKeysModule } from 'src/services/api-keys/api-keys.module';
 import { UsersModule } from 'src/services/users/users.module';
 import { RolesModule } from 'src/services/roles/roles.module';
-import { JwtModule } from 'src/services/JWT/jwt.module';
+import { JwtModule } from 'src/services/jwt/jwt.module';
 import { EmailModule } from 'src/clients/email/email.module';
 import { IsUniquePermissionCodeConstraint } from 'src/common/validators/unique-permission-code.validator';
 import { IsUniqueRoleNameConstraint } from 'src/common/validators/unique-role-name.validator';
@@ -17,6 +17,7 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { OutboxPublisherService } from 'src/cron/outbox-publisher.service';
 import { OutboxSubscriberService } from 'src/cron/outbox-subscriber.service';
 import { EprCacheReconciliationService } from 'src/cron/epr-cache-reconciliation.service';
+import { ApiKeysCacheReconciliationService } from 'src/cron/api-keys-cache-reconciliation.service';
 import { RequestContextMiddleware } from 'src/middlewares/request-context.middleware';
 import { RequestContextModule } from 'src/common/context/request-context.module';
 import { RedisModule } from 'src/common/redis/redis.module';
@@ -103,6 +104,7 @@ import { IsUniqueEndpointKeyNameConstraint } from 'src/common/validators/unique-
     OutboxPublisherService,
     OutboxSubscriberService,
     EprCacheReconciliationService,
+    ApiKeysCacheReconciliationService,
   ],
 })
 export class AppModule implements NestModule {

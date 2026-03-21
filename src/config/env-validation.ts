@@ -47,6 +47,12 @@ class EnvironmentVariables {
   @IsNotEmpty()
   JWT_REFRESH_EXPIRES_IN: string;
 
+  //---------- HMAC CONFIGS -----------------
+  @IsString()
+  @MinLength(32)
+  @IsNotEmpty()
+  HMAC_SECRET: string;
+
   //---------- RESET PASSWORD CONFIGS -----------------
   @IsString()
   @IsNotEmpty()

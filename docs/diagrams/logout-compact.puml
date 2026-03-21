@@ -1,0 +1,14 @@
+@startuml README Logout Flow
+skinparam backgroundColor white
+skinparam sequenceArrowThickness 2
+
+actor Browser as browser
+participant "Auth-MS" as auth
+database "Redis" as redis
+
+browser -> auth : POST /users/logout\nCookie: auth_token
+activate auth
+auth -> redis : DEL auth_session:{sid}
+auth --> browser : Clear-Cookie: auth_token\nClear-Cookie: refresh_token\n{message: "Logged out"}
+deactivate auth
+@enduml

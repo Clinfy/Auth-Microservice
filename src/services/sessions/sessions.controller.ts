@@ -1,7 +1,7 @@
 import { Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
 import { SessionsService } from 'src/services/sessions/sessions.service';
 import { SessionWithSid } from 'src/interfaces/session.interface';
-import { AuthGuard } from 'src/middlewares/auth.middleware';
+import { AuthGuard } from 'src/common/guards/auth.guard';
 import {
   ApiCookieAuth,
   ApiForbiddenResponse,
@@ -11,7 +11,7 @@ import {
   ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
-import { EndpointKey } from 'src/middlewares/decorators/endpoint-key.decorator';
+import { EndpointKey } from 'src/common/decorators/endpoint-key.decorator';
 
 @ApiTags('Sessions')
 @ApiCookieAuth('auth_token')

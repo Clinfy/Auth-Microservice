@@ -8,7 +8,7 @@ import {
 import { DataSource, Not } from 'typeorm';
 import { PermissionEntity } from 'src/entities/permission.entity';
 import { Injectable } from '@nestjs/common';
-import { PermissionsErrorCodes } from 'src/services/permissions/permissions.exception.handler';
+import { PermissionsErrorCodes } from 'src/services/permissions/permissions.exception';
 
 @ValidatorConstraint({ name: 'IsUniquePermissionCode', async: true })
 @Injectable()

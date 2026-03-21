@@ -10,6 +10,9 @@ jobs:
   run-tests-and-build:
     runs-on: ubuntu-latest
 
+    permissions:
+      contents: read
+
     steps:
       #1. Set up Docker
       - name: Set up Docker

@@ -1,0 +1,61 @@
+@startuml Module Structure
+skinparam backgroundColor white
+skinparam componentStyle uml2
+skinparam packageStyle rectangle
+
+package "AppModule" as app {
+
+  package "Infrastructure (Global)" as infra {
+    [ConfigModule] <<global>>
+    [TypeOrmModule\n(PostgreSQL)] as typeorm
+    [WinstonModule\n(Structured Logging)] as winston
+    [ClientsModule\n(RabbitMQ — AUDIT_SERVICE)] as clients
+    [ScheduleModule\n(Cron Jobs)] as schedule
+    [RedisModule] <<global>>
+    [RequestContextModule] as reqCtx
+    [ObservabilityModule\n(Prometheus)] as observability
+  }
+
+  package "Business Modules" as business {
+    [UsersModule] as users
+    [RolesModule] as roles
+    [PermissionsModule] as perms
+    [ApiKeysModule] as apiKeys
+    [SessionsModule] as sessions
+    [EndpointPermissionRulesModule] as epr
+    [JwtModule] as jwt
+    [EmailModule\n(RabbitMQ Publisher)] as email
+  }
+
+  package "Cron Providers" as cron {
+    [OutboxPublisherService\n(every 10s)] as outboxPub
+    [OutboxSubscriberService] as outboxSub
+    [EprCacheReconciliationService\n(every hour)] as eprCron
+  }
+}
+
+' Dependencies
+users --> jwt
+users --> sessions
+users --> roles
+
+roles --> perms
+roles --> sessions
+
+sessions --> RedisModule
+sessions --> typeorm : read-only\nUserEntity
+
+epr --> RedisModule
+epr --> perms
+
+eprCron --> epr
+outboxPub --> clients
+outboxSub --> clients
+
+note right of sessions
+  Accesses UserRepository
+  directly (read-only)
+  to avoid circular dependency
+  with UsersModule.
+end note
+@enduml

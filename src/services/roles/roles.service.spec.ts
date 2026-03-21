@@ -1,7 +1,7 @@
 import { RolesRepository } from './roles.repository';
 import { RolesService } from './roles.service';
 import { PermissionsService } from '../permissions/permissions.service';
-import { RolesException } from './roles.exception.handler';
+import { RolesException } from './roles.exception';
 import { SessionsService } from 'src/services/sessions/sessions.service';
 import { Logger } from 'winston';
 

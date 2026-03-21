@@ -1,0 +1,49 @@
+@startuml High-Level Architecture
+skinparam backgroundColor white
+skinparam componentStyle uml2
+skinparam packageStyle rectangle
+
+rectangle "NestJS — Auth-Microservice" {
+  package "Controllers" as controllers {
+    [UsersController] as ucl
+    [RolesController] as rcl
+    [PermissionsController] as pcl
+    [ApiKeysController] as acl
+  }
+
+  package "Services" as services {
+    [UsersService] as usvc
+    [RolesService] as rsvc
+    [PermissionsService] as psvc
+    [ApiKeysService] as asvc
+    [SessionsService] as ssvc
+    [JwtService] as jsvc
+    [EmailClient\n(RabbitMQ)] as esvc
+  }
+
+  package "Cross-Cutting" as cross {
+    [Outbox Pattern\n(Cron → RMQ)] as outbox
+    [Observability\n(Prometheus + Grafana)] as obs
+  }
+
+  ucl --> usvc
+  rcl --> rsvc
+  pcl --> psvc
+  acl --> asvc
+}
+
+database "PostgreSQL\n(TypeORM)" as pg
+database "Redis" as redis
+queue "RabbitMQ" as rmq
+
+usvc --> pg
+rsvc --> pg
+psvc --> pg
+asvc --> pg
+
+ssvc --> redis
+
+outbox --> pg
+outbox --> rmq
+esvc --> rmq
+@enduml

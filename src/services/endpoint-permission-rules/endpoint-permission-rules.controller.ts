@@ -18,10 +18,10 @@ import {
   PatchEndpointPermissionRulesDTO,
 } from 'src/interfaces/DTO/endpoint-permission-rules.dto';
 import { EndpointPermissionRulesEntity } from 'src/entities/endpoint-permission-rules.entity';
-import { AuthGuard } from 'src/middlewares/auth.middleware';
+import { AuthGuard } from 'src/common/guards/auth.guard';
 import { AssignPermissionDTO } from 'src/interfaces/DTO/assign.dto';
-import { EndpointKey } from 'src/middlewares/decorators/endpoint-key.decorator';
-import { ApiKeyGuard } from 'src/middlewares/api-key.middleware';
+import { EndpointKey } from 'src/common/decorators/endpoint-key.decorator';
+import { ApiKeyGuard } from 'src/common/guards/api-key.guard';
 
 @Controller('endpoint-permission-rules')
 export class EndpointPermissionRulesController {

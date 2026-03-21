@@ -1,0 +1,42 @@
+@startuml Authenticated Request Flow
+skinparam backgroundColor white
+skinparam sequenceArrowThickness 2
+
+actor Browser as browser
+participant "AuthGuard" as guard
+participant "JwtService" as jwt
+database "Redis" as redis
+participant "Controller" as ctrl
+
+browser -> guard : GET /roles/all\nCookie: auth_token
+activate guard
+
+guard -> guard : extractToken(req)\nreq.cookies['auth_token']
+
+guard -> jwt : getPayload(token, 'auth')
+activate jwt
+jwt --> guard : {email, sid, ...}
+deactivate jwt
+
+guard -> redis : GET auth_session:{sid}
+activate redis
+redis --> guard : session JSON
+deactivate redis
+
+guard -> guard : Validate:\n- session.active\n- email match\n- IP subnet match
+
+group #LightBlue Dynamic Permissions
+  guard -> guard : Resolve @EndpointKey\nvia Reflector
+  guard -> redis : GET epr:{endpointKey}
+  activate redis
+  redis --> guard : required permissions[]
+  deactivate redis
+  guard -> guard : Check session.permissions\nincludes required permissions
+end
+
+guard -> ctrl : request.user = AuthUser
+activate ctrl
+ctrl --> browser : Response
+deactivate ctrl
+deactivate guard
+@enduml

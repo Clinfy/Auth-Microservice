@@ -1,0 +1,37 @@
+@startuml Token Refresh Flow
+skinparam backgroundColor white
+skinparam sequenceArrowThickness 2
+
+actor Browser as browser
+participant "UsersController" as ctrl
+participant "UsersService" as svc
+participant "JwtService" as jwt
+
+browser -> ctrl : GET /users/refresh-token\nCookie: refresh_token\n(sent automatically — path matches)
+activate ctrl
+
+ctrl -> ctrl : Extract refresh_token\nfrom cookies
+
+ctrl -> svc : refreshToken(token)
+activate svc
+
+svc -> jwt : Validate refresh JWT
+activate jwt
+jwt --> svc : payload
+deactivate jwt
+
+svc -> svc : Conditional token rotation
+
+svc --> ctrl : {accessToken, refreshToken}
+deactivate svc
+
+ctrl --> browser : Set-Cookie: auth_token (new)\nSet-Cookie: refresh_token (new, if rotated)\n{message: "Token refreshed"}
+deactivate ctrl
+
+note right of browser
+  refresh_token cookie has
+  **path: /users/refresh-token**
+  so it is only sent to
+  this specific endpoint.
+end note
+@enduml

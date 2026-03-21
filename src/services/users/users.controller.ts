@@ -12,8 +12,8 @@ import {
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
-import { AuthGuard } from 'src/middlewares/auth.middleware';
-import { MicroserviceGuard } from 'src/middlewares/microservice.middleware';
+import { AuthGuard } from 'src/common/guards/auth.guard';
+import { MicroserviceGuard } from 'src/common/guards/microservice.guard';
 import type { Request, Response } from 'express';
 import {
   ApiBearerAuth,
@@ -35,12 +35,12 @@ import { UserEntity } from 'src/entities/user.entity';
 import { RegisterUserDTO } from 'src/interfaces/DTO/register.dto';
 import { LoginDTO } from 'src/interfaces/DTO/login.dto';
 import { AssignRoleDTO } from 'src/interfaces/DTO/assign.dto';
-import { ApiKeyGuard } from 'src/middlewares/api-key.middleware';
+import { ApiKeyGuard } from 'src/common/guards/api-key.guard';
 import { ForgotPasswordDTO, ResetPasswordDTO } from 'src/interfaces/DTO/reset-password.dto';
 import { ActivateUserDTO } from 'src/interfaces/DTO/activate.dto';
-import { getAuthCookieOptions, getRefreshCookieOptions } from 'src/common/tools/cookie-options';
-import { UsersErrorCodes, UsersException } from 'src/services/users/users.exception.handler';
-import { EndpointKey } from 'src/middlewares/decorators/endpoint-key.decorator';
+import { getAuthCookieOptions, getRefreshCookieOptions } from 'src/common/utils/cookie-options.util';
+import { UsersErrorCodes, UsersException } from 'src/services/users/users.exception';
+import { EndpointKey } from 'src/common/decorators/endpoint-key.decorator';
 
 @ApiTags('Users')
 @Controller('users')

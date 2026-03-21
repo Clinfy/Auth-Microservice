@@ -1,0 +1,68 @@
+@startuml Request Lifecycle Pipeline
+skinparam backgroundColor white
+skinparam activityArrowThickness 2
+
+|#LightCyan|Middleware|
+start
+:1. **cookie-parser**
+Parse cookies from request headers;
+
+:2. **CORS**
+Validate origin, set credentials headers;
+
+:3. **RequestContextMiddleware**
+Extract IP, user-agent, set request ID;
+
+|#LightGreen|Pipe|
+:4. **ValidationPipe** (global)
+class-validator + class-transformer;
+
+note right
+  Returns structured error
+  with errorCode on
+  validation failure
+end note
+
+|#LightYellow|Guard|
+:5. **Guard**
+(AuthGuard / MicroserviceGuard / ApiKeyGuard);
+split
+  :Token/key extraction;
+split again
+  :JWT validation +
+  Redis session check;
+split again
+  :@EndpointKey →
+  dynamic permission check
+  (Redis → DB fallback);
+end split
+
+:Sets request.user (AuthUser);
+
+|#LightPink|Interceptor|
+:6. **HttpMetricsInterceptor**
+Start timing;
+
+|#LightBlue|Handler|
+:7. **Controller method execution**
+Service → Repository → DB;
+
+|#LightPink|Interceptor|
+:8. **ClassSerializerInterceptor**
+Entity serialization (where applied);
+
+:HttpMetricsInterceptor
+Record duration + status code;
+
+|#Salmon|Filter|
+if (Unhandled exception?) then (yes)
+  :9. **AllExceptionsFilter**
+  - Cause chain traversal
+  - Winston structured logging
+  - JSON error response;
+else (no)
+  :Return response;
+endif
+
+stop
+@enduml

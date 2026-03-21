@@ -22,12 +22,13 @@ import {
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { ApiKeyEntity } from 'src/entities/api-key.entity';
-import { AuthGuard } from 'src/middlewares/auth.middleware';
+import { AuthGuard } from 'src/common/guards/auth.guard';
 import { CreateApiKeyDTO } from 'src/interfaces/DTO/api-key.dto';
 import { ApiKeysService } from './api-keys.service';
 import * as requestWithApi from 'src/interfaces/request-api-key';
 import * as requestUser from 'src/interfaces/request-user';
-import { EndpointKey } from 'src/middlewares/decorators/endpoint-key.decorator';
+import { EndpointKey } from 'src/common/decorators/endpoint-key.decorator';
+import { AssignPermissionDTO } from 'src/interfaces/DTO/assign.dto';
 
 @ApiTags('API Keys')
 @Controller('api-keys')
@@ -74,6 +75,14 @@ export class ApiKeysController {
   @UseGuards(AuthGuard)
   @EndpointKey('api-key.find')
   @UseInterceptors(ClassSerializerInterceptor)
+  @Get('find/:id')
+  findOne(@Param('id') id: string): Promise<ApiKeyEntity> {
+    return this.apiKeysService.findOne(id);
+  }
+
+  @UseGuards(AuthGuard)
+  @EndpointKey('api-key.find')
+  @UseInterceptors(ClassSerializerInterceptor)
   @ApiCookieAuth('auth_token')
   @ApiOperation({ summary: 'List all API keys' })
   @ApiOkResponse({ type: [ApiKeyEntity] })
@@ -82,6 +91,14 @@ export class ApiKeysController {
   @Get('all')
   findAll(): Promise<ApiKeyEntity[]> {
     return this.apiKeysService.findAll();
+  }
+
+  @UseGuards(AuthGuard)
+  @EndpointKey('api-key.update')
+  @UseInterceptors(ClassSerializerInterceptor)
+  @Patch('change-permissions/:id')
+  changePermissions(@Param('id') id: string, @Body() dto: AssignPermissionDTO): Promise<ApiKeyEntity> {
+    return this.apiKeysService.changePermissions(id, dto);
   }
 
   @UseGuards(AuthGuard)
@@ -97,5 +114,20 @@ export class ApiKeysController {
   @Patch('deactivate/:id')
   deactivate(@Param('id') id: string): Promise<{ message: string }> {
     return this.apiKeysService.deactivate(id);
+  }
+
+  @UseGuards(AuthGuard)
+  @EndpointKey('api-key.activate')
+  @ApiCookieAuth('auth_token')
+  @ApiOperation({ summary: 'Activate an API key' })
+  @ApiOkResponse({
+    schema: { type: 'object', properties: { message: { type: 'string' } } },
+  })
+  @ApiNotFoundResponse({ description: 'API key not found' })
+  @ApiUnauthorizedResponse({ description: 'Missing or invalid auth cookie' })
+  @ApiForbiddenResponse({ description: 'Insufficient permissions' })
+  @Patch('activate/:id')
+  activate(@Param('id') id: string): Promise<{ message: string }> {
+    return this.apiKeysService.activate(id);
   }
 }

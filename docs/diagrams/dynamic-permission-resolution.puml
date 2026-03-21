@@ -1,0 +1,41 @@
+@startuml Dynamic Endpoint Permission Resolution
+skinparam backgroundColor white
+skinparam activityArrowThickness 2
+
+start
+
+:Request arrives at **AuthGuard**;
+
+if (@EndpointKey found?) then (yes)
+  :Look up dynamic rule;
+
+  :Check Redis cache\n**epr:{endpointKey}**;
+  if (Cache hit?) then (yes)
+    :Use cached permissions;
+  else (no)
+    :Query PostgreSQL\n(fallback);
+    if (Rule found?) then (yes)
+      :Backfill Redis cache;
+    endif
+  endif
+
+  if (Rule found & enabled?) then (yes)
+    :Enforce permissions\nagainst session.permissions;
+    if (User has required permission?) then (yes)
+      #LightGreen:Access **allowed**;
+    else (no)
+      #Salmon:Access **denied**\n(403 Forbidden);
+      stop
+    endif
+  else (no rule / disabled)
+    #Salmon:Access **denied**\n(fail-closed);
+    stop
+  endif
+
+else (no)
+  #LightGreen:Access **allowed**\n(not protected by dynamic rules);
+endif
+
+:Continue to controller handler;
+stop
+@enduml

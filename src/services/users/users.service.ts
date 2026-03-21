@@ -1,7 +1,7 @@
 import { HttpStatus, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { UserEntity, UserStatus } from 'src/entities/user.entity';
 import { DataSource } from 'typeorm';
-import { JwtService } from 'src/services/JWT/jwt.service';
+import { JwtService } from 'src/services/jwt/jwt.service';
 import { RegisterUserDTO } from 'src/interfaces/DTO/register.dto';
 import { compare } from 'bcrypt';
 import { LoginDTO } from 'src/interfaces/DTO/login.dto';
@@ -11,22 +11,22 @@ import { RolesService } from 'src/services/roles/roles.service';
 import { ForgotPasswordDTO, ResetPasswordDTO } from 'src/interfaces/DTO/reset-password.dto';
 import { EmailService } from 'src/clients/email/email.service';
 import { RequestWithUser } from 'src/interfaces/request-user';
-import { getTtlFromEnv } from 'src/common/tools/get-ttl';
+import { getTtlFromEnv } from 'src/common/utils/get-ttl.util';
 import { Session } from 'src/interfaces/session.interface';
 import { randomBytes, randomUUID } from 'crypto';
 import { AuthUser } from 'src/interfaces/auth-user.interface';
 import { RedisService } from 'src/common/redis/redis.service';
 import type { Request } from 'express';
 import { UAParser } from 'ua-parser-js';
-import { getClientIp } from 'src/common/tools/get-client-ip';
+import { getClientIp } from 'src/common/utils/get-client-ip.util';
 import { ResetPasswordRedisPayload } from 'src/interfaces/payload';
 import { UsersRepository } from 'src/services/users/users.repository';
 import { ActivateUserDTO } from 'src/interfaces/DTO/activate.dto';
-import { UsersErrorCodes, UsersException } from 'src/services/users/users.exception.handler';
+import { UsersErrorCodes, UsersException } from 'src/services/users/users.exception';
 import { SessionsService } from 'src/services/sessions/sessions.service';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { Logger } from 'winston';
-import { serializeError } from 'src/common/tools/logger-format';
+import { serializeError } from 'src/common/utils/logger-format.util';
 
 @Injectable()
 export class UsersService {
@@ -316,7 +316,7 @@ export class UsersService {
 
   private async findOne(id: string): Promise<UserEntity> {
     const user = await this.userRepository.findOneById(id);
-    if (!user) throw new UsersException('User not found', UsersErrorCodes.USER_NOT_FOUND, HttpStatus.NOT_FOUND);
+    if (!user) throw new UsersException(`User with id ${id} not found`, UsersErrorCodes.USER_NOT_FOUND, HttpStatus.NOT_FOUND);
     return user;
   }
 

@@ -1,0 +1,14 @@
+@startuml README Token Refresh Flow
+skinparam backgroundColor white
+skinparam sequenceArrowThickness 2
+
+actor Browser as browser
+participant "Auth-MS" as auth
+
+browser -> auth : GET /users/refresh-token\nCookie: refresh_token\n(sent automatically — path matches)
+activate auth
+auth -> auth : Validate refresh token JWT
+auth -> auth : Rotate tokens if needed
+auth --> browser : Set-Cookie: auth_token (new)\nSet-Cookie: refresh_token (new, if rotated)\n{message: "Token refreshed"}
+deactivate auth
+@enduml

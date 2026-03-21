@@ -1,0 +1,35 @@
+@startuml Login Flow
+skinparam backgroundColor white
+skinparam sequenceArrowThickness 2
+
+actor Browser as browser
+participant "UsersController" as ctrl
+participant "UsersService" as svc
+database "Redis" as redis
+
+browser -> ctrl : POST /users/login\n{email, password}
+activate ctrl
+
+ctrl -> svc : logIn(dto, req)
+activate svc
+
+svc -> svc : Validate credentials\n(bcrypt compare)
+
+svc -> redis : SET auth_session:{sid}\n(JSON session data + TTL)
+activate redis
+redis --> svc
+deactivate redis
+
+svc --> ctrl : {accessToken, refreshToken}
+deactivate svc
+
+ctrl --> browser : Set-Cookie: auth_token (httpOnly, secure, path=/)\nSet-Cookie: refresh_token (httpOnly, secure, path=/users/refresh-token)\n{message: "Login successful"}
+deactivate ctrl
+
+note right of browser
+  Tokens are **never** returned
+  in the response body.
+  The frontend has zero JavaScript
+  access to raw tokens.
+end note
+@enduml

@@ -8,7 +8,7 @@ import {
 import { DataSource, Not } from 'typeorm';
 import { Injectable } from '@nestjs/common';
 import { EndpointPermissionRulesEntity } from 'src/entities/endpoint-permission-rules.entity';
-import { EndpointPermissionRulesErrorCodes } from 'src/services/endpoint-permission-rules/endpoint-permission-rules.exception.handler';
+import { EndpointPermissionRulesErrorCodes } from 'src/services/endpoint-permission-rules/endpoint-permission-rules.exception';
 
 @ValidatorConstraint({ name: 'IsUniqueEndpointKeyName', async: true })
 @Injectable()
