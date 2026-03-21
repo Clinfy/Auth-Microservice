@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { ApiKeyEntity } from 'src/entities/api-key.entity';
-import { EntityManager, Repository } from 'typeorm';
+import { EntityManager, In, Repository } from 'typeorm';
 
 @Injectable()
 export class ApiKeysRepository {
@@ -45,6 +45,23 @@ export class ApiKeysRepository {
       where: { key_fingerprint: fingerprint, active: true },
       relations: ['permissions'],
     });
+  }
+
+  /**
+   * Given a list of fingerprints, returns the subset that are still active in DB.
+   * Single query using IN (...) — no relations loaded, only key_fingerprint is selected.
+   */
+  async findActiveFingerprintsIn(fingerprints: string[]): Promise<string[]> {
+    if (!fingerprints.length) return [];
+    const rows = await this.ormRepository.find({
+      select: { key_fingerprint: true },
+      where: {
+        key_fingerprint: In(fingerprints),
+        active: true,
+      },
+    });
+
+    return rows.map((r) => r.key_fingerprint);
   }
 
   private getManager(manager?: EntityManager): Repository<ApiKeyEntity> {

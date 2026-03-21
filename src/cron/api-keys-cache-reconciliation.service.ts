@@ -50,13 +50,14 @@ export class ApiKeysCacheReconciliationService {
   /**
    * Deletes stale API key cache entries.
    *
-   * For each fingerprint in the api_keys SET:
-   * 1. Check if the API key still exists and is active in DB
-   * 2. If not, remove the cache entries
+   * Strategy (batched):
+   * 1. Read all fingerprints from the Redis `api_keys` SET.
+   * 2. Query active fingerprints in a single DB call using IN (...).
+   * 3. Compute stale fingerprints as the set difference.
+   * 4. Remove stale entries atomically via Redis MULTI.
    */
   private async deleteStaleKeys(): Promise<void> {
     const fingerprints = await this.redisService.raw.sMembers('api_keys');
-    let staleCount = 0;
 
     if (!fingerprints.length) {
       this.logger.info('API keys cache fingerprints set is empty', {
@@ -66,29 +67,34 @@ export class ApiKeysCacheReconciliationService {
       return;
     }
 
+    // Single DB query instead of N sequential lookups
+    const activeFingerprints = new Set(await this.apiKeysRepository.findActiveFingerprintsIn(fingerprints));
+
+    const staleFingerprints = fingerprints.filter((fp) => !activeFingerprints.has(fp));
+
+    if (staleFingerprints.length === 0) {
+      this.logger.info('No stale API keys found', {
+        context: 'ApiKeysCacheReconciliationService',
+        operation: 'deleteStaleKeys',
+        totalFingerprints: fingerprints.length,
+      });
+
+      return;
+    }
+
     const multi = this.redisService.raw.multi();
-
-    for (const fingerprint of fingerprints) {
-      // Check if the API key is still active in DB
-      const apiKey = await this.apiKeysRepository.findByFingerprint(fingerprint);
-
-      if (!apiKey) {
-        // If an API key not found or inactive — remove from cache
-        multi.del(`api_key:fp:${fingerprint}`);
-        multi.sRem('api_keys', fingerprint);
-        staleCount++;
-      }
+    for (const fp of staleFingerprints) {
+      multi.del(`api_key:fp:${fp}`);
+      multi.sRem('api_keys', fp);
     }
+    await multi.exec();
 
-    if (staleCount > 0) {
-      await multi.exec();
-    }
 
     this.logger.info('Deleted stale API key cache entries', {
       context: 'ApiKeysCacheReconciliationService',
       operation: 'deleteStaleKeys',
       totalFingerprints: fingerprints.length,
-      staleKeysDeleted: staleCount,
+      staleKeysDeleted: staleFingerprints.length,
     });
   }
 }
