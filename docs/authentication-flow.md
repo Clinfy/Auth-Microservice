@@ -118,7 +118,7 @@ Used for endpoints that other microservices consume on behalf of a user:
 
 ### Dual Authentication Steps
 
-1. **API key validation**: Extract `x-api-key` header → find active key via `ApiKeysService.findActiveByPlainKey()` (bcrypt comparison) → check `@EndpointKey` dynamic permissions against the API key's permission codes.
+1. **API key validation**: Extract `x-api-key` header → find active key via `ApiKeysService.findActiveByPlainKey()` (HMAC-SHA256 fingerprint lookup with Redis cache) → check `@EndpointKey` dynamic permissions against the API key's permission codes.
 2. **Bearer token validation**: Extract `Authorization: Bearer <token>` header → decode JWT → load Redis session → verify session is active and email matches payload. **No IP/subnet check** is performed because the request originates from a microservice, not the user's browser.
 
 ### Why Dual Auth?
@@ -142,7 +142,7 @@ Used for service-only endpoints where no user context is needed:
 | `GET /endpoint-permission-rules/get-endpoint-permissions/:key` | EPR lookup (called by other services)          |
 | `GET /metrics`                                                 | Prometheus metrics scraping                    |
 
-The API key is sent in the `x-api-key` header and validated via bcrypt comparison against stored hashes.
+The API key is sent in the `x-api-key` header and validated via HMAC-SHA256 fingerprint lookup with Redis-first caching.
 
 ---
 

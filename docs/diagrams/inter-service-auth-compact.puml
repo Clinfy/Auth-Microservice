@@ -14,7 +14,7 @@ other -> other : Extract token from cookie
 
 other -> auth : x-api-key: <service_key>\nAuthorization: Bearer <user_token>
 activate auth
-auth -> auth : 1. Validate API key (bcrypt)
+auth -> auth : 1. Validate API key (HMAC-SHA256)
 auth -> auth : 2. Validate Bearer JWT
 auth -> redis : Load session
 auth --> other : {id, email, person_id, session_id}

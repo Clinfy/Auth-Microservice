@@ -100,11 +100,12 @@ The global `ValidationPipe` uses a custom `exceptionFactory` that:
 
 All cron jobs are registered as providers in `AppModule`:
 
-| Service                         | Schedule     | Description                                                                    |
-| ------------------------------- | ------------ | ------------------------------------------------------------------------------ |
-| `OutboxPublisherService`        | Every 10 sec | Reads pending events from `outbox` table, publishes to RabbitMQ, marks as sent |
-| `OutboxSubscriberService`       | Startup      | Consumes events from RabbitMQ audit queue                                      |
-| `EprCacheReconciliationService` | Every hour   | Deletes stale EPR Redis keys, re-warms cache from DB                           |
+| Service                             | Schedule     | Description                                                                    |
+| ----------------------------------- | ------------ | ------------------------------------------------------------------------------ |
+| `OutboxPublisherService`            | Every 10 sec | Reads pending events from `outbox` table, publishes to RabbitMQ, marks as sent |
+| `OutboxSubscriberService`           | Startup      | Consumes events from RabbitMQ audit queue                                      |
+| `EprCacheReconciliationService`     | Every hour   | Deletes stale EPR Redis keys, re-warms cache from DB                           |
+| `ApiKeysCacheReconciliationService` | Every hour   | Removes stale API key cache entries from Redis                                 |
 
 ### Outbox Pattern
 
@@ -143,6 +144,8 @@ Source of truth for all entities. Entities:
 - **Session tracking**: `user_sessions:{userId}` — set of active session IDs.
 - **EPR cache**: `epr:{endpoint_key_name}` — JSON array of permission codes.
 - **EPR key tracking**: `epr_keys` — set of all cached endpoint key names (for reconciliation).
+- **API key cache**: `api_key:fp:{fingerprint}` — JSON with client name and permission codes, keyed by HMAC-SHA256 fingerprint.
+- **API key tracking**: `api_keys` — Redis SET of all cached fingerprints (for reconciliation).
 
 All Redis operations are resilient — failures are caught, logged, and the service falls back to PostgreSQL.
 

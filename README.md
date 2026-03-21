@@ -40,21 +40,21 @@ This microservice is responsible for managing:
 
 ## Tech Stack
 
-| Layer         | Technology                              |
-| ------------- | --------------------------------------- |
-| Framework     | NestJS 11                               |
-| Language      | TypeScript 5                            |
-| Runtime       | Node.js 24                              |
-| Database      | PostgreSQL (TypeORM)                    |
-| Cache         | Redis                                   |
-| Messaging     | RabbitMQ (via `@nestjs/microservices`)  |
-| Auth          | JWT (`jsonwebtoken`) + bcrypt + cookies |
-| Logging       | Winston (`nest-winston`)                |
-| Metrics       | Prometheus (`prom-client`)              |
-| Visualization | Grafana                                 |
-| API Docs      | Swagger (`@nestjs/swagger`)             |
-| Validation    | `class-validator` + `class-transformer` |
-| Scheduling    | `@nestjs/schedule`                      |
+| Layer         | Technology                                            |
+| ------------- | ----------------------------------------------------- |
+| Framework     | NestJS 11                                             |
+| Language      | TypeScript 5                                          |
+| Runtime       | Node.js 24                                            |
+| Database      | PostgreSQL (TypeORM)                                  |
+| Cache         | Redis                                                 |
+| Messaging     | RabbitMQ (via `@nestjs/microservices`)                |
+| Auth          | JWT (`jsonwebtoken`) + HMAC-SHA256 + bcrypt + cookies |
+| Logging       | Winston (`nest-winston`)                              |
+| Metrics       | Prometheus (`prom-client`)                            |
+| Visualization | Grafana                                               |
+| API Docs      | Swagger (`@nestjs/swagger`)                           |
+| Validation    | `class-validator` + `class-transformer`               |
+| Scheduling    | `@nestjs/schedule`                                    |
 
 ## Architecture
 
@@ -220,8 +220,10 @@ Keys follow a `<domain>.<action>` pattern. Related endpoints share the same key 
 | `permission.delete`                  | `DELETE /permissions/delete/:id`                                                                   |
 | `permission.find`                    | `GET /permissions/find/:id`, `GET /permissions/all`                                                |
 | `api-key.generate`                   | `POST /api-keys/generate`                                                                          |
-| `api-key.find`                       | `GET /api-keys/all`                                                                                |
+| `api-key.find`                       | `GET /api-keys/find/:id`, `GET /api-keys/all`                                                      |
+| `api-key.update`                     | `PATCH /api-keys/change-permissions/:id`                                                           |
 | `api-key.deactivate`                 | `PATCH /api-keys/deactivate/:id`                                                                   |
+| `api-key.activate`                   | `PATCH /api-keys/activate/:id`                                                                     |
 | `sessions.find`                      | `GET /sessions/user/:userId`                                                                       |
 | `sessions.deactivate`                | `POST /sessions/deactivate/:sid`                                                                   |
 | `endpoint-permission-rules.create`   | `POST /endpoint-permission-rules/new`                                                              |
@@ -454,6 +456,7 @@ cp example.env .env
 | `CORS_ORIGIN`               | Yes      | —       | Allowed CORS origins (comma-separated). Required for cookies |
 | `COOKIE_DOMAIN`             | No       | —       | Cookie domain (e.g. `.example.com`). Omit for request domain |
 | `COOKIE_SECURE`             | No       | `true`  | Set `false` only for local dev without HTTPS                 |
+| `HMAC_SECRET`               | Yes      | —       | HMAC-SHA256 secret for API key fingerprinting (min 32 chars) |
 | `METRICS_ENABLED`           | No       | `true`  | Enable Prometheus metrics (`true`/`false`)                   |
 
 ---
@@ -505,12 +508,15 @@ The OpenAPI spec is exported as `openapi.json` at startup.
 
 ### API Keys
 
-| Method  | Path                       | Auth           | Description              |
-| ------- | -------------------------- | -------------- | ------------------------ |
-| `GET`   | `/api-keys/can-do/:perm`   | API Key header | Check API key permission |
-| `POST`  | `/api-keys/generate`       | Cookie         | Generate a new API key   |
-| `GET`   | `/api-keys/all`            | Cookie         | List all API keys        |
-| `PATCH` | `/api-keys/deactivate/:id` | Cookie         | Deactivate an API key    |
+| Method  | Path                               | Auth           | Description                |
+| ------- | ---------------------------------- | -------------- | -------------------------- |
+| `GET`   | `/api-keys/can-do/:perm`           | API Key header | Check API key permission   |
+| `POST`  | `/api-keys/generate`               | Cookie         | Generate a new API key     |
+| `GET`   | `/api-keys/find/:id`               | Cookie         | Get an API key by ID       |
+| `GET`   | `/api-keys/all`                    | Cookie         | List all API keys          |
+| `PATCH` | `/api-keys/change-permissions/:id` | Cookie         | Change API key permissions |
+| `PATCH` | `/api-keys/deactivate/:id`         | Cookie         | Deactivate an API key      |
+| `PATCH` | `/api-keys/activate/:id`           | Cookie         | Activate an API key        |
 
 ### Sessions
 
@@ -661,7 +667,8 @@ src/
 ├── cron/
 │   ├── outbox-publisher.service.ts    # Publishes outbox events to RMQ (every 10s)
 │   ├── outbox-subscriber.service.ts   # Consumes RMQ events
-│   └── epr-cache-reconciliation.service.ts  # Hourly EPR Redis ↔ DB sync
+│   ├── epr-cache-reconciliation.service.ts  # Hourly EPR Redis ↔ DB sync
+│   └── api-keys-cache-reconciliation.service.ts  # Hourly API key Redis cache cleanup
 ├── common/
 │   ├── guards/
 │   │   ├── auth.guard.ts              # Cookie-based JWT auth guard
