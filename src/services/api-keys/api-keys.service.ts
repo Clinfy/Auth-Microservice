@@ -20,7 +20,6 @@ import { AssignPermissionDTO } from 'src/interfaces/DTO/assign.dto';
 
 @Injectable()
 export class ApiKeysService implements OnModuleInit {
-
   constructor(
     private readonly apiKeysRepository: ApiKeysRepository,
 
@@ -193,13 +192,12 @@ export class ApiKeysService implements OnModuleInit {
         const cache: ApiCache = {
           client: apiKey.client,
           permissionCodes: apiKey.permissionCodes,
-        }
+        };
         const multi = this.redis.raw.multi();
 
         multi.set(this.redisKey(fingerprint), JSON.stringify(cache));
         multi.sAdd('api_keys', fingerprint);
         await multi.exec();
-
       } catch {
         this.logger.debug('API key found in DB, backfilled to Redis', {
           context: 'ApiKeysService',
@@ -209,14 +207,18 @@ export class ApiKeysService implements OnModuleInit {
         });
       }
       return apiKey.permissionCodes;
-
     } catch (error) {
       this.logger.warn('DB fallback failed', {
         context: 'ApiKeysService',
         operation: 'findActiveByPlainKey',
         error: serializeError(error),
       });
-      throw error;
+      throw new ApiKeyException(
+        'Failed to find the active API key',
+        ApiKeyErrorCodes.API_KEY_NOT_FOUND,
+        error.status ?? HttpStatus.INTERNAL_SERVER_ERROR,
+        error,
+      );
     }
   }
 
@@ -244,13 +246,12 @@ export class ApiKeysService implements OnModuleInit {
         const cache: ApiCache = {
           client: apiKey.client,
           permissionCodes: apiKey.permissionCodes,
-        }
+        };
 
         multi.set(this.redisKey(apiKey.key_fingerprint), JSON.stringify(cache));
         multi.sAdd('api_keys', apiKey.key_fingerprint);
       }
       await multi.exec();
-
     } catch (error) {
       this.logger.warn('Failed to warm up API keys cache', {
         context: 'ApiKeysService',
@@ -265,7 +266,7 @@ export class ApiKeysService implements OnModuleInit {
       const cache: ApiCache = {
         client: apiKey.client,
         permissionCodes: apiKey.permissionCodes,
-      }
+      };
       const multi = this.redis.raw.multi();
       multi.set(this.redisKey(apiKey.key_fingerprint), JSON.stringify(cache));
       multi.sAdd('api_keys', apiKey.key_fingerprint);
@@ -286,14 +287,18 @@ export class ApiKeysService implements OnModuleInit {
       multi.sRem('api_keys', apiKey.key_fingerprint);
       await multi.exec();
     } catch (error) {
-      this.logger.warn('Failed to invalidate API key cache', {
+      this.logger.warn('Failed to invalidate API key cache. Pleas try again later.', {
         context: 'ApiKeysService',
         operation: 'invalidateApiKeyCache',
         error: serializeError(error),
       });
 
-      throw error;
+      throw new ApiKeyException(
+        'Failed to invalidate the API key from cache',
+        ApiKeyErrorCodes.API_KEY_CACHE_INVALIDATION_FAILED,
+        error.status ?? HttpStatus.INTERNAL_SERVER_ERROR,
+        error,
+      );
     }
   }
-
 }
