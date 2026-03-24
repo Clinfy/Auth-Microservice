@@ -24,6 +24,7 @@ import {
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
+  ApiParam,
   ApiQuery,
   ApiSecurity,
   ApiTags,
@@ -49,7 +50,8 @@ export class UsersController {
 
   @UseGuards(ApiKeyGuard)
   @EndpointKey('users.register')
-  @ApiHeader({ name: 'x-api-key', required: true })
+  @ApiSecurity('api-key')
+  @ApiHeader({ name: 'x-api-key', required: true, description: 'API key for machine-to-machine authentication' })
   @ApiOperation({ summary: 'Create a new user' })
   @ApiUnauthorizedResponse({ description: 'Missing or invalid API key' })
   @ApiForbiddenResponse({ description: 'Insufficient API key permissions' })
@@ -61,10 +63,15 @@ export class UsersController {
     return this.userService.register(dto, request);
   }
 
-  @ApiOperation({ summary: 'Activate a user for the first time' })
+  @ApiOperation({
+    summary: 'Activate a user for the first time',
+    description:
+      'Sets a new password and activates the user on their first login using the temporary password sent by email.',
+  })
   @ApiOkResponse({
     schema: { type: 'object', properties: { message: { type: 'string' } } },
   })
+  @ApiUnauthorizedResponse({ description: 'Wrong email or temporary password' })
   @Post('first-activation')
   firstActivation(@Body() dto: ActivateUserDTO): Promise<{ message: string }> {
     return this.userService.firstActivation(dto);
@@ -74,6 +81,7 @@ export class UsersController {
   @EndpointKey('users.update')
   @ApiCookieAuth('auth_token')
   @ApiOperation({ summary: 'Activate a user' })
+  @ApiParam({ name: 'id', description: 'User UUID', example: '550e8400-e29b-41d4-a716-446655440000' })
   @ApiOkResponse({
     schema: { type: 'object', properties: { message: { type: 'string' } } },
   })
@@ -89,6 +97,7 @@ export class UsersController {
   @EndpointKey('users.update')
   @ApiCookieAuth('auth_token')
   @ApiOperation({ summary: 'Deactivate a user' })
+  @ApiParam({ name: 'id', description: 'User UUID', example: '550e8400-e29b-41d4-a716-446655440000' })
   @ApiOkResponse({
     schema: { type: 'object', properties: { message: { type: 'string' } } },
   })
@@ -140,8 +149,11 @@ export class UsersController {
     return result;
   }
 
-  @ApiOperation({ summary: 'Refresh a user token' })
-  @ApiCookieAuth('auth_token')
+  @ApiOperation({
+    summary: 'Refresh a user token',
+    description: 'Uses the HttpOnly refresh_token cookie to issue a new auth_token and refresh_token pair.',
+  })
+  @ApiCookieAuth('refresh_token')
   @ApiOkResponse({
     schema: {
       type: 'object',
@@ -150,7 +162,7 @@ export class UsersController {
       },
     },
   })
-  @ApiUnauthorizedResponse({ description: 'Invalid refresh token' })
+  @ApiUnauthorizedResponse({ description: 'Missing or invalid refresh_token cookie' })
   @Get('refresh-token')
   async refreshToken(@Req() request: Request, @Res({ passthrough: true }) response: Response): Promise<{ message: string }> {
     const refreshToken = request.cookies?.['refresh_token'];
@@ -172,8 +184,10 @@ export class UsersController {
   @ApiSecurity('api-key')
   @ApiBearerAuth()
   @ApiOperation({
-    summary: 'Return if a user have permissions to do something',
+    summary: 'Return if a user has permissions to do something',
+    description: 'Used by other microservices. Requires both a valid X-API-Key header and a Bearer token.',
   })
+  @ApiParam({ name: 'permission', description: 'Permission code to check', example: 'USERS_CREATE' })
   @ApiOkResponse({ schema: { type: 'boolean' } })
   @ApiUnauthorizedResponse({ description: 'Missing or invalid API key or bearer token' })
   @ApiForbiddenResponse({ description: 'Insufficient permissions' })
@@ -219,6 +233,7 @@ export class UsersController {
   @UseInterceptors(ClassSerializerInterceptor)
   @ApiCookieAuth('auth_token')
   @ApiOperation({ summary: 'Assign roles to a user' })
+  @ApiParam({ name: 'id', description: 'User UUID', example: '550e8400-e29b-41d4-a716-446655440000' })
   @ApiOkResponse({ type: UserEntity })
   @ApiUnauthorizedResponse({ description: 'Missing or invalid auth cookie' })
   @ApiForbiddenResponse({ description: 'Insufficient permissions' })

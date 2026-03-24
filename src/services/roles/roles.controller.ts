@@ -8,6 +8,7 @@ import {
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
+  ApiParam,
   ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
@@ -38,6 +39,7 @@ export class RolesController {
   @UseGuards(AuthGuard)
   @EndpointKey('roles.update')
   @ApiOperation({ summary: 'Update a role' })
+  @ApiParam({ name: 'id', description: 'Role UUID', example: '550e8400-e29b-41d4-a716-446655440000' })
   @ApiOkResponse({ type: RoleEntity })
   @ApiNotFoundResponse({ description: 'Role not found' })
   @ApiUnauthorizedResponse({ description: 'Missing or invalid auth cookie' })
@@ -50,6 +52,7 @@ export class RolesController {
   @UseGuards(AuthGuard)
   @EndpointKey('roles.update')
   @ApiOperation({ summary: 'Assign permissions to a role' })
+  @ApiParam({ name: 'id', description: 'Role UUID', example: '550e8400-e29b-41d4-a716-446655440000' })
   @ApiOkResponse({ type: RoleEntity })
   @ApiNotFoundResponse({ description: 'Role or permission not found' })
   @ApiUnauthorizedResponse({ description: 'Missing or invalid auth cookie' })
@@ -62,6 +65,7 @@ export class RolesController {
   @UseGuards(AuthGuard)
   @EndpointKey('roles.delete')
   @ApiOperation({ summary: 'Delete a role' })
+  @ApiParam({ name: 'id', description: 'Role UUID', example: '550e8400-e29b-41d4-a716-446655440000' })
   @ApiOkResponse({
     schema: { type: 'object', properties: { message: { type: 'string' } } },
   })
@@ -75,7 +79,8 @@ export class RolesController {
 
   @UseGuards(AuthGuard)
   @EndpointKey('roles.find')
-  @ApiOperation({ summary: 'Find a role by id number' })
+  @ApiOperation({ summary: 'Find a role by ID' })
+  @ApiParam({ name: 'id', description: 'Role UUID', example: '550e8400-e29b-41d4-a716-446655440000' })
   @ApiOkResponse({ type: RoleEntity })
   @ApiNotFoundResponse({ description: 'Role not found' })
   @ApiUnauthorizedResponse({ description: 'Missing or invalid auth cookie' })

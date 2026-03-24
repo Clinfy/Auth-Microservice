@@ -56,6 +56,7 @@ async function bootstrap() {
     .setVersion('1.0')
     .addBearerAuth()
     .addCookieAuth('auth_token')
+    .addCookieAuth('refresh_token')
     .addApiKey({ type: 'apiKey', in: 'header', name: 'x-api-key' }, 'api-key')
     .build();
 
