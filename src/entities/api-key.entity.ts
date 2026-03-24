@@ -34,17 +34,17 @@ export class ApiKeyEntity extends BaseEntity {
   @Column({ default: true })
   active: boolean;
 
-  @ApiProperty({ description: 'Creation timestamp' })
+  @ApiHideProperty()
   @Exclude()
   @CreateDateColumn()
   created_at: Date;
 
-  @ApiProperty({ description: 'Last update timestamp' })
+  @ApiHideProperty()
   @Exclude()
   @UpdateDateColumn()
   updated_at: Date;
 
-  @ApiProperty({ description: 'User who created this API key', required: false })
+  @ApiHideProperty()
   @Exclude()
   @Column({ type: 'jsonb', nullable: true })
   created_by?: AuthUser;

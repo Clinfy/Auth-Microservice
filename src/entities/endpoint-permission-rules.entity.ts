@@ -17,7 +17,7 @@ import { Exclude } from 'class-transformer';
 @Unique('UQ_endpoint_permission_key_name', ['endpoint_key_name'])
 @Entity('endpoint_permission_rules')
 export class EndpointPermissionRulesEntity extends BaseEntity {
-  @ApiProperty({ description: 'User UUID', example: '550e8400-e29b-41d4-a716-446655440000' })
+  @ApiProperty({ description: 'Endpoint permission rule UUID', example: '550e8400-e29b-41d4-a716-446655440000' })
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
@@ -49,7 +49,7 @@ export class EndpointPermissionRulesEntity extends BaseEntity {
   @Exclude()
   updated_at: Date;
 
-  @ApiProperty({ description: 'User who created this role', required: false })
+  @ApiProperty({ description: 'User who created this rule', required: false })
   @Column({ type: 'jsonb', nullable: true })
   @Exclude()
   created_by?: AuthUser;

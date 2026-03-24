@@ -20,6 +20,7 @@ import {
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
+  ApiParam,
   ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
@@ -50,6 +51,7 @@ export class PermissionsController {
   @EndpointKey('permission.update')
   @UseInterceptors(ClassSerializerInterceptor)
   @ApiOperation({ summary: 'Update a permission' })
+  @ApiParam({ name: 'id', description: 'Permission UUID', example: '550e8400-e29b-41d4-a716-446655440000' })
   @ApiOkResponse({ type: PermissionEntity })
   @ApiNotFoundResponse({ description: 'Permission not found' })
   @ApiUnauthorizedResponse({ description: 'Missing or invalid auth cookie' })
@@ -63,6 +65,7 @@ export class PermissionsController {
   @EndpointKey('permission.delete')
   @UseInterceptors(ClassSerializerInterceptor)
   @ApiOperation({ summary: 'Delete a permission' })
+  @ApiParam({ name: 'id', description: 'Permission UUID', example: '550e8400-e29b-41d4-a716-446655440000' })
   @ApiOkResponse({
     schema: { type: 'object', properties: { message: { type: 'string' } } },
   })
@@ -77,7 +80,8 @@ export class PermissionsController {
   @UseGuards(AuthGuard)
   @EndpointKey('permission.find')
   @UseInterceptors(ClassSerializerInterceptor)
-  @ApiOperation({ summary: 'Find a permission by id number' })
+  @ApiOperation({ summary: 'Find a permission by ID' })
+  @ApiParam({ name: 'id', description: 'Permission UUID', example: '550e8400-e29b-41d4-a716-446655440000' })
   @ApiOkResponse({ type: PermissionEntity })
   @ApiNotFoundResponse({ description: 'Permission not found' })
   @ApiUnauthorizedResponse({ description: 'Missing or invalid auth cookie' })

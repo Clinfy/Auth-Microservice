@@ -18,6 +18,8 @@ import {
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
+  ApiParam,
+  ApiSecurity,
   ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
@@ -35,10 +37,13 @@ import { AssignPermissionDTO } from 'src/interfaces/DTO/assign.dto';
 export class ApiKeysController {
   constructor(private readonly apiKeysService: ApiKeysService) {}
 
+  @ApiSecurity('api-key')
+  @ApiHeader({ name: 'x-api-key', required: true, description: 'API key for machine-to-machine authentication' })
   @ApiOperation({
-    summary: 'Return if an API key have permissions to do something',
+    summary: 'Return if an API key has permissions to do something',
+    description: 'Checks whether the provided API key (via X-API-Key header) holds the specified permission code.',
   })
-  @ApiHeader({ name: 'x-api-key', required: true })
+  @ApiParam({ name: 'permission', description: 'Permission code to check', example: 'USERS_CREATE' })
   @ApiOkResponse({ schema: { type: 'boolean' } })
   @ApiUnauthorizedResponse({ description: 'API key header missing or invalid' })
   @ApiForbiddenResponse({ description: 'Invalid or inactive API key' })
@@ -75,6 +80,13 @@ export class ApiKeysController {
   @UseGuards(AuthGuard)
   @EndpointKey('api-key.find')
   @UseInterceptors(ClassSerializerInterceptor)
+  @ApiCookieAuth('auth_token')
+  @ApiOperation({ summary: 'Find an API key by ID' })
+  @ApiParam({ name: 'id', description: 'API key UUID', example: '550e8400-e29b-41d4-a716-446655440000' })
+  @ApiOkResponse({ type: ApiKeyEntity })
+  @ApiNotFoundResponse({ description: 'API key not found' })
+  @ApiUnauthorizedResponse({ description: 'Missing or invalid auth cookie' })
+  @ApiForbiddenResponse({ description: 'Insufficient permissions' })
   @Get('find/:id')
   findOne(@Param('id') id: string): Promise<ApiKeyEntity> {
     return this.apiKeysService.findOne(id);
@@ -96,6 +108,13 @@ export class ApiKeysController {
   @UseGuards(AuthGuard)
   @EndpointKey('api-key.update')
   @UseInterceptors(ClassSerializerInterceptor)
+  @ApiCookieAuth('auth_token')
+  @ApiOperation({ summary: 'Update permissions assigned to an API key' })
+  @ApiParam({ name: 'id', description: 'API key UUID', example: '550e8400-e29b-41d4-a716-446655440000' })
+  @ApiOkResponse({ type: ApiKeyEntity })
+  @ApiNotFoundResponse({ description: 'API key or permission not found' })
+  @ApiUnauthorizedResponse({ description: 'Missing or invalid auth cookie' })
+  @ApiForbiddenResponse({ description: 'Insufficient permissions' })
   @Patch('change-permissions/:id')
   changePermissions(@Param('id') id: string, @Body() dto: AssignPermissionDTO): Promise<ApiKeyEntity> {
     return this.apiKeysService.changePermissions(id, dto);
@@ -105,6 +124,7 @@ export class ApiKeysController {
   @EndpointKey('api-key.deactivate')
   @ApiCookieAuth('auth_token')
   @ApiOperation({ summary: 'Deactivate an API key' })
+  @ApiParam({ name: 'id', description: 'API key UUID', example: '550e8400-e29b-41d4-a716-446655440000' })
   @ApiOkResponse({
     schema: { type: 'object', properties: { message: { type: 'string' } } },
   })
@@ -120,6 +140,7 @@ export class ApiKeysController {
   @EndpointKey('api-key.activate')
   @ApiCookieAuth('auth_token')
   @ApiOperation({ summary: 'Activate an API key' })
+  @ApiParam({ name: 'id', description: 'API key UUID', example: '550e8400-e29b-41d4-a716-446655440000' })
   @ApiOkResponse({
     schema: { type: 'object', properties: { message: { type: 'string' } } },
   })
