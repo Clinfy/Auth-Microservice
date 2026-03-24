@@ -433,13 +433,17 @@ describe('UsersService (integration)', () => {
     expect(redisServiceMock.raw.sRem).toHaveBeenCalledWith('user_sessions:user-1', 'sess-logout');
   });
 
-  it('findAll returns all registered users', async () => {
+  it('findAll returns a paginated response containing registered users', async () => {
     await usersService.register({ email: 'julia@example.com', person_id: randomUUID() }, request);
 
-    const users = await usersService.findAll();
-    const emails = users.map((u) => u.email);
+    const result = await usersService.findAll({ page: 1, limit: 20 });
 
+    expect(result.data).toBeDefined();
+    const emails = result.data.map((u) => u.email);
     expect(emails).toContain('julia@example.com');
-    expect(users.length).toBeGreaterThanOrEqual(1);
+    expect(result.total).toBeGreaterThanOrEqual(1);
+    expect(result.page).toBe(1);
+    expect(result.limit).toBe(20);
+    expect(result.totalPages).toBeGreaterThanOrEqual(1);
   });
 });

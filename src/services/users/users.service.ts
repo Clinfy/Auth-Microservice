@@ -23,6 +23,7 @@ import { ResetPasswordRedisPayload } from 'src/interfaces/payload';
 import { UsersRepository } from 'src/services/users/users.repository';
 import { ActivateUserDTO } from 'src/interfaces/DTO/activate.dto';
 import { UsersErrorCodes, UsersException } from 'src/services/users/users.exception';
+import { PaginatedResponseDto, PaginationQueryDto } from 'src/interfaces/DTO/pagination.dto';
 import { SessionsService } from 'src/services/sessions/sessions.service';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { Logger } from 'winston';
@@ -310,13 +311,15 @@ export class UsersService {
     return { message: 'User deactivated successfully' };
   }
 
-  async findAll(): Promise<UserEntity[]> {
-    return await this.userRepository.findAll();
+  async findAll(query: PaginationQueryDto = new PaginationQueryDto()): Promise<PaginatedResponseDto<UserEntity>> {
+    const [data, total] = await this.userRepository.findAll(query);
+    return new PaginatedResponseDto(data, total, query.page, query.limit);
   }
 
   private async findOne(id: string): Promise<UserEntity> {
     const user = await this.userRepository.findOneById(id);
-    if (!user) throw new UsersException(`User with id ${id} not found`, UsersErrorCodes.USER_NOT_FOUND, HttpStatus.NOT_FOUND);
+    if (!user)
+      throw new UsersException(`User with id ${id} not found`, UsersErrorCodes.USER_NOT_FOUND, HttpStatus.NOT_FOUND);
     return user;
   }
 

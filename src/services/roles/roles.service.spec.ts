@@ -4,6 +4,7 @@ import { PermissionsService } from '../permissions/permissions.service';
 import { RolesException } from './roles.exception';
 import { SessionsService } from 'src/services/sessions/sessions.service';
 import { Logger } from 'winston';
+import { PaginatedResponseDto, PaginationQueryDto } from 'src/interfaces/DTO/pagination.dto';
 
 describe('RolesService', () => {
   let roleRepository: jest.Mocked<Partial<RolesRepository>>;
@@ -101,10 +102,19 @@ describe('RolesService', () => {
     await expect(service.findOne(otherRoleId)).rejects.toBeInstanceOf(RolesException);
   });
 
-  it('findAll returns all roles', async () => {
-    (roleRepository.findAll as jest.Mock).mockResolvedValue([{ id: roleId, name: 'ADMIN' }]);
+  it('findAll returns a PaginatedResponseDto wrapping all roles', async () => {
+    const roles = [{ id: roleId, name: 'ADMIN' }];
+    (roleRepository.findAll as jest.Mock).mockResolvedValue([roles, 1]);
 
-    await expect(service.findAll()).resolves.toEqual([{ id: roleId, name: 'ADMIN' }]);
+    const query = new PaginationQueryDto();
+    const result = await service.findAll(query);
+
+    expect(result).toBeInstanceOf(PaginatedResponseDto);
+    expect(result.data).toEqual(roles);
+    expect(result.total).toBe(1);
+    expect(result.page).toBe(1);
+    expect(result.limit).toBe(20);
+    expect(result.totalPages).toBe(1);
   });
 
   it('assignPermissions loads permissions and saves role', async () => {

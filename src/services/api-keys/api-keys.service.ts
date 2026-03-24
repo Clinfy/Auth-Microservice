@@ -12,6 +12,7 @@ import { RequestWithUser } from 'src/interfaces/request-user';
 import { ApiKeyErrorCodes, ApiKeyException } from 'src/services/api-keys/api-keys.exception.handler';
 import { ApiKeysRepository } from 'src/services/api-keys/api-keys.repository';
 import { RedisService } from 'src/common/redis/redis.service';
+import { PaginatedResponseDto, PaginationQueryDto } from 'src/interfaces/DTO/pagination.dto';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { Logger } from 'winston';
 import { serializeError } from 'src/common/utils/logger-format.util';
@@ -75,9 +76,10 @@ export class ApiKeysService implements OnModuleInit {
     }
   }
 
-  async findAll(): Promise<ApiKeyEntity[]> {
+  async findAll(query: PaginationQueryDto = new PaginationQueryDto()): Promise<PaginatedResponseDto<ApiKeyEntity>> {
     try {
-      return await this.apiKeysRepository.findAll();
+      const [data, total] = await this.apiKeysRepository.findAll(query);
+      return new PaginatedResponseDto(data, total, query.page, query.limit);
     } catch (error) {
       throw new ApiKeyException(
         'Api keys not found',

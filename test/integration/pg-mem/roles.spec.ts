@@ -153,4 +153,18 @@ describe('RolesService (integration)', () => {
     const exists = await roleRepository.findOneBy({ id: role.id });
     expect(exists).toBeNull();
   });
+
+  it('findAll returns a paginated response of roles', async () => {
+    await service.create({ name: 'paginated-role' }, request);
+
+    const result = await service.findAll({ page: 1, limit: 20 });
+
+    expect(result.data).toBeDefined();
+    expect(result.total).toBeGreaterThanOrEqual(1);
+    expect(result.page).toBe(1);
+    expect(result.limit).toBe(20);
+    expect(result.totalPages).toBeGreaterThanOrEqual(1);
+    const names = result.data.map((r) => r.name);
+    expect(names).toContain('paginated-role');
+  });
 });

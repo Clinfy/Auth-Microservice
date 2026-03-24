@@ -5,6 +5,7 @@ import { PatchPermissionDTO } from 'src/interfaces/DTO/patch.dto';
 import { RequestWithUser } from 'src/interfaces/request-user';
 import { PermissionsRepository } from 'src/services/permissions/permissions.repository';
 import { PermissionsErrorCodes, PermissionsException } from 'src/services/permissions/permissions.exception';
+import { PaginatedResponseDto, PaginationQueryDto } from 'src/interfaces/DTO/pagination.dto';
 
 @Injectable()
 export class PermissionsService {
@@ -67,9 +68,10 @@ export class PermissionsService {
     return permission;
   }
 
-  async findAll(): Promise<PermissionEntity[]> {
+  async findAll(query: PaginationQueryDto = new PaginationQueryDto()): Promise<PaginatedResponseDto<PermissionEntity>> {
     try {
-      return await this.permissionRepository.findAll();
+      const [data, total] = await this.permissionRepository.findAll(query);
+      return new PaginatedResponseDto(data, total, query.page, query.limit);
     } catch (error) {
       throw new PermissionsException(
         'Permissions not found',

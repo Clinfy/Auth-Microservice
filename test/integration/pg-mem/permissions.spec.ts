@@ -110,5 +110,19 @@ describe('PermissionsService (integration)', () => {
     const stored = await repository.findOneBy({ id: created.id });
     expect(stored).toBeNull();
   });
+
+  it('findAll returns a paginated response of permissions', async () => {
+    const created = await service.create({ code: 'PAGINATED_PERM' }, request);
+
+    const result = await service.findAll({ page: 1, limit: 20 });
+
+    expect(result.data).toBeDefined();
+    expect(result.total).toBeGreaterThanOrEqual(1);
+    expect(result.page).toBe(1);
+    expect(result.limit).toBe(20);
+    expect(result.totalPages).toBeGreaterThanOrEqual(1);
+    const codes = result.data.map((p) => p.code);
+    expect(codes).toContain('PAGINATED_PERM');
+  });
 });
 const request = { user: null } as any;

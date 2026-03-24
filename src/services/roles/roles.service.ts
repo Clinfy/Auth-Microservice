@@ -11,6 +11,7 @@ import { SessionsService } from 'src/services/sessions/sessions.service';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { Logger } from 'winston';
 import { serializeError } from 'src/common/utils/logger-format.util';
+import { PaginatedResponseDto, PaginationQueryDto } from 'src/interfaces/DTO/pagination.dto';
 
 @Injectable()
 export class RolesService {
@@ -65,13 +66,15 @@ export class RolesService {
 
   async findOne(id: string): Promise<RoleEntity> {
     const role = await this.roleRepository.findOneById(id);
-    if (!role) throw new RolesException(`Role with id ${id} not found`, RolesErrorCodes.ROLES_NOT_FOUND, HttpStatus.NOT_FOUND);
+    if (!role)
+      throw new RolesException(`Role with id ${id} not found`, RolesErrorCodes.ROLES_NOT_FOUND, HttpStatus.NOT_FOUND);
     return role;
   }
 
-  async findAll(): Promise<RoleEntity[]> {
+  async findAll(query: PaginationQueryDto = new PaginationQueryDto()): Promise<PaginatedResponseDto<RoleEntity>> {
     try {
-      return await this.roleRepository.findAll();
+      const [data, total] = await this.roleRepository.findAll(query);
+      return new PaginatedResponseDto(data, total, query.page, query.limit);
     } catch (error) {
       throw new RolesException(
         'Roles not found',
