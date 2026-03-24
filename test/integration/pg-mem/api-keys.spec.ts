@@ -265,4 +265,41 @@ describe('ApiKeysService (integration)', () => {
     expect(redisMultiMock.set).toHaveBeenCalled();
     expect(redisMultiMock.sAdd).toHaveBeenCalled();
   });
+
+  it('findAll returns a paginated response of API keys ordered by client ASC', async () => {
+    // Use explicit UUIDs to avoid pg-mem UUID sequence collision after backup.restore()
+    await apiKeyRepository.save(
+      apiKeyRepository.create({
+        id: randomUUID(),
+        client: 'z-client',
+        key_fingerprint: computeHmac('z-client-plain-key'),
+        active: true,
+      }),
+    );
+    await apiKeyRepository.save(
+      apiKeyRepository.create({
+        id: randomUUID(),
+        client: 'a-client',
+        key_fingerprint: computeHmac('a-client-plain-key'),
+        active: true,
+      }),
+    );
+
+    const result = await service.findAll({ page: 1, limit: 20 });
+
+    expect(result.data).toBeDefined();
+    expect(result.total).toBeGreaterThanOrEqual(2);
+    expect(result.page).toBe(1);
+    expect(result.limit).toBe(20);
+    expect(result.totalPages).toBeGreaterThanOrEqual(1);
+
+    const clients = result.data.map((k) => k.client);
+    expect(clients).toContain('a-client');
+    expect(clients).toContain('z-client');
+
+    // Verify ASC ordering by client
+    const aIndex = clients.indexOf('a-client');
+    const zIndex = clients.indexOf('z-client');
+    expect(aIndex).toBeLessThan(zIndex);
+  });
 });
