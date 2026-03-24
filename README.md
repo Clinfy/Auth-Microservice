@@ -358,12 +358,12 @@ npm run seed
 
 The seeder (`src/database/seed/`) creates the following within a single transaction:
 
-| Entity                        | Count | Description                                                 |
-| ----------------------------- | ----- | ----------------------------------------------------------- |
-| **Permissions**               | 23    | All permission codes required by endpoint rules             |
-| **Endpoint Permission Rules** | 23    | Mappings from `@EndpointKey` values to required permissions |
-| **Roles**                     | 1     | `SUPER_ADMIN` role with all permissions                     |
-| **Users**                     | 1     | Admin user with `SUPER_ADMIN` role                          |
+| Entity                        | Count | Description                                                               |
+| ----------------------------- | ----- | ------------------------------------------------------------------------- |
+| **Permissions**               | 23    | 22 permission codes required by endpoint rules + `BASE_ACCESS` (reserved) |
+| **Endpoint Permission Rules** | 23    | Mappings from `@EndpointKey` values to required permissions               |
+| **Roles**                     | 1     | `SUPER_ADMIN` role with all 23 permissions                                |
+| **Users**                     | 1     | Admin user with `SUPER_ADMIN` role                                        |
 
 #### Default Admin Credentials
 
@@ -467,6 +467,31 @@ Swagger UI is available at `/docs` when the application is running.
 
 The OpenAPI spec is exported as `openapi.json` at startup.
 
+### Pagination
+
+All five `GET /*/all` list endpoints support offset-based pagination via query parameters:
+
+| Parameter | Type    | Default | Max | Description              |
+| --------- | ------- | ------- | --- | ------------------------ |
+| `page`    | integer | `1`     | —   | Page number (1-indexed)  |
+| `limit`   | integer | `20`    | 100 | Number of items per page |
+
+**Response shape** (`PaginatedResponseDto<T>`):
+
+```json
+{
+  "data": [...],
+  "total": 42,
+  "page": 1,
+  "limit": 20,
+  "totalPages": 3
+}
+```
+
+`totalPages` is `0` when there are no results.
+
+**Affected endpoints:** `GET /users/all`, `GET /roles/all`, `GET /permissions/all`, `GET /api-keys/all`, `GET /endpoint-permission-rules/all`.
+
 ### Users
 
 | Method | Path                      | Auth             | Description                       |
@@ -483,7 +508,7 @@ The OpenAPI spec is exported as `openapi.json` at startup.
 | `POST` | `/users/assign-role/:id`  | Cookie           | Assign roles to a user            |
 | `POST` | `/users/forgot-password`  | —                | Request password reset email      |
 | `POST` | `/users/reset-password`   | Query token      | Reset password with token         |
-| `GET`  | `/users/all`              | Cookie           | List all users                    |
+| `GET`  | `/users/all`              | Cookie           | List all users (paginated)        |
 
 ### Roles
 
@@ -494,29 +519,29 @@ The OpenAPI spec is exported as `openapi.json` at startup.
 | `PATCH`  | `/roles/assign-permissions/:id` | Cookie | Assign permissions to a role |
 | `DELETE` | `/roles/delete/:id`             | Cookie | Delete a role                |
 | `GET`    | `/roles/find/:id`               | Cookie | Get a role by ID             |
-| `GET`    | `/roles/all`                    | Cookie | List all roles               |
+| `GET`    | `/roles/all`                    | Cookie | List all roles (paginated)   |
 
 ### Permissions
 
-| Method   | Path                      | Auth   | Description             |
-| -------- | ------------------------- | ------ | ----------------------- |
-| `POST`   | `/permissions/new`        | Cookie | Create a new permission |
-| `PATCH`  | `/permissions/edit/:id`   | Cookie | Update a permission     |
-| `DELETE` | `/permissions/delete/:id` | Cookie | Delete a permission     |
-| `GET`    | `/permissions/find/:id`   | Cookie | Get a permission by ID  |
-| `GET`    | `/permissions/all`        | Cookie | List all permissions    |
+| Method   | Path                      | Auth   | Description                      |
+| -------- | ------------------------- | ------ | -------------------------------- |
+| `POST`   | `/permissions/new`        | Cookie | Create a new permission          |
+| `PATCH`  | `/permissions/edit/:id`   | Cookie | Update a permission              |
+| `DELETE` | `/permissions/delete/:id` | Cookie | Delete a permission              |
+| `GET`    | `/permissions/find/:id`   | Cookie | Get a permission by ID           |
+| `GET`    | `/permissions/all`        | Cookie | List all permissions (paginated) |
 
 ### API Keys
 
-| Method  | Path                               | Auth           | Description                |
-| ------- | ---------------------------------- | -------------- | -------------------------- |
-| `GET`   | `/api-keys/can-do/:perm`           | API Key header | Check API key permission   |
-| `POST`  | `/api-keys/generate`               | Cookie         | Generate a new API key     |
-| `GET`   | `/api-keys/find/:id`               | Cookie         | Get an API key by ID       |
-| `GET`   | `/api-keys/all`                    | Cookie         | List all API keys          |
-| `PATCH` | `/api-keys/change-permissions/:id` | Cookie         | Change API key permissions |
-| `PATCH` | `/api-keys/deactivate/:id`         | Cookie         | Deactivate an API key      |
-| `PATCH` | `/api-keys/activate/:id`           | Cookie         | Activate an API key        |
+| Method  | Path                               | Auth           | Description                   |
+| ------- | ---------------------------------- | -------------- | ----------------------------- |
+| `GET`   | `/api-keys/can-do/:perm`           | API Key header | Check API key permission      |
+| `POST`  | `/api-keys/generate`               | Cookie         | Generate a new API key        |
+| `GET`   | `/api-keys/find/:id`               | Cookie         | Get an API key by ID          |
+| `GET`   | `/api-keys/all`                    | Cookie         | List all API keys (paginated) |
+| `PATCH` | `/api-keys/change-permissions/:id` | Cookie         | Change API key permissions    |
+| `PATCH` | `/api-keys/deactivate/:id`         | Cookie         | Deactivate an API key         |
+| `PATCH` | `/api-keys/activate/:id`           | Cookie         | Activate an API key           |
 
 ### Sessions
 
@@ -535,7 +560,7 @@ The OpenAPI spec is exported as `openapi.json` at startup.
 | `PATCH`  | `/endpoint-permission-rules/enable/:id`                    | Cookie  | Enable a rule                    |
 | `PATCH`  | `/endpoint-permission-rules/disable/:id`                   | Cookie  | Disable a rule                   |
 | `DELETE` | `/endpoint-permission-rules/delete/:id`                    | Cookie  | Delete a rule                    |
-| `GET`    | `/endpoint-permission-rules/all`                           | Cookie  | List all rules                   |
+| `GET`    | `/endpoint-permission-rules/all`                           | Cookie  | List all rules (paginated)       |
 | `GET`    | `/endpoint-permission-rules/find/:id`                      | Cookie  | Get a rule by ID                 |
 | `GET`    | `/endpoint-permission-rules/get-endpoint-permissions/:key` | API Key | Get resolved permissions for key |
 
