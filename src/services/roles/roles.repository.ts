@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { RoleEntity } from 'src/entities/role.entity';
 import { Repository } from 'typeorm';
+import { PaginationQueryDto } from 'src/interfaces/DTO/pagination.dto';
 
 @Injectable()
 export class RolesRepository {
@@ -26,8 +27,12 @@ export class RolesRepository {
     return await this.ormRepository.findOneBy({ id });
   }
 
-  async findAll(): Promise<RoleEntity[]> {
-    return await this.ormRepository.find();
+  async findAll(query: PaginationQueryDto): Promise<[RoleEntity[], number]> {
+    const { page, limit } = query;
+    return await this.ormRepository.findAndCount({
+      skip: (page - 1) * limit,
+      take: limit,
+    });
   }
 
   async remove(role: RoleEntity): Promise<void> {

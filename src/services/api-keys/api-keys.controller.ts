@@ -6,6 +6,7 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   Req,
   UseGuards,
   UseInterceptors,
@@ -19,9 +20,12 @@ import {
   ApiOkResponse,
   ApiOperation,
   ApiParam,
+  ApiQuery,
   ApiSecurity,
   ApiTags,
   ApiUnauthorizedResponse,
+  ApiExtraModels,
+  getSchemaPath,
 } from '@nestjs/swagger';
 import { ApiKeyEntity } from 'src/entities/api-key.entity';
 import { AuthGuard } from 'src/common/guards/auth.guard';
@@ -31,6 +35,7 @@ import * as requestWithApi from 'src/interfaces/request-api-key';
 import * as requestUser from 'src/interfaces/request-user';
 import { EndpointKey } from 'src/common/decorators/endpoint-key.decorator';
 import { AssignPermissionDTO } from 'src/interfaces/DTO/assign.dto';
+import { PaginatedResponseDto, PaginationQueryDto } from 'src/interfaces/DTO/pagination.dto';
 
 @ApiTags('API Keys')
 @Controller('api-keys')
@@ -97,12 +102,26 @@ export class ApiKeysController {
   @UseInterceptors(ClassSerializerInterceptor)
   @ApiCookieAuth('auth_token')
   @ApiOperation({ summary: 'List all API keys' })
-  @ApiOkResponse({ type: [ApiKeyEntity] })
+  @ApiQuery({ name: 'page', required: false, type: Number, example: 1 })
+  @ApiQuery({ name: 'limit', required: false, type: Number, example: 20 })
+  @ApiExtraModels(ApiKeyEntity)
+  @ApiOkResponse({
+    description: 'Paginated list of API keys',
+    schema: {
+      properties: {
+        data: { type: 'array', items: { $ref: getSchemaPath(ApiKeyEntity) } },
+        total: { type: 'integer', example: 42 },
+        page: { type: 'integer', example: 1 },
+        limit: { type: 'integer', example: 20 },
+        totalPages: { type: 'integer', example: 3 },
+      },
+    },
+  })
   @ApiUnauthorizedResponse({ description: 'Missing or invalid auth cookie' })
   @ApiForbiddenResponse({ description: 'Insufficient permissions' })
   @Get('all')
-  findAll(): Promise<ApiKeyEntity[]> {
-    return this.apiKeysService.findAll();
+  findAll(@Query() query: PaginationQueryDto): Promise<PaginatedResponseDto<ApiKeyEntity>> {
+    return this.apiKeysService.findAll(query);
   }
 
   @UseGuards(AuthGuard)

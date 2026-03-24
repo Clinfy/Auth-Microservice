@@ -1,6 +1,7 @@
 import { PermissionsRepository } from './permissions.repository';
 import { PermissionsService } from './permissions.service';
 import { PermissionsException } from './permissions.exception';
+import { PaginatedResponseDto, PaginationQueryDto } from 'src/interfaces/DTO/pagination.dto';
 
 describe('PermissionsService', () => {
   let permissionRepository: jest.Mocked<Partial<PermissionsRepository>>;
@@ -84,9 +85,18 @@ describe('PermissionsService', () => {
     await expect(service.findOne(missingPermissionId)).rejects.toBeInstanceOf(PermissionsException);
   });
 
-  it('findAll returns list of permissions', async () => {
-    (permissionRepository.findAll as jest.Mock).mockResolvedValue([{ id: permissionId, code: 'PERM' }]);
+  it('findAll returns a PaginatedResponseDto wrapping all permissions', async () => {
+    const permissions = [{ id: permissionId, code: 'PERM' }];
+    (permissionRepository.findAll as jest.Mock).mockResolvedValue([permissions, 1]);
 
-    await expect(service.findAll()).resolves.toEqual([{ id: permissionId, code: 'PERM' }]);
+    const query = new PaginationQueryDto();
+    const result = await service.findAll(query);
+
+    expect(result).toBeInstanceOf(PaginatedResponseDto);
+    expect(result.data).toEqual(permissions);
+    expect(result.total).toBe(1);
+    expect(result.page).toBe(1);
+    expect(result.limit).toBe(20);
+    expect(result.totalPages).toBe(1);
   });
 });

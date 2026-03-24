@@ -251,4 +251,19 @@ describe('ApiKeysService (integration)', () => {
     expect(redisMultiMock.set).toHaveBeenCalled();
     expect(redisMultiMock.sAdd).toHaveBeenCalled();
   });
+
+  it('findAll returns a paginated response of API keys', async () => {
+    const permission = await permissionsService.create({ code: 'FINDALL_PERM' }, request);
+    await service.create({ client: 'findall-client', permissionIds: [permission.id] }, request);
+
+    const result = await service.findAll({ page: 1, limit: 20 });
+
+    expect(result.data).toBeDefined();
+    expect(result.total).toBeGreaterThanOrEqual(1);
+    expect(result.page).toBe(1);
+    expect(result.limit).toBe(20);
+    expect(result.totalPages).toBeGreaterThanOrEqual(1);
+    const clients = result.data.map((k) => k.client);
+    expect(clients).toContain('findall-client');
+  });
 });

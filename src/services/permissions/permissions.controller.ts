@@ -7,6 +7,7 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   Req,
   UseGuards,
   UseInterceptors,
@@ -21,13 +22,17 @@ import {
   ApiOkResponse,
   ApiOperation,
   ApiParam,
+  ApiQuery,
   ApiTags,
   ApiUnauthorizedResponse,
+  ApiExtraModels,
+  getSchemaPath,
 } from '@nestjs/swagger';
 import { PermissionEntity } from 'src/entities/permission.entity';
 import { CreatePermissionDTO } from 'src/interfaces/DTO/create.dto';
 import * as requestUser from 'src/interfaces/request-user';
 import { EndpointKey } from 'src/common/decorators/endpoint-key.decorator';
+import { PaginatedResponseDto, PaginationQueryDto } from 'src/interfaces/DTO/pagination.dto';
 
 @ApiTags('Permissions')
 @ApiCookieAuth('auth_token')
@@ -95,11 +100,25 @@ export class PermissionsController {
   @EndpointKey('permission.find')
   @UseInterceptors(ClassSerializerInterceptor)
   @ApiOperation({ summary: 'Find all permissions' })
-  @ApiOkResponse({ type: [PermissionEntity] })
+  @ApiQuery({ name: 'page', required: false, type: Number, example: 1 })
+  @ApiQuery({ name: 'limit', required: false, type: Number, example: 20 })
+  @ApiExtraModels(PermissionEntity)
+  @ApiOkResponse({
+    description: 'Paginated list of permissions',
+    schema: {
+      properties: {
+        data: { type: 'array', items: { $ref: getSchemaPath(PermissionEntity) } },
+        total: { type: 'integer', example: 42 },
+        page: { type: 'integer', example: 1 },
+        limit: { type: 'integer', example: 20 },
+        totalPages: { type: 'integer', example: 3 },
+      },
+    },
+  })
   @ApiUnauthorizedResponse({ description: 'Missing or invalid auth cookie' })
   @ApiForbiddenResponse({ description: 'Insufficient permissions' })
   @Get('all')
-  findAll(): Promise<PermissionEntity[]> {
-    return this.permissionService.findAll();
+  findAll(@Query() query: PaginationQueryDto): Promise<PaginatedResponseDto<PermissionEntity>> {
+    return this.permissionService.findAll(query);
   }
 }

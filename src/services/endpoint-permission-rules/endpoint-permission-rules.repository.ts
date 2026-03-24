@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { EndpointPermissionRulesEntity } from 'src/entities/endpoint-permission-rules.entity';
+import { PaginationQueryDto } from 'src/interfaces/DTO/pagination.dto';
 
 @Injectable()
 export class EndpointPermissionRulesRepository {
@@ -29,8 +30,12 @@ export class EndpointPermissionRulesRepository {
     return await this.ormRepository.findOneBy({ id });
   }
 
-  async findAll(): Promise<EndpointPermissionRulesEntity[]> {
-    return await this.ormRepository.find();
+  async findAll(query: PaginationQueryDto): Promise<[EndpointPermissionRulesEntity[], number]> {
+    const { page, limit } = query;
+    return await this.ormRepository.findAndCount({
+      skip: (page - 1) * limit,
+      take: limit,
+    });
   }
 
   async findByEndpointKey(endpointKeyName: string): Promise<EndpointPermissionRulesEntity | null> {

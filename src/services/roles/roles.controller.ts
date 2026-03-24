@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query, Req, UseGuards } from '@nestjs/common';
 import { RolesService } from 'src/services/roles/roles.service';
 import { AuthGuard } from 'src/common/guards/auth.guard';
 import {
@@ -9,8 +9,11 @@ import {
   ApiOkResponse,
   ApiOperation,
   ApiParam,
+  ApiQuery,
   ApiTags,
   ApiUnauthorizedResponse,
+  ApiExtraModels,
+  getSchemaPath,
 } from '@nestjs/swagger';
 import { RoleEntity } from 'src/entities/role.entity';
 import { AssignPermissionDTO } from 'src/interfaces/DTO/assign.dto';
@@ -18,6 +21,7 @@ import { PatchRoleDTO } from 'src/interfaces/DTO/patch.dto';
 import * as requestUser from 'src/interfaces/request-user';
 import { CreateRoleDTO } from 'src/interfaces/DTO/create.dto';
 import { EndpointKey } from 'src/common/decorators/endpoint-key.decorator';
+import { PaginatedResponseDto, PaginationQueryDto } from 'src/interfaces/DTO/pagination.dto';
 
 @ApiTags('Roles')
 @ApiCookieAuth('auth_token')
@@ -93,11 +97,25 @@ export class RolesController {
   @UseGuards(AuthGuard)
   @EndpointKey('roles.find')
   @ApiOperation({ summary: 'Find all roles' })
-  @ApiOkResponse({ type: [RoleEntity] })
+  @ApiQuery({ name: 'page', required: false, type: Number, example: 1 })
+  @ApiQuery({ name: 'limit', required: false, type: Number, example: 20 })
+  @ApiExtraModels(RoleEntity)
+  @ApiOkResponse({
+    description: 'Paginated list of roles',
+    schema: {
+      properties: {
+        data: { type: 'array', items: { $ref: getSchemaPath(RoleEntity) } },
+        total: { type: 'integer', example: 42 },
+        page: { type: 'integer', example: 1 },
+        limit: { type: 'integer', example: 20 },
+        totalPages: { type: 'integer', example: 3 },
+      },
+    },
+  })
   @ApiUnauthorizedResponse({ description: 'Missing or invalid auth cookie' })
   @ApiForbiddenResponse({ description: 'Insufficient permissions' })
   @Get('all')
-  findAll(): Promise<RoleEntity[]> {
-    return this.rolesService.findAll();
+  findAll(@Query() query: PaginationQueryDto): Promise<PaginatedResponseDto<RoleEntity>> {
+    return this.rolesService.findAll(query);
   }
 }
