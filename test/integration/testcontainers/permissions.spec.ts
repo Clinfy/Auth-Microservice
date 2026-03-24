@@ -112,4 +112,18 @@ describe('PermissionsService (integration)', () => {
     const codes = result.data.map((p) => p.code);
     expect(codes).toContain('PAGINATED_PERM');
   });
+
+  it('findAll returns permissions sorted by code ASC', async () => {
+    // Create permissions with intentionally out-of-order codes
+    await service.create({ code: 'Z_PERM' }, request);
+    await service.create({ code: 'A_PERM' }, request);
+
+    const result = await service.findAll({ page: 1, limit: 20 });
+
+    expect(result.data.length).toBeGreaterThanOrEqual(2);
+    const codes = result.data.map((p) => p.code);
+    for (let i = 0; i < codes.length - 1; i++) {
+      expect(codes[i].localeCompare(codes[i + 1])).toBeLessThanOrEqual(0);
+    }
+  });
 });

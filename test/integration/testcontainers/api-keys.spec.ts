@@ -266,4 +266,19 @@ describe('ApiKeysService (integration)', () => {
     const clients = result.data.map((k) => k.client);
     expect(clients).toContain('findall-client');
   });
+
+  it('findAll returns API keys sorted by client ASC', async () => {
+    const permission = await permissionsService.create({ code: 'SORT_PERM' }, request);
+    // Create API keys with intentionally out-of-order client names
+    await service.create({ client: 'z-client', permissionIds: [permission.id] }, request);
+    await service.create({ client: 'a-client', permissionIds: [permission.id] }, request);
+
+    const result = await service.findAll({ page: 1, limit: 20 });
+
+    expect(result.data.length).toBeGreaterThanOrEqual(2);
+    const clients = result.data.map((k) => k.client);
+    for (let i = 0; i < clients.length - 1; i++) {
+      expect(clients[i].localeCompare(clients[i + 1])).toBeLessThanOrEqual(0);
+    }
+  });
 });

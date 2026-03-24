@@ -432,4 +432,18 @@ describe('UsersService (integration)', () => {
     expect(result.limit).toBe(20);
     expect(result.totalPages).toBeGreaterThanOrEqual(1);
   });
+
+  it('findAll returns users sorted by email ASC', async () => {
+    // Register users with intentionally out-of-order emails
+    await usersService.register({ email: 'z-user@test.com', person_id: randomUUID() }, request);
+    await usersService.register({ email: 'a-user@test.com', person_id: randomUUID() }, request);
+
+    const result = await usersService.findAll({ page: 1, limit: 20 });
+
+    expect(result.data.length).toBeGreaterThanOrEqual(2);
+    const emails = result.data.map((u) => u.email);
+    for (let i = 0; i < emails.length - 1; i++) {
+      expect(emails[i].localeCompare(emails[i + 1])).toBeLessThanOrEqual(0);
+    }
+  });
 });

@@ -124,5 +124,19 @@ describe('PermissionsService (integration)', () => {
     const codes = result.data.map((p) => p.code);
     expect(codes).toContain('PAGINATED_PERM');
   });
+
+  it('findAll returns permissions sorted by code ASC', async () => {
+    // Use explicit UUIDs to avoid pg-mem UUID sequence collision after backup.restore()
+    await repository.save(repository.create({ id: randomUUID(), code: 'Z_PERM' }));
+    await repository.save(repository.create({ id: randomUUID(), code: 'A_PERM' }));
+
+    const result = await service.findAll({ page: 1, limit: 20 });
+
+    expect(result.data.length).toBeGreaterThanOrEqual(2);
+    const codes = result.data.map((p) => p.code);
+    for (let i = 0; i < codes.length - 1; i++) {
+      expect(codes[i].localeCompare(codes[i + 1])).toBeLessThanOrEqual(0);
+    }
+  });
 });
 const request = { user: null } as any;

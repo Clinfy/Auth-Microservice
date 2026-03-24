@@ -149,4 +149,18 @@ describe('RolesService (integration)', () => {
     const names = result.data.map((r) => r.name);
     expect(names).toContain('paginated-role');
   });
+
+  it('findAll returns roles sorted by name ASC', async () => {
+    // Create roles with intentionally out-of-order names
+    await service.create({ name: 'z-role' }, request);
+    await service.create({ name: 'a-role' }, request);
+
+    const result = await service.findAll({ page: 1, limit: 20 });
+
+    expect(result.data.length).toBeGreaterThanOrEqual(2);
+    const names = result.data.map((r) => r.name);
+    for (let i = 0; i < names.length - 1; i++) {
+      expect(names[i].localeCompare(names[i + 1])).toBeLessThanOrEqual(0);
+    }
+  });
 });
