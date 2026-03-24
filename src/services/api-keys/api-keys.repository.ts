@@ -32,6 +32,7 @@ export class ApiKeysRepository {
       relations: ['permissions'],
       skip: (page - 1) * limit,
       take: limit,
+      order: { client: 'ASC' },
     });
   }
 

@@ -32,6 +32,7 @@ export class PermissionsRepository {
     return await this.ormRepository.findAndCount({
       skip: (page - 1) * limit,
       take: limit,
+      order: {code: 'ASC'}
     });
   }
 

@@ -33,6 +33,7 @@ export class UsersRepository {
       relations: ['roles'],
       skip: (page - 1) * limit,
       take: limit,
+      order: { email: 'ASC' },
     });
   }
 

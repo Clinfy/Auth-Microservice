@@ -32,6 +32,7 @@ export class RolesRepository {
     return await this.ormRepository.findAndCount({
       skip: (page - 1) * limit,
       take: limit,
+      order: { name: 'ASC' },
     });
   }
 

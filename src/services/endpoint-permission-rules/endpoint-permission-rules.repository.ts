@@ -35,6 +35,7 @@ export class EndpointPermissionRulesRepository {
     return await this.ormRepository.findAndCount({
       skip: (page - 1) * limit,
       take: limit,
+      order: { endpoint_key_name: 'ASC' },
     });
   }
 
