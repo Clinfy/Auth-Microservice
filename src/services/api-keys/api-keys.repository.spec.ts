@@ -58,7 +58,7 @@ describe('ApiKeysRepository', () => {
       const query = Object.assign(new PaginationQueryDto(), { page: 1, limit: 20 });
       await repository.findAll(query);
 
-      expect(ormRepository.findAndCount).toHaveBeenCalledWith(expect.objectContaining({ order: { client: 'ASC' } }));
+      expect(ormRepository.findAndCount).toHaveBeenCalledWith(expect.objectContaining({ order: { client: 'ASC', id: "ASC" } }));
     });
 
     it('passes relations option with permissions to findAndCount', async () => {
