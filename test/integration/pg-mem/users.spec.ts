@@ -7,7 +7,7 @@ import { PermissionsService } from 'src/services/permissions/permissions.service
 import { UsersRepository } from 'src/services/users/users.repository';
 import { RolesRepository } from 'src/services/roles/roles.repository';
 import { PermissionsRepository } from 'src/services/permissions/permissions.repository';
-import { UserEntity } from 'src/entities/user.entity';
+import { UserEntity, UserStatus } from 'src/entities/user.entity';
 import { RoleEntity } from 'src/entities/role.entity';
 import { PermissionEntity } from 'src/entities/permission.entity';
 import { JwtService } from 'src/services/jwt/jwt.service';
@@ -433,13 +433,47 @@ describe('UsersService (integration)', () => {
     expect(redisServiceMock.raw.sRem).toHaveBeenCalledWith('user_sessions:user-1', 'sess-logout');
   });
 
-  it('findAll returns all registered users', async () => {
+  it('findAll returns a paginated response containing registered users', async () => {
     await usersService.register({ email: 'julia@example.com', person_id: randomUUID() }, request);
 
-    const users = await usersService.findAll();
-    const emails = users.map((u) => u.email);
+    const result = await usersService.findAll({ page: 1, limit: 20 });
 
+    expect(result.data).toBeDefined();
+    const emails = result.data.map((u) => u.email);
     expect(emails).toContain('julia@example.com');
-    expect(users.length).toBeGreaterThanOrEqual(1);
+    expect(result.total).toBeGreaterThanOrEqual(1);
+    expect(result.page).toBe(1);
+    expect(result.limit).toBe(20);
+    expect(result.totalPages).toBeGreaterThanOrEqual(1);
+  });
+
+  it('findAll returns users sorted by email ASC', async () => {
+    // Use explicit UUIDs to avoid pg-mem UUID sequence collision after backup.restore()
+    await userRepository.save(
+      userRepository.create({
+        id: randomUUID(),
+        email: 'z-user@test.com',
+        password: 'placeholder',
+        person_id: randomUUID(),
+        status: UserStatus.PENDING,
+      }),
+    );
+    await userRepository.save(
+      userRepository.create({
+        id: randomUUID(),
+        email: 'a-user@test.com',
+        password: 'placeholder',
+        person_id: randomUUID(),
+        status: UserStatus.PENDING,
+      }),
+    );
+
+    const result = await usersService.findAll({ page: 1, limit: 20 });
+
+    expect(result.data.length).toBeGreaterThanOrEqual(2);
+    const emails = result.data.map((u) => u.email);
+    for (let i = 0; i < emails.length - 1; i++) {
+      expect(emails[i].localeCompare(emails[i + 1])).toBeLessThanOrEqual(0);
+    }
   });
 });

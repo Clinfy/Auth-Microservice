@@ -3,6 +3,7 @@ import { ApiKeysService } from './api-keys.service';
 import { ApiKeysRepository } from './api-keys.repository';
 import { ApiKeyEntity } from 'src/entities/api-key.entity';
 import { ApiKeyErrorCodes, ApiKeyException } from 'src/services/api-keys/api-keys.exception.handler';
+import { PaginatedResponseDto, PaginationQueryDto } from 'src/interfaces/DTO/pagination.dto';
 
 // Mock node:crypto — HMAC-SHA256 replaces bcrypt
 const MOCK_PLAIN_KEY = 'ab'.repeat(32); // 64 hex chars from randomBytes(32)
@@ -142,11 +143,20 @@ describe('ApiKeysService', () => {
 
   // ── findAll ─────────────────────────────────────────────────────────
 
-  it('findAll returns API keys with relations', async () => {
-    (repository.findAll as jest.Mock).mockResolvedValue([{ id: apiKeyId }]);
+  it('findAll returns a PaginatedResponseDto wrapping API keys', async () => {
+    const keys = [{ id: apiKeyId }];
+    (repository.findAll as jest.Mock).mockResolvedValue([keys, 1]);
 
-    await expect(service.findAll()).resolves.toEqual([{ id: apiKeyId }]);
-    expect(repository.findAll).toHaveBeenCalled();
+    const query = new PaginationQueryDto();
+    const result = await service.findAll(query);
+
+    expect(result).toBeInstanceOf(PaginatedResponseDto);
+    expect(result.data).toEqual(keys);
+    expect(result.total).toBe(1);
+    expect(result.page).toBe(1);
+    expect(result.limit).toBe(20);
+    expect(result.totalPages).toBe(1);
+    expect(repository.findAll).toHaveBeenCalledWith(query);
   });
 
   // ── findOne ─────────────────────────────────────────────────────────

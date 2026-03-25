@@ -3,6 +3,7 @@ import { PermissionsService } from './permissions.service';
 import { CreatePermissionDTO } from 'src/interfaces/DTO/create.dto';
 import { PatchPermissionDTO } from 'src/interfaces/DTO/patch.dto';
 import { PermissionEntity } from 'src/entities/permission.entity';
+import { PaginatedResponseDto, PaginationQueryDto } from 'src/interfaces/DTO/pagination.dto';
 
 describe('PermissionsController', () => {
   let controller: PermissionsController;
@@ -66,14 +67,21 @@ describe('PermissionsController', () => {
     expect(service.findOne).toHaveBeenCalledWith(permissionId);
   });
 
-  it('should list all permissions', async () => {
+  it('should list all permissions as a paginated response', async () => {
     const permissions = [
       { id: permissionId, code: 'P1' },
       { id: secondPermissionId, code: 'P2' },
     ] as PermissionEntity[];
-    service.findAll.mockResolvedValue(permissions);
+    const query = new PaginationQueryDto();
+    const paginated = new PaginatedResponseDto(permissions, 2, query.page, query.limit);
+    service.findAll.mockResolvedValue(paginated);
 
-    await expect(controller.findAll()).resolves.toEqual(permissions);
-    expect(service.findAll).toHaveBeenCalledTimes(1);
+    const result = await controller.findAll(query);
+    expect(result.data).toEqual(permissions);
+    expect(result.total).toBe(2);
+    expect(result.page).toBe(1);
+    expect(result.limit).toBe(20);
+    expect(result.totalPages).toBe(1);
+    expect(service.findAll).toHaveBeenCalledWith(query);
   });
 });

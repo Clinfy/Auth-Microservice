@@ -6,6 +6,8 @@ import { AuthInterface } from 'src/interfaces/auth.interface';
 import { AssignRoleDTO } from 'src/interfaces/DTO/assign.dto';
 import { ForgotPasswordDTO, ResetPasswordDTO } from 'src/interfaces/DTO/reset-password.dto';
 import { ActivateUserDTO } from 'src/interfaces/DTO/activate.dto';
+import { PaginatedResponseDto, PaginationQueryDto } from 'src/interfaces/DTO/pagination.dto';
+import { UserEntity } from 'src/entities/user.entity';
 
 describe('UsersController', () => {
   let controller: UsersController;
@@ -115,18 +117,25 @@ describe('UsersController', () => {
     });
   });
 
-  it('should return all users', async () => {
+  it('should return all users as a paginated response', async () => {
     const users = [
       {
         id: userId,
         email: 'user@example.com',
         person_id: '77777777-7777-7777-7777-777777777777',
       },
-    ] as any;
-    service.findAll.mockResolvedValue(users);
+    ] as UserEntity[];
+    const query = new PaginationQueryDto();
+    const paginated = new PaginatedResponseDto(users, 1, query.page, query.limit);
+    service.findAll.mockResolvedValue(paginated);
 
-    await expect(controller.findAll()).resolves.toEqual(users);
-    expect(service.findAll).toHaveBeenCalledTimes(1);
+    const result = await controller.findAll(query);
+    expect(result.data).toEqual(users);
+    expect(result.total).toBe(1);
+    expect(result.page).toBe(1);
+    expect(result.limit).toBe(20);
+    expect(result.totalPages).toBe(1);
+    expect(service.findAll).toHaveBeenCalledWith(query);
   });
 
   it('should assign roles to the user', async () => {

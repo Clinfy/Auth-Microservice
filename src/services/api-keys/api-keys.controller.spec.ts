@@ -2,6 +2,7 @@ import { ApiKeysController } from './api-keys.controller';
 import { ApiKeysService } from './api-keys.service';
 import { CreateApiKeyDTO } from 'src/interfaces/DTO/api-key.dto';
 import { ApiKeyEntity } from 'src/entities/api-key.entity';
+import { PaginatedResponseDto, PaginationQueryDto } from 'src/interfaces/DTO/pagination.dto';
 
 describe('ApiKeysController', () => {
   let controller: ApiKeysController;
@@ -52,12 +53,19 @@ describe('ApiKeysController', () => {
     expect(service.create).toHaveBeenCalledWith(dto, request);
   });
 
-  it('should return all api keys from the service', async () => {
+  it('should return all api keys as a paginated response', async () => {
     const apiKeys = [{ id: apiKeyId } as ApiKeyEntity];
-    service.findAll.mockResolvedValue(apiKeys);
+    const query = new PaginationQueryDto();
+    const paginated = new PaginatedResponseDto(apiKeys, 1, query.page, query.limit);
+    service.findAll.mockResolvedValue(paginated);
 
-    await expect(controller.findAll()).resolves.toEqual(apiKeys);
-    expect(service.findAll).toHaveBeenCalledTimes(1);
+    const result = await controller.findAll(query);
+    expect(result.data).toEqual(apiKeys);
+    expect(result.total).toBe(1);
+    expect(result.page).toBe(1);
+    expect(result.limit).toBe(20);
+    expect(result.totalPages).toBe(1);
+    expect(service.findAll).toHaveBeenCalledWith(query);
   });
 
   it('should deactivate an api key via the service', async () => {

@@ -4,6 +4,7 @@ import { CreateRoleDTO } from 'src/interfaces/DTO/create.dto';
 import { PatchRoleDTO } from 'src/interfaces/DTO/patch.dto';
 import { AssignPermissionDTO } from 'src/interfaces/DTO/assign.dto';
 import { RoleEntity } from 'src/entities/role.entity';
+import { PaginatedResponseDto, PaginationQueryDto } from 'src/interfaces/DTO/pagination.dto';
 
 describe('RolesController', () => {
   let controller: RolesController;
@@ -78,11 +79,18 @@ describe('RolesController', () => {
     expect(service.findOne).toHaveBeenCalledWith(roleId);
   });
 
-  it('should list all roles', async () => {
+  it('should list all roles as a paginated response', async () => {
     const roles = [{ id: roleId, name: 'a' }] as RoleEntity[];
-    service.findAll.mockResolvedValue(roles);
+    const query = new PaginationQueryDto();
+    const paginated = new PaginatedResponseDto(roles, 1, query.page, query.limit);
+    service.findAll.mockResolvedValue(paginated);
 
-    await expect(controller.findAll()).resolves.toEqual(roles);
-    expect(service.findAll).toHaveBeenCalledTimes(1);
+    const result = await controller.findAll(query);
+    expect(result.data).toEqual(roles);
+    expect(result.total).toBe(1);
+    expect(result.page).toBe(1);
+    expect(result.limit).toBe(20);
+    expect(result.totalPages).toBe(1);
+    expect(service.findAll).toHaveBeenCalledWith(query);
   });
 });

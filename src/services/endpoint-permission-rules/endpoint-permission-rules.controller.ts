@@ -7,6 +7,7 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   Req,
   UseGuards,
   UseInterceptors,
@@ -30,10 +31,14 @@ import {
   ApiOkResponse,
   ApiOperation,
   ApiParam,
+  ApiQuery,
   ApiSecurity,
   ApiTags,
   ApiUnauthorizedResponse,
+  ApiExtraModels,
+  getSchemaPath,
 } from '@nestjs/swagger';
+import { PaginatedResponseDto, PaginationQueryDto } from 'src/interfaces/DTO/pagination.dto';
 
 @ApiTags('Endpoint Permission Rules')
 @Controller('endpoint-permission-rules')
@@ -138,12 +143,26 @@ export class EndpointPermissionRulesController {
   @EndpointKey('endpoint-permission-rules.find')
   @ApiCookieAuth('auth_token')
   @ApiOperation({ summary: 'List all endpoint permission rules' })
-  @ApiOkResponse({ type: [EndpointPermissionRulesEntity] })
+  @ApiQuery({ name: 'page', required: false, type: Number, example: 1 })
+  @ApiQuery({ name: 'limit', required: false, type: Number, example: 20 })
+  @ApiExtraModels(EndpointPermissionRulesEntity)
+  @ApiOkResponse({
+    description: 'Paginated list of endpoint permission rules',
+    schema: {
+      properties: {
+        data: { type: 'array', items: { $ref: getSchemaPath(EndpointPermissionRulesEntity) } },
+        total: { type: 'integer', example: 42 },
+        page: { type: 'integer', example: 1 },
+        limit: { type: 'integer', example: 20 },
+        totalPages: { type: 'integer', example: 3 },
+      },
+    },
+  })
   @ApiUnauthorizedResponse({ description: 'Missing or invalid auth cookie' })
   @ApiForbiddenResponse({ description: 'Insufficient permissions' })
   @Get('all')
-  findAll(): Promise<EndpointPermissionRulesEntity[]> {
-    return this.endpointPermissionRulesService.findAll();
+  findAll(@Query() query: PaginationQueryDto): Promise<PaginatedResponseDto<EndpointPermissionRulesEntity>> {
+    return this.endpointPermissionRulesService.findAll(query);
   }
 
   @UseGuards(AuthGuard)

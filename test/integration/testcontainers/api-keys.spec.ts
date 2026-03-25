@@ -251,4 +251,34 @@ describe('ApiKeysService (integration)', () => {
     expect(redisMultiMock.set).toHaveBeenCalled();
     expect(redisMultiMock.sAdd).toHaveBeenCalled();
   });
+
+  it('findAll returns a paginated response of API keys', async () => {
+    const permission = await permissionsService.create({ code: 'FINDALL_PERM' }, request);
+    await service.create({ client: 'findall-client', permissionIds: [permission.id] }, request);
+
+    const result = await service.findAll({ page: 1, limit: 20 });
+
+    expect(result.data).toBeDefined();
+    expect(result.total).toBeGreaterThanOrEqual(1);
+    expect(result.page).toBe(1);
+    expect(result.limit).toBe(20);
+    expect(result.totalPages).toBeGreaterThanOrEqual(1);
+    const clients = result.data.map((k) => k.client);
+    expect(clients).toContain('findall-client');
+  });
+
+  it('findAll returns API keys sorted by client ASC', async () => {
+    const permission = await permissionsService.create({ code: 'SORT_PERM' }, request);
+    // Create API keys with intentionally out-of-order client names
+    await service.create({ client: 'z-client', permissionIds: [permission.id] }, request);
+    await service.create({ client: 'a-client', permissionIds: [permission.id] }, request);
+
+    const result = await service.findAll({ page: 1, limit: 20 });
+
+    expect(result.data.length).toBeGreaterThanOrEqual(2);
+    const clients = result.data.map((k) => k.client);
+    for (let i = 0; i < clients.length - 1; i++) {
+      expect(clients[i].localeCompare(clients[i + 1])).toBeLessThanOrEqual(0);
+    }
+  });
 });

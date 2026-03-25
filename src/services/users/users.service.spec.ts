@@ -9,6 +9,7 @@ import { UserEntity, UserStatus } from 'src/entities/user.entity';
 import { RedisService } from 'src/common/redis/redis.service';
 import { RegisterUserDTO } from 'src/interfaces/DTO/register.dto';
 import { SessionsService } from 'src/services/sessions/sessions.service';
+import { PaginatedResponseDto, PaginationQueryDto } from 'src/interfaces/DTO/pagination.dto';
 
 jest.mock('bcrypt', () => ({
   compare: jest.fn(),
@@ -490,12 +491,20 @@ describe('UsersService', () => {
   });
 
   describe('findAll', () => {
-    it('delegates to userRepository.findAll', async () => {
+    it('returns a PaginatedResponseDto wrapping users from repository', async () => {
       const users = [{ id: 'u-1' }, { id: 'u-2' }] as UserEntity[];
-      (userRepository.findAll as jest.Mock).mockResolvedValue(users);
+      (userRepository.findAll as jest.Mock).mockResolvedValue([users, 2]);
 
-      await expect(service.findAll()).resolves.toEqual(users);
-      expect(userRepository.findAll).toHaveBeenCalledTimes(1);
+      const query = new PaginationQueryDto();
+      const result = await service.findAll(query);
+
+      expect(result).toBeInstanceOf(PaginatedResponseDto);
+      expect(result.data).toEqual(users);
+      expect(result.total).toBe(2);
+      expect(result.page).toBe(1);
+      expect(result.limit).toBe(20);
+      expect(result.totalPages).toBe(1);
+      expect(userRepository.findAll).toHaveBeenCalledWith(query);
     });
   });
 

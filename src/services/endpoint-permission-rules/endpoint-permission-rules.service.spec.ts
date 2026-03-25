@@ -5,6 +5,7 @@ import { RedisService } from 'src/common/redis/redis.service';
 import { EndpointPermissionRulesEntity } from 'src/entities/endpoint-permission-rules.entity';
 import { EndpointPRException } from 'src/services/endpoint-permission-rules/endpoint-permission-rules.exception';
 import { Logger } from 'winston';
+import { PaginatedResponseDto, PaginationQueryDto } from 'src/interfaces/DTO/pagination.dto';
 
 // ────────────────────────────────────────────────────────────────
 // Helpers
@@ -359,6 +360,24 @@ describe('EndpointPermissionRulesService', () => {
         await service.disableRule('rule-1');
 
         expect(invalidateRuleCacheSpy).toHaveBeenCalledWith('users.disable');
+      });
+    });
+
+    describe('findAll()', () => {
+      it('returns a PaginatedResponseDto wrapping all endpoint permission rules', async () => {
+        const rules = [makeRule({ endpoint_key_name: 'users.create' })];
+        repository.findAll.mockResolvedValue([rules, 1]);
+
+        const query = new PaginationQueryDto();
+        const result = await service.findAll(query);
+
+        expect(result).toBeInstanceOf(PaginatedResponseDto);
+        expect(result.data).toEqual(rules);
+        expect(result.total).toBe(1);
+        expect(result.page).toBe(1);
+        expect(result.limit).toBe(20);
+        expect(result.totalPages).toBe(1);
+        expect(repository.findAll).toHaveBeenCalledWith(query);
       });
     });
 

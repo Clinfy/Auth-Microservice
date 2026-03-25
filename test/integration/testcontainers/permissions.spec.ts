@@ -98,4 +98,32 @@ describe('PermissionsService (integration)', () => {
     const stored = await repository.findOneBy({ id: created.id });
     expect(stored).toBeNull();
   });
+
+  it('findAll returns a paginated response of permissions', async () => {
+    await service.create({ code: 'PAGINATED_PERM' }, request);
+
+    const result = await service.findAll({ page: 1, limit: 20 });
+
+    expect(result.data).toBeDefined();
+    expect(result.total).toBeGreaterThanOrEqual(1);
+    expect(result.page).toBe(1);
+    expect(result.limit).toBe(20);
+    expect(result.totalPages).toBeGreaterThanOrEqual(1);
+    const codes = result.data.map((p) => p.code);
+    expect(codes).toContain('PAGINATED_PERM');
+  });
+
+  it('findAll returns permissions sorted by code ASC', async () => {
+    // Create permissions with intentionally out-of-order codes
+    await service.create({ code: 'Z_PERM' }, request);
+    await service.create({ code: 'A_PERM' }, request);
+
+    const result = await service.findAll({ page: 1, limit: 20 });
+
+    expect(result.data.length).toBeGreaterThanOrEqual(2);
+    const codes = result.data.map((p) => p.code);
+    for (let i = 0; i < codes.length - 1; i++) {
+      expect(codes[i].localeCompare(codes[i + 1])).toBeLessThanOrEqual(0);
+    }
+  });
 });

@@ -110,5 +110,33 @@ describe('PermissionsService (integration)', () => {
     const stored = await repository.findOneBy({ id: created.id });
     expect(stored).toBeNull();
   });
+
+  it('findAll returns a paginated response of permissions', async () => {
+    const created = await service.create({ code: 'PAGINATED_PERM' }, request);
+
+    const result = await service.findAll({ page: 1, limit: 20 });
+
+    expect(result.data).toBeDefined();
+    expect(result.total).toBeGreaterThanOrEqual(1);
+    expect(result.page).toBe(1);
+    expect(result.limit).toBe(20);
+    expect(result.totalPages).toBeGreaterThanOrEqual(1);
+    const codes = result.data.map((p) => p.code);
+    expect(codes).toContain('PAGINATED_PERM');
+  });
+
+  it('findAll returns permissions sorted by code ASC', async () => {
+    // Use explicit UUIDs to avoid pg-mem UUID sequence collision after backup.restore()
+    await repository.save(repository.create({ id: randomUUID(), code: 'Z_PERM' }));
+    await repository.save(repository.create({ id: randomUUID(), code: 'A_PERM' }));
+
+    const result = await service.findAll({ page: 1, limit: 20 });
+
+    expect(result.data.length).toBeGreaterThanOrEqual(2);
+    const codes = result.data.map((p) => p.code);
+    for (let i = 0; i < codes.length - 1; i++) {
+      expect(codes[i].localeCompare(codes[i + 1])).toBeLessThanOrEqual(0);
+    }
+  });
 });
 const request = { user: null } as any;

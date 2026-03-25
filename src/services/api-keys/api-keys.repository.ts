@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { ApiKeyEntity } from 'src/entities/api-key.entity';
 import { EntityManager, In, Repository } from 'typeorm';
+import { PaginationQueryDto } from 'src/interfaces/DTO/pagination.dto';
 
 @Injectable()
 export class ApiKeysRepository {
@@ -25,8 +26,14 @@ export class ApiKeysRepository {
     });
   }
 
-  async findAll(): Promise<ApiKeyEntity[]> {
-    return await this.ormRepository.find({ relations: ['permissions'] });
+  async findAll(query: PaginationQueryDto): Promise<[ApiKeyEntity[], number]> {
+    const { page, limit } = query;
+    return await this.ormRepository.findAndCount({
+      relations: ['permissions'],
+      skip: (page - 1) * limit,
+      take: limit,
+      order: { client: 'ASC', id: 'ASC' },
+    });
   }
 
   async findAllActive(): Promise<ApiKeyEntity[]> {

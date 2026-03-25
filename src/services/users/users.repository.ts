@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { UserEntity } from 'src/entities/user.entity';
 import { EntityManager, Repository } from 'typeorm';
+import { PaginationQueryDto } from 'src/interfaces/DTO/pagination.dto';
 
 @Injectable()
 export class UsersRepository {
@@ -26,8 +27,14 @@ export class UsersRepository {
     return await this.ormRepository.findOneBy({ id });
   }
 
-  async findAll(): Promise<UserEntity[]> {
-    return await this.ormRepository.find({ relations: ['roles'] });
+  async findAll(query: PaginationQueryDto): Promise<[UserEntity[], number]> {
+    const { page, limit } = query;
+    return await this.ormRepository.findAndCount({
+      relations: ['roles'],
+      skip: (page - 1) * limit,
+      take: limit,
+      order: { email: 'ASC' },
+    });
   }
 
   private getManager(manager?: EntityManager): Repository<UserEntity> {

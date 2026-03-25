@@ -1,6 +1,7 @@
 import { HttpStatus, Inject, Injectable, OnModuleInit } from '@nestjs/common';
 import { EndpointPermissionRulesRepository } from 'src/services/endpoint-permission-rules/endpoint-permission-rules.repository';
 import { PermissionsService } from 'src/services/permissions/permissions.service';
+import { PaginatedResponseDto, PaginationQueryDto } from 'src/interfaces/DTO/pagination.dto';
 import {
   CreateEndpointPermissionRulesDTO,
   PatchEndpointPermissionRulesDTO,
@@ -220,9 +221,12 @@ export class EndpointPermissionRulesService implements OnModuleInit {
     return endpointPermissionRule;
   }
 
-  async findAll(): Promise<EndpointPermissionRulesEntity[]> {
+  async findAll(
+    query: PaginationQueryDto = new PaginationQueryDto(),
+  ): Promise<PaginatedResponseDto<EndpointPermissionRulesEntity>> {
     try {
-      return await this.endpointPermissionRulesRepository.findAll();
+      const [data, total] = await this.endpointPermissionRulesRepository.findAll(query);
+      return new PaginatedResponseDto(data, total, query.page, query.limit);
     } catch (error) {
       throw new EndpointPRException(
         'Endpoint Permission Rules not found',

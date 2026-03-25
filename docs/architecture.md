@@ -9,6 +9,8 @@ Technical architecture documentation for the Auth-Microservice.
 - [Error Handling Architecture](#error-handling-architecture)
 - [Cron Jobs](#cron-jobs)
 - [External Dependencies](#external-dependencies)
+- [Pagination](#pagination)
+- [Database Seeding](#database-seeding)
 - [Key Design Decisions](#key-design-decisions)
 
 ---
@@ -153,6 +155,86 @@ All Redis operations are resilient — failures are caught, logged, and the serv
 
 - **Audit queue** (`audit_queue`): Receives audit events from the outbox publisher.
 - **Email client**: Publishes email requests (password reset, etc.) to a dedicated queue.
+
+---
+
+## Pagination
+
+All five `GET /*/all` list endpoints return paginated results using a shared set of DTOs defined in `src/interfaces/DTO/pagination.dto.ts`.
+
+### Query Parameters (`PaginationQueryDto`)
+
+| Parameter | Type    | Default | Max | Validation             |
+| --------- | ------- | ------- | --- | ---------------------- |
+| `page`    | integer | `1`     | —   | `@Min(1)`, 1-indexed   |
+| `limit`   | integer | `20`    | 100 | `@Min(1)`, `@Max(100)` |
+
+### Response Shape (`PaginatedResponseDto<T>`)
+
+```typescript
+class PaginatedResponseDto<T> {
+  data: T[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number; // 0 when total === 0
+}
+```
+
+`totalPages` is computed as `Math.ceil(total / limit)` and is `0` when there are no results.
+
+### Affected Endpoints
+
+| Endpoint                             | Entity                          |
+| ------------------------------------ | ------------------------------- |
+| `GET /users/all`                     | `UserEntity`                    |
+| `GET /roles/all`                     | `RoleEntity`                    |
+| `GET /permissions/all`               | `PermissionEntity`              |
+| `GET /api-keys/all`                  | `ApiKeyEntity`                  |
+| `GET /endpoint-permission-rules/all` | `EndpointPermissionRulesEntity` |
+
+---
+
+## Database Seeding
+
+The seeding system (`src/database/seed/`) provides a CLI command to bootstrap a fresh database with the minimum required data to make all endpoints accessible.
+
+### Command
+
+```bash
+npm run seed
+```
+
+Internally this runs `ts-node src/database/seed/seed.command.ts`, which bootstraps a minimal NestJS application context (no HTTP server), executes all seed operations in a single transaction, and exits.
+
+### Seed Order and Idempotency
+
+Operations run in dependency order within one transaction:
+
+1. **Permissions** — `upsert` with `conflictPaths: ['code']`.
+2. **Endpoint Permission Rules** — two-phase: upsert base entity, then assign `permissions` ManyToMany relation.
+3. **Roles** — upsert role, then assign all permissions (empty `permission_codes` array = all permissions).
+4. **Users** — insert on first run (password hashed by `@BeforeInsert`); on re-run, updates roles only without re-hashing the password.
+
+Safe to run multiple times: existing records are updated, not duplicated.
+
+### Seeded Data Summary
+
+| Entity                    | Count | Notes                                                             |
+| ------------------------- | ----- | ----------------------------------------------------------------- |
+| Permissions               | 23    | 22 EPR-mapped codes + `BASE_ACCESS` (reserved, not mapped to EPR) |
+| Endpoint Permission Rules | 23    | One rule per `@EndpointKey` value; all enabled by default         |
+| Roles                     | 1     | `SUPER_ADMIN` with all 23 permissions                             |
+| Users                     | 1     | `admin@admin.com` / `admin` — **change in production**            |
+
+### Source Files
+
+| File                                | Purpose                                |
+| ----------------------------------- | -------------------------------------- |
+| `src/database/seed/seed.command.ts` | CLI entry point — bootstraps and runs  |
+| `src/database/seed/seed.module.ts`  | Minimal NestJS module for seeding      |
+| `src/database/seed/seed.service.ts` | Core seed logic (transaction, upserts) |
+| `src/database/seed/seed.data.ts`    | Seed data constants                    |
 
 ---
 
