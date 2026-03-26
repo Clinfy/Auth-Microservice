@@ -29,6 +29,7 @@ import { AllExceptionsFilter } from 'src/common/filters/all-exceptions.filter';
 import { ObservabilityModule } from 'src/observability/observability.module';
 import { EndpointPermissionRulesModule } from 'src/services/endpoint-permission-rules/endpoint-permission-rules.module';
 import { IsUniqueEndpointKeyNameConstraint } from 'src/common/validators/unique-endpoint-key.validator';
+import { OutboxCleanupService } from 'src/cron/outbox-cleanup.service';
 
 @Module({
   imports: [
@@ -103,6 +104,7 @@ import { IsUniqueEndpointKeyNameConstraint } from 'src/common/validators/unique-
     IsUniqueEndpointKeyNameConstraint,
     OutboxPublisherService,
     OutboxSubscriberService,
+    OutboxCleanupService,
     EprCacheReconciliationService,
     ApiKeysCacheReconciliationService,
   ],
