@@ -43,6 +43,7 @@ describe('UsersService', () => {
     redisService = {
       raw: {
         get: jest.fn(),
+        getDel: jest.fn(),
         set: jest.fn().mockResolvedValue('OK'),
         sAdd: jest.fn().mockResolvedValue(1),
         pExpire: jest.fn().mockResolvedValue(true),
@@ -260,7 +261,7 @@ describe('UsersService', () => {
 
   describe('resetPassword', () => {
     it('updates password and clears token when payload valid', async () => {
-      redisService.raw.get.mockResolvedValue(JSON.stringify({ id: 'user-1' }));
+      redisService.raw.getDel.mockResolvedValue(JSON.stringify({ id: 'user-1' }));
       const storedUser: any = {
         id: 'user-1',
         email: 'user@example.com',
@@ -278,7 +279,6 @@ describe('UsersService', () => {
           password: 'new-password',
         }),
       );
-      expect(redisService.raw.del).toHaveBeenCalledWith('reset_password:token-123');
       expect(emailService.confirmPasswordChange).toHaveBeenCalledWith('user@example.com');
     });
 

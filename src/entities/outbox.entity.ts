@@ -1,11 +1,13 @@
-import { Column, CreateDateColumn, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, CreateDateColumn, Entity, Index, PrimaryGeneratedColumn } from 'typeorm';
 
 export enum OutboxStatus {
   PENDING = 'PENDING',
+  PROCESSING = 'PROCESSING',
   SENT = 'SENT',
   FAILED = 'FAILED',
 }
 
+@Index('idx_outbox_sent_cleanup', ['status'], { where: '"status" = \'SENT\'' })
 @Entity('outbox')
 export class OutboxEntity {
   @PrimaryGeneratedColumn('uuid')
@@ -22,6 +24,9 @@ export class OutboxEntity {
 
   @Column({ type: 'enum', enum: OutboxStatus, default: OutboxStatus.PENDING })
   status: OutboxStatus;
+
+  @Column({ type: 'timestamptz', nullable: true })
+  claimed_at: Date | null;
 
   @CreateDateColumn()
   created_at: Date;
