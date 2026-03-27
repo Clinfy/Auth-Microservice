@@ -25,6 +25,7 @@ import { SessionsModule } from 'src/services/sessions/sessions.module';
 import { validate } from 'src/config/env-validation';
 import { WinstonModule } from 'nest-winston';
 import winston from 'winston';
+import 'winston-daily-rotate-file';
 import { AllExceptionsFilter } from 'src/common/filters/all-exceptions.filter';
 import { ObservabilityModule } from 'src/observability/observability.module';
 import { EndpointPermissionRulesModule } from 'src/services/endpoint-permission-rules/endpoint-permission-rules.module';
@@ -76,8 +77,19 @@ import { OutboxCleanupService } from 'src/cron/outbox-cleanup.service';
       ),
       transports: [
         //new winston.transports.Console(),
-        new winston.transports.File({ filename: 'logs/error.log', level: 'error' }),
-        new winston.transports.File({ filename: 'logs/combined.log' }),
+        new winston.transports.DailyRotateFile({
+          filename: 'logs/error-%DATE%.log',
+          datePattern: 'YYYY-MM-DD',
+          level: 'error',
+          maxSize: '5m',
+          maxFiles: '14d',
+        }),
+        new winston.transports.DailyRotateFile({
+          filename: 'logs/combined-%DATE%.log',
+          datePattern: 'YYYY-MM-DD',
+          maxSize: '10m',
+          maxFiles: '30d',
+        }),
       ],
     }),
 
