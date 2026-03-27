@@ -114,8 +114,8 @@ export class ApiKeysService implements OnModuleInit {
     }
 
     apiKey.active = false;
-    await this.apiKeysRepository.save(apiKey);
     await this.invalidateApiKeyCache(apiKey);
+    await this.apiKeysRepository.save(apiKey);
 
     return { message: `API key ${id} ${apiKey.client} deactivated` };
   }
