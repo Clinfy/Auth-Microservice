@@ -143,8 +143,9 @@ export class ApiKeysService implements OnModuleInit {
       const apiKey = await this.findOne(id);
 
       apiKey.permissions = await Promise.all(dto.permissionsIds.map((id) => this.permissionService.findOne(id)));
-      await this.invalidateApiKeyCache(apiKey);
       await this.apiKeysRepository.save(apiKey);
+      await this.invalidateApiKeyCache(apiKey);
+      await this.loadApiKeyToRedis(apiKey);
       return apiKey;
     } catch (error) {
       throw new ApiKeyException(
