@@ -25,6 +25,9 @@ export class OutboxEntity {
   @Column({ type: 'enum', enum: OutboxStatus, default: OutboxStatus.PENDING })
   status: OutboxStatus;
 
+  @Column({ type: 'timestamptz', nullable: true })
+  claimed_at: Date | null;
+
   @CreateDateColumn()
   created_at: Date;
 }

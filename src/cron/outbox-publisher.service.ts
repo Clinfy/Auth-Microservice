@@ -4,7 +4,7 @@ import { ClientProxy } from '@nestjs/microservices';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { Logger } from 'winston';
-import { DataSource, In, Repository } from 'typeorm';
+import { Brackets, DataSource, In, Repository } from 'typeorm';
 import { lastValueFrom } from 'rxjs';
 
 import { OutboxEntity, OutboxStatus } from 'src/entities/outbox.entity';
@@ -14,6 +14,7 @@ import { serializeError } from 'src/common/utils/logger-format.util';
 @Injectable()
 export class OutboxPublisherService {
   private static readonly BATCH_SIZE = 100;
+  private static readonly PROCESSING_TIMEOUT_MS = 60_000;
 
   constructor(
     @InjectRepository(OutboxEntity)
@@ -31,7 +32,7 @@ export class OutboxPublisherService {
 
   @Cron(CronExpression.EVERY_10_SECONDS)
   private async handleAuditEvents(): Promise<void> {
-    const claimedEvents = await this.claimPendingEvents();
+    const claimedEvents = await this.claimAvailableEvents();
 
     this.metrics.outboxBatchSize.set(claimedEvents.length);
 
@@ -42,11 +43,13 @@ export class OutboxPublisherService {
 
           await this.outboxRepository.update(event.id, {
             status: OutboxStatus.SENT,
+            claimed_at: null,
           });
         });
       } catch (error) {
         await this.outboxRepository.update(event.id, {
           status: OutboxStatus.PENDING,
+          claimed_at: null,
         });
 
         this.logger.warn('Error publishing event', {
@@ -60,16 +63,35 @@ export class OutboxPublisherService {
     }
   }
 
-  private async claimPendingEvents(): Promise<OutboxEntity[]> {
+  private async claimAvailableEvents(): Promise<OutboxEntity[]> {
     return this.dataSource.transaction(async (manager) => {
+      const now = new Date();
+      const staleBefore = new Date(now.getTime() - OutboxPublisherService.PROCESSING_TIMEOUT_MS);
+
       const events = await manager
         .createQueryBuilder(OutboxEntity, 'outbox')
         .setLock('pessimistic_write')
         .setOnLocked('skip_locked')
-        .where('outbox.status = :status', { status: OutboxStatus.PENDING })
-        .andWhere('outbox.destination = :destination', {
+        .where('outbox.destination = :destination', {
           destination: 'audit_queue',
         })
+        .andWhere(
+          new Brackets((qb) => {
+            qb.where('outbox.status = :pending', {
+              pending: OutboxStatus.PENDING,
+            }).orWhere(
+              `
+              outbox.status = :processing
+              AND outbox.claimed_at IS NOT NULL
+              AND outbox.claimed_at < :staleBefore
+              `,
+              {
+                processing: OutboxStatus.PROCESSING,
+                staleBefore,
+              },
+            );
+          }),
+        )
         .orderBy('outbox.created_at', 'ASC')
         .addOrderBy('outbox.id', 'ASC')
         .limit(OutboxPublisherService.BATCH_SIZE)
@@ -81,11 +103,19 @@ export class OutboxPublisherService {
 
       const ids = events.map((event) => event.id);
 
-      await manager.update(OutboxEntity, { id: In(ids) }, { status: OutboxStatus.PROCESSING });
+      await manager.update(
+        OutboxEntity,
+        { id: In(ids) },
+        {
+          status: OutboxStatus.PROCESSING,
+          claimed_at: now,
+        },
+      );
 
       return events.map((event) => ({
         ...event,
         status: OutboxStatus.PROCESSING,
+        claimed_at: now,
       }));
     });
   }
