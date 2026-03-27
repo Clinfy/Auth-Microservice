@@ -19,7 +19,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.workflow_run.head_sha }}
+          ref: main
 
       - name: Install Heroku CLI
         run: curl https://cli-assets.heroku.com/install.sh | sh
