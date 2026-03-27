@@ -36,12 +36,14 @@ import * as requestUser from 'src/interfaces/request-user';
 import { EndpointKey } from 'src/common/decorators/endpoint-key.decorator';
 import { AssignPermissionDTO } from 'src/interfaces/DTO/assign.dto';
 import { PaginatedResponseDto, PaginationQueryDto } from 'src/interfaces/DTO/pagination.dto';
+import { ApiKeyGuard } from 'src/common/guards/api-key.guard';
 
 @ApiTags('API Keys')
 @Controller('api-keys')
 export class ApiKeysController {
   constructor(private readonly apiKeysService: ApiKeysService) {}
 
+  @UseGuards(ApiKeyGuard)
   @ApiSecurity('api-key')
   @ApiHeader({ name: 'x-api-key', required: true, description: 'API key for machine-to-machine authentication' })
   @ApiOperation({
