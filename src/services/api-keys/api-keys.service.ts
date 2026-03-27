@@ -159,9 +159,6 @@ export class ApiKeysService implements OnModuleInit {
 
   async canDo(rawApiKey: RequestWithApiKey, permissionCode: string): Promise<boolean> {
     const apiKeyPermissions = await this.findActiveByPlainKey(extractApiKey(rawApiKey));
-    if (!apiKeyPermissions) {
-      return false;
-    }
     return apiKeyPermissions.includes(permissionCode);
   }
 
