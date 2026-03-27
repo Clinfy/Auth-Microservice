@@ -114,8 +114,8 @@ export class ApiKeysService implements OnModuleInit {
     }
 
     apiKey.active = false;
-    await this.invalidateApiKeyCache(apiKey);
     await this.apiKeysRepository.save(apiKey);
+    await this.invalidateApiKeyCache(apiKey);
 
     return { message: `API key ${id} ${apiKey.client} deactivated` };
   }
@@ -132,8 +132,8 @@ export class ApiKeysService implements OnModuleInit {
     }
 
     apiKey.active = true;
-    await this.loadApiKeyToRedis(apiKey);
     await this.apiKeysRepository.save(apiKey);
+    await this.loadApiKeyToRedis(apiKey);
 
     return { message: `API key ${id} ${apiKey.client} activated` };
   }
@@ -143,8 +143,9 @@ export class ApiKeysService implements OnModuleInit {
       const apiKey = await this.findOne(id);
 
       apiKey.permissions = await Promise.all(dto.permissionsIds.map((id) => this.permissionService.findOne(id)));
-      await this.invalidateApiKeyCache(apiKey);
       await this.apiKeysRepository.save(apiKey);
+      await this.invalidateApiKeyCache(apiKey);
+      await this.loadApiKeyToRedis(apiKey);
       return apiKey;
     } catch (error) {
       throw new ApiKeyException(
@@ -158,9 +159,6 @@ export class ApiKeysService implements OnModuleInit {
 
   async canDo(rawApiKey: RequestWithApiKey, permissionCode: string): Promise<boolean> {
     const apiKeyPermissions = await this.findActiveByPlainKey(extractApiKey(rawApiKey));
-    if (!apiKeyPermissions) {
-      return false;
-    }
     return apiKeyPermissions.includes(permissionCode);
   }
 

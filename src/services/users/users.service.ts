@@ -230,7 +230,7 @@ export class UsersService {
 
   async resetPassword(token: string, dto: ResetPasswordDTO): Promise<{ message: string }> {
     const redisIndex = `reset_password:${token}`;
-    const raw = await this.redis.raw.get(redisIndex);
+    const raw = await this.redis.raw.getDel(redisIndex);
     const redisPayload = raw ? (JSON.parse(raw) as ResetPasswordRedisPayload) : null;
     if (!redisPayload) {
       throw new UsersException(
@@ -256,7 +256,6 @@ export class UsersService {
 
     user.password = dto.password;
     await this.userRepository.save(user);
-    await this.redis.raw.del(redisIndex);
     await this.emailService.confirmPasswordChange(user.email);
     return { message: 'Password reset successfully' };
   }

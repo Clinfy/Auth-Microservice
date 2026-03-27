@@ -46,6 +46,7 @@ describe('UsersService (integration)', () => {
   const redisServiceMock = {
     raw: {
       get: jest.fn(),
+      getDel: jest.fn(),
       set: jest.fn().mockResolvedValue('OK'),
       sAdd: jest.fn().mockResolvedValue(1),
       pExpire: jest.fn().mockResolvedValue(true),
@@ -330,7 +331,7 @@ describe('UsersService (integration)', () => {
       email: 'erin@example.com',
     });
 
-    redisServiceMock.raw.get.mockResolvedValue(JSON.stringify({ id: stored!.id }));
+    redisServiceMock.raw.getDel.mockResolvedValue(JSON.stringify({ id: stored!.id }));
     emailServiceMock.confirmPasswordChange.mockResolvedValue(undefined);
 
     const response = await usersService.resetPassword(token, {
@@ -338,7 +339,6 @@ describe('UsersService (integration)', () => {
     });
     expect(response).toEqual({ message: 'Password reset successfully' });
     expect(emailServiceMock.confirmPasswordChange).toHaveBeenCalledWith('erin@example.com');
-    expect(redisServiceMock.raw.del).toHaveBeenCalledWith(redisKey);
 
     const updated = await userRepository.findOneBy({
       email: 'erin@example.com',

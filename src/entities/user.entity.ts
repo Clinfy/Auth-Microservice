@@ -1,4 +1,5 @@
 import {
+  AfterLoad,
   BaseEntity,
   BeforeInsert,
   BeforeUpdate,
@@ -75,10 +76,23 @@ export class UserEntity extends BaseEntity implements UserI {
     return this.roles?.flatMap((role) => role.permissions.map((permission) => permission.code)) || [];
   }
 
+  private originalPassword?: string;
+
+  @AfterLoad()
+  loadOriginalPassword() {
+    this.originalPassword = this.password;
+  }
+
   @BeforeInsert()
+  hasPasswordOnInsert() {
+    if(this.password) {
+      this.password = hashSync(this.password, 10);
+    }
+  }
+
   @BeforeUpdate()
-  async hashPassword() {
-    if (this.password && !this.password.startsWith('$2')) {
+  async hashPasswordOnUpdate() {
+    if (this.password && this.password !== this.originalPassword) {
       this.password = hashSync(this.password, 10);
     }
   }
