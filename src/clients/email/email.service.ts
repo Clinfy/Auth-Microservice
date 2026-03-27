@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { EmailBody } from 'src/interfaces/clients/email-body.interface';
 import { TemplateService } from 'src/clients/email/template.service';
 import { ClientProxy } from '@nestjs/microservices';
+import { lastValueFrom } from 'rxjs';
 
 @Injectable()
 export class EmailService {
@@ -74,6 +75,6 @@ export class EmailService {
   }
 
   private async sendMail(body: EmailBody) {
-    this.emailClient.emit('email_queue', body);
+    await lastValueFrom(this.emailClient.emit('email_queue', body));
   }
 }
