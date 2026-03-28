@@ -79,13 +79,7 @@ export class UsersService {
       throw new UsersException('Session expired or invalid', UsersErrorCodes.SESSION_INVALID, HttpStatus.UNAUTHORIZED);
     }
 
-    const allowed = session.permissions.includes(permissionCode);
-
-    if (!allowed) {
-      throw new UsersException('Insufficient permissions', UsersErrorCodes.INSUFFICIENT_PERMISSIONS, HttpStatus.FORBIDDEN);
-    }
-
-    return allowed;
+    return session.permissions.includes(permissionCode);
   }
 
   async register(dto: RegisterUserDTO, request: RequestWithUser): Promise<{ message: string }> {
