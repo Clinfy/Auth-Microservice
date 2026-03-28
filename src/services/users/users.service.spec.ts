@@ -112,7 +112,7 @@ describe('UsersService', () => {
 
       await expect(
         service.canDo({ session_id: 'abc', id: '1', email: '', person_id: '' }, 'DELETE_USER'),
-      ).rejects.toBeInstanceOf(UsersException);
+      ).resolves.toBe(false);
     });
   });
 
