@@ -4,12 +4,20 @@ import { Repository } from 'typeorm';
 import { PermissionsRepository } from './permissions.repository';
 import { PermissionEntity } from 'src/entities/permission.entity';
 import { PaginationQueryDto } from 'src/interfaces/DTO/pagination.dto';
+import { IPermission } from 'src/interfaces/permission.interface';
 
 describe('PermissionsRepository', () => {
   let repository: PermissionsRepository;
   let ormRepository: jest.Mocked<Repository<PermissionEntity>>;
+  let qb: Record<string, jest.Mock>;
 
   beforeEach(async () => {
+    qb = {
+      select: jest.fn().mockReturnThis(),
+      orderBy: jest.fn().mockReturnThis(),
+      getRawMany: jest.fn(),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         PermissionsRepository,
@@ -22,6 +30,7 @@ describe('PermissionsRepository', () => {
             create: jest.fn(),
             merge: jest.fn(),
             remove: jest.fn(),
+            createQueryBuilder: jest.fn().mockReturnValue(qb),
           },
         },
       ],
@@ -29,6 +38,36 @@ describe('PermissionsRepository', () => {
 
     repository = module.get<PermissionsRepository>(PermissionsRepository);
     ormRepository = module.get(getRepositoryToken(PermissionEntity));
+  });
+
+  describe('findAllForDetails', () => {
+    it('returns raw id and code for each permission', async () => {
+      const details: IPermission[] = [
+        { id: 'p-1', code: 'PERM_READ' },
+        { id: 'p-2', code: 'PERM_WRITE' },
+      ];
+      qb.getRawMany.mockResolvedValue(details);
+
+      const result = await repository.findAllForDetails();
+
+      expect(result).toEqual(details);
+    });
+
+    it('selects only permission.id and permission.code columns', async () => {
+      qb.getRawMany.mockResolvedValue([]);
+
+      await repository.findAllForDetails();
+
+      expect(qb.select).toHaveBeenCalledWith(['permission.id', 'permission.code']);
+    });
+
+    it('orders results by permission.code ASC', async () => {
+      qb.getRawMany.mockResolvedValue([]);
+
+      await repository.findAllForDetails();
+
+      expect(qb.orderBy).toHaveBeenCalledWith('permission.code', 'ASC');
+    });
   });
 
   describe('findAll', () => {

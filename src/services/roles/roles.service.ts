@@ -12,6 +12,7 @@ import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { Logger } from 'winston';
 import { serializeError } from 'src/common/utils/logger-format.util';
 import { PaginatedResponseDto, PaginationQueryDto } from 'src/interfaces/DTO/pagination.dto';
+import { IRole } from 'src/interfaces/role.interface';
 
 @Injectable()
 export class RolesService {
@@ -62,6 +63,10 @@ export class RolesService {
         error,
       );
     }
+  }
+
+  async getDetails (): Promise<IRole[]> {
+    return await this.roleRepository.findAllForDetails();
   }
 
   async findOne(id: string): Promise<RoleEntity> {

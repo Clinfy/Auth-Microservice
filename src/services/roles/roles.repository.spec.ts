@@ -4,12 +4,20 @@ import { Repository } from 'typeorm';
 import { RolesRepository } from './roles.repository';
 import { RoleEntity } from 'src/entities/role.entity';
 import { PaginationQueryDto } from 'src/interfaces/DTO/pagination.dto';
+import { IRole } from 'src/interfaces/role.interface';
 
 describe('RolesRepository', () => {
   let repository: RolesRepository;
   let ormRepository: jest.Mocked<Repository<RoleEntity>>;
+  let qb: Record<string, jest.Mock>;
 
   beforeEach(async () => {
+    qb = {
+      select: jest.fn().mockReturnThis(),
+      orderBy: jest.fn().mockReturnThis(),
+      getRawMany: jest.fn(),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         RolesRepository,
@@ -22,6 +30,7 @@ describe('RolesRepository', () => {
             create: jest.fn(),
             merge: jest.fn(),
             remove: jest.fn(),
+            createQueryBuilder: jest.fn().mockReturnValue(qb),
           },
         },
       ],
@@ -29,6 +38,36 @@ describe('RolesRepository', () => {
 
     repository = module.get<RolesRepository>(RolesRepository);
     ormRepository = module.get(getRepositoryToken(RoleEntity));
+  });
+
+  describe('findAllForDetails', () => {
+    it('returns raw id and name for each role', async () => {
+      const details: IRole[] = [
+        { id: 'r-1', name: 'ADMIN' },
+        { id: 'r-2', name: 'VIEWER' },
+      ];
+      qb.getRawMany.mockResolvedValue(details);
+
+      const result = await repository.findAllForDetails();
+
+      expect(result).toEqual(details);
+    });
+
+    it('selects only role.id and role.name columns', async () => {
+      qb.getRawMany.mockResolvedValue([]);
+
+      await repository.findAllForDetails();
+
+      expect(qb.select).toHaveBeenCalledWith(['role.id', 'role.name']);
+    });
+
+    it('orders results by role.name ASC', async () => {
+      qb.getRawMany.mockResolvedValue([]);
+
+      await repository.findAllForDetails();
+
+      expect(qb.orderBy).toHaveBeenCalledWith('role.name', 'ASC');
+    });
   });
 
   describe('findAll', () => {

@@ -33,6 +33,7 @@ import { CreatePermissionDTO } from 'src/interfaces/DTO/create.dto';
 import * as requestUser from 'src/interfaces/request-user';
 import { EndpointKey } from 'src/common/decorators/endpoint-key.decorator';
 import { PaginatedResponseDto, PaginationQueryDto } from 'src/interfaces/DTO/pagination.dto';
+import { IPermission } from 'src/interfaces/permission.interface';
 
 @ApiTags('Permissions')
 @ApiCookieAuth('auth_token')
@@ -80,6 +81,17 @@ export class PermissionsController {
   @Delete('delete/:id')
   delete(@Param('id') id: string): Promise<{ message: string }> {
     return this.permissionService.delete(id);
+  }
+
+  @UseGuards(AuthGuard)
+  @EndpointKey('permission.details')
+  @ApiOperation({ summary: 'Get id and code of each permission registered in the system' })
+  @ApiOkResponse({ type: 'object' })
+  @ApiUnauthorizedResponse({ description: 'Missing or invalid auth cookie' })
+  @ApiForbiddenResponse({ description: 'Insufficient permissions' })
+  @Get('details')
+  getDetails(): Promise<IPermission[]> {
+    return this.permissionService.getDetails();
   }
 
   @UseGuards(AuthGuard)
