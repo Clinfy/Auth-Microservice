@@ -47,6 +47,15 @@ export class RolesRepository {
       .getRawMany<IRole>();
   }
 
+  async findAllForDetails(): Promise<IRole[]> {
+    return await this.ormRepository
+      .createQueryBuilder('role')
+      .select('role.id', 'id')
+      .addSelect('role.name', 'name')
+      .orderBy('role.name', 'ASC')
+      .getRawMany<IRole>();
+  }
+
   async remove(role: RoleEntity): Promise<void> {
     await this.ormRepository.remove(role);
   }
