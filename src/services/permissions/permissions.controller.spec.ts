@@ -4,6 +4,7 @@ import { CreatePermissionDTO } from 'src/interfaces/DTO/create.dto';
 import { PatchPermissionDTO } from 'src/interfaces/DTO/patch.dto';
 import { PermissionEntity } from 'src/entities/permission.entity';
 import { PaginatedResponseDto, PaginationQueryDto } from 'src/interfaces/DTO/pagination.dto';
+import { IPermission } from 'src/interfaces/permission.interface';
 
 describe('PermissionsController', () => {
   let controller: PermissionsController;
@@ -21,6 +22,7 @@ describe('PermissionsController', () => {
       delete: jest.fn(),
       findOne: jest.fn(),
       findAll: jest.fn(),
+      getDetails: jest.fn(),
     } as unknown as jest.Mocked<PermissionsService>;
 
     controller = new PermissionsController(service);
@@ -65,6 +67,17 @@ describe('PermissionsController', () => {
 
     await expect(controller.findOne(permissionId)).resolves.toEqual(permission);
     expect(service.findOne).toHaveBeenCalledWith(permissionId);
+  });
+
+  it('should return permission details (id and code only)', async () => {
+    const details: IPermission[] = [
+      { id: permissionId, code: 'PERM_READ' },
+      { id: secondPermissionId, code: 'PERM_WRITE' },
+    ];
+    service.getDetails.mockResolvedValue(details);
+
+    await expect(controller.getDetails()).resolves.toEqual(details);
+    expect(service.getDetails).toHaveBeenCalledTimes(1);
   });
 
   it('should list all permissions as a paginated response', async () => {

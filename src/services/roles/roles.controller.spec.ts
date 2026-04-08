@@ -5,6 +5,7 @@ import { PatchRoleDTO } from 'src/interfaces/DTO/patch.dto';
 import { AssignPermissionDTO } from 'src/interfaces/DTO/assign.dto';
 import { RoleEntity } from 'src/entities/role.entity';
 import { PaginatedResponseDto, PaginationQueryDto } from 'src/interfaces/DTO/pagination.dto';
+import { IRole } from 'src/interfaces/role.interface';
 
 describe('RolesController', () => {
   let controller: RolesController;
@@ -24,6 +25,7 @@ describe('RolesController', () => {
       delete: jest.fn(),
       findOne: jest.fn(),
       findAll: jest.fn(),
+      getDetails: jest.fn(),
       assignPermissions: jest.fn(),
     } as unknown as jest.Mocked<RolesService>;
 
@@ -77,6 +79,17 @@ describe('RolesController', () => {
 
     await expect(controller.findOne(roleId)).resolves.toEqual(role);
     expect(service.findOne).toHaveBeenCalledWith(roleId);
+  });
+
+  it('should return role details (id and name only)', async () => {
+    const details: IRole[] = [
+      { id: roleId, name: 'admin' },
+      { id: anotherRoleId, name: 'viewer' },
+    ];
+    service.getDetails.mockResolvedValue(details);
+
+    await expect(controller.getDetails()).resolves.toEqual(details);
+    expect(service.getDetails).toHaveBeenCalledTimes(1);
   });
 
   it('should list all roles as a paginated response', async () => {
