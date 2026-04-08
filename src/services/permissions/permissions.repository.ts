@@ -39,9 +39,10 @@ export class PermissionsRepository {
 
   async findAllForDetails(): Promise<IPermission[]> {
     return await this.ormRepository.createQueryBuilder('permission')
-      .select(['permission.id', 'permission.code'])
+      .select('permission.id', 'id')
+      .addSelect('permission.code', 'code')
       .orderBy('permission.code', 'ASC')
-      .getRawMany();
+      .getRawMany<IPermission>();
   }
 
   async remove(permission: PermissionEntity): Promise<void> {
