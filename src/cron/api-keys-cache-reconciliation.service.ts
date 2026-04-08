@@ -89,7 +89,6 @@ export class ApiKeysCacheReconciliationService {
     }
     await multi.exec();
 
-
     this.logger.info('Deleted stale API key cache entries', {
       context: 'ApiKeysCacheReconciliationService',
       operation: 'deleteStaleKeys',

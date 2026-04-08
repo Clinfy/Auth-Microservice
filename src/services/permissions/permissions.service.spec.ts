@@ -2,6 +2,7 @@ import { PermissionsRepository } from './permissions.repository';
 import { PermissionsService } from './permissions.service';
 import { PermissionsException } from './permissions.exception';
 import { PaginatedResponseDto, PaginationQueryDto } from 'src/interfaces/DTO/pagination.dto';
+import { IPermission } from 'src/interfaces/permission.interface';
 
 describe('PermissionsService', () => {
   let permissionRepository: jest.Mocked<Partial<PermissionsRepository>>;
@@ -19,6 +20,7 @@ describe('PermissionsService', () => {
       merge: jest.fn((entity, dto) => ({ ...entity, ...dto }) as any),
       findOneById: jest.fn(),
       findAll: jest.fn(),
+      findAllForDetails: jest.fn(),
       remove: jest.fn(),
     };
 
@@ -83,6 +85,17 @@ describe('PermissionsService', () => {
     (permissionRepository.findOneById as jest.Mock).mockResolvedValue(null);
 
     await expect(service.findOne(missingPermissionId)).rejects.toBeInstanceOf(PermissionsException);
+  });
+
+  it('getDetails returns id and code for each permission', async () => {
+    const details: IPermission[] = [
+      { id: permissionId, code: 'PERM_READ' },
+      { id: otherPermissionId, code: 'PERM_WRITE' },
+    ];
+    (permissionRepository.findAllForDetails as jest.Mock).mockResolvedValue(details);
+
+    await expect(service.getDetails()).resolves.toEqual(details);
+    expect(permissionRepository.findAllForDetails).toHaveBeenCalledTimes(1);
   });
 
   it('findAll returns a PaginatedResponseDto wrapping all permissions', async () => {

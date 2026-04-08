@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { PermissionEntity } from 'src/entities/permission.entity';
 import { Repository } from 'typeorm';
 import { PaginationQueryDto } from 'src/interfaces/DTO/pagination.dto';
+import { IPermission } from 'src/interfaces/permission.interface';
 
 @Injectable()
 export class PermissionsRepository {
@@ -32,8 +33,17 @@ export class PermissionsRepository {
     return await this.ormRepository.findAndCount({
       skip: (page - 1) * limit,
       take: limit,
-      order: {code: 'ASC'}
+      order: { code: 'ASC' },
     });
+  }
+
+  async findAllForDetails(): Promise<IPermission[]> {
+    return await this.ormRepository
+      .createQueryBuilder('permission')
+      .select('permission.id', 'id')
+      .addSelect('permission.code', 'code')
+      .orderBy('permission.code', 'ASC')
+      .getRawMany<IPermission>();
   }
 
   async remove(permission: PermissionEntity): Promise<void> {

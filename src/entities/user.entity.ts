@@ -85,7 +85,7 @@ export class UserEntity extends BaseEntity implements UserI {
 
   @BeforeInsert()
   hasPasswordOnInsert() {
-    if(this.password) {
+    if (this.password) {
       this.password = hashSync(this.password, 10);
     }
   }

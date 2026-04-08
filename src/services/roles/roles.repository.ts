@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { RoleEntity } from 'src/entities/role.entity';
 import { Repository } from 'typeorm';
 import { PaginationQueryDto } from 'src/interfaces/DTO/pagination.dto';
+import { IRole } from 'src/interfaces/role.interface';
 
 @Injectable()
 export class RolesRepository {
@@ -34,6 +35,15 @@ export class RolesRepository {
       take: limit,
       order: { name: 'ASC' },
     });
+  }
+
+  async findAllForDetails(): Promise<IRole[]> {
+    return await this.ormRepository
+      .createQueryBuilder('role')
+      .select('role.id', 'id')
+      .addSelect('role.name', 'name')
+      .orderBy('role.name', 'ASC')
+      .getRawMany<IRole>();
   }
 
   async remove(role: RoleEntity): Promise<void> {

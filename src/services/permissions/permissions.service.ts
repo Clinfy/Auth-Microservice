@@ -6,6 +6,7 @@ import { RequestWithUser } from 'src/interfaces/request-user';
 import { PermissionsRepository } from 'src/services/permissions/permissions.repository';
 import { PermissionsErrorCodes, PermissionsException } from 'src/services/permissions/permissions.exception';
 import { PaginatedResponseDto, PaginationQueryDto } from 'src/interfaces/DTO/pagination.dto';
+import { IPermission } from 'src/interfaces/permission.interface';
 
 @Injectable()
 export class PermissionsService {
@@ -55,6 +56,10 @@ export class PermissionsService {
         error,
       );
     }
+  }
+
+  async getDetails(): Promise<IPermission[]> {
+    return await this.permissionRepository.findAllForDetails();
   }
 
   async findOne(id: string): Promise<PermissionEntity> {

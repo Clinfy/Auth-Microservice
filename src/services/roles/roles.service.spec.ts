@@ -5,6 +5,7 @@ import { RolesException } from './roles.exception';
 import { SessionsService } from 'src/services/sessions/sessions.service';
 import { Logger } from 'winston';
 import { PaginatedResponseDto, PaginationQueryDto } from 'src/interfaces/DTO/pagination.dto';
+import { IRole } from 'src/interfaces/role.interface';
 
 describe('RolesService', () => {
   let roleRepository: jest.Mocked<Partial<RolesRepository>>;
@@ -26,6 +27,7 @@ describe('RolesService', () => {
       merge: jest.fn((entity, dto) => ({ ...entity, ...dto }) as any),
       findOneById: jest.fn(),
       findAll: jest.fn(),
+      findAllForDetails: jest.fn(),
       remove: jest.fn(),
     };
 
@@ -115,6 +117,17 @@ describe('RolesService', () => {
     expect(result.page).toBe(1);
     expect(result.limit).toBe(20);
     expect(result.totalPages).toBe(1);
+  });
+
+  it('getDetails returns id and name for each role', async () => {
+    const details: IRole[] = [
+      { id: roleId, name: 'ADMIN' },
+      { id: otherRoleId, name: 'VIEWER' },
+    ];
+    (roleRepository.findAllForDetails as jest.Mock).mockResolvedValue(details);
+
+    await expect(service.getDetails()).resolves.toEqual(details);
+    expect(roleRepository.findAllForDetails).toHaveBeenCalledTimes(1);
   });
 
   it('assignPermissions loads permissions and saves role', async () => {

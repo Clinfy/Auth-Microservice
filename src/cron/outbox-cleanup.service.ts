@@ -28,16 +28,16 @@ export class OutboxCleanupService {
     let totalDeleted = 0;
     let affected = 0;
 
-
     try {
       do {
-
-        const subQuery = this.outboxRepository.createQueryBuilder('sub_outbox')
+        const subQuery = this.outboxRepository
+          .createQueryBuilder('sub_outbox')
           .select('sub_outbox.id')
           .where('sub_outbox.status = :status', { status: OutboxStatus.SENT })
           .limit(BATCH_SIZE);
 
-        const result = await this.outboxRepository.createQueryBuilder()
+        const result = await this.outboxRepository
+          .createQueryBuilder()
           .delete()
           .from(OutboxEntity)
           .where(`id IN (${subQuery.getQuery()})`)
@@ -51,7 +51,6 @@ export class OutboxCleanupService {
           context: 'OutboxCleanupService',
           operation: 'cleanSentOutboxMessages',
         });
-
       } while (affected === BATCH_SIZE);
 
       this.logger.info('Cleaning up sent outbox messages completed', {
@@ -59,13 +58,12 @@ export class OutboxCleanupService {
         operation: 'cleanSentOutboxMessages',
         totalDeleted,
       });
-
     } catch (error) {
       this.logger.warn('Failed to clean up sent outbox messages', {
         context: 'OutboxCleanupService',
         operation: 'cleanSentOutboxMessages',
         error: serializeError(error),
-      })
+      });
     }
   }
 }
