@@ -69,6 +69,10 @@ export class RolesService {
     return await this.roleRepository.findAllUnrestrictedForDetails();
   }
 
+  async getAllDetails(): Promise<IRole[]> {
+    return await this.roleRepository.findAllForDetails();
+  }
+
   async findOne(id: string): Promise<RoleEntity> {
     const role = await this.roleRepository.findOneById(id);
     if (!role)
