@@ -14,6 +14,7 @@ describe('RolesRepository', () => {
   beforeEach(async () => {
     qb = {
       select: jest.fn().mockReturnThis(),
+      addSelect: jest.fn().mockReturnThis(),
       orderBy: jest.fn().mockReturnThis(),
       getRawMany: jest.fn(),
     };
@@ -53,12 +54,13 @@ describe('RolesRepository', () => {
       expect(result).toEqual(details);
     });
 
-    it('selects only role.id and role.name columns', async () => {
+    it('selects role.id as id and role.name as name', async () => {
       qb.getRawMany.mockResolvedValue([]);
 
       await repository.findAllForDetails();
 
-      expect(qb.select).toHaveBeenCalledWith(['role.id', 'role.name']);
+      expect(qb.select).toHaveBeenCalledWith('role.id', 'id');
+      expect(qb.addSelect).toHaveBeenCalledWith('role.name', 'name');
     });
 
     it('orders results by role.name ASC', async () => {

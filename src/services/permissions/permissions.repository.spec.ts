@@ -14,6 +14,7 @@ describe('PermissionsRepository', () => {
   beforeEach(async () => {
     qb = {
       select: jest.fn().mockReturnThis(),
+      addSelect: jest.fn().mockReturnThis(),
       orderBy: jest.fn().mockReturnThis(),
       getRawMany: jest.fn(),
     };
@@ -53,12 +54,13 @@ describe('PermissionsRepository', () => {
       expect(result).toEqual(details);
     });
 
-    it('selects only permission.id and permission.code columns', async () => {
+    it('selects permission.id as id and permission.code as code', async () => {
       qb.getRawMany.mockResolvedValue([]);
 
       await repository.findAllForDetails();
 
-      expect(qb.select).toHaveBeenCalledWith(['permission.id', 'permission.code']);
+      expect(qb.select).toHaveBeenCalledWith('permission.id', 'id');
+      expect(qb.addSelect).toHaveBeenCalledWith('permission.code', 'code');
     });
 
     it('orders results by permission.code ASC', async () => {
