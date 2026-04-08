@@ -58,7 +58,7 @@ export class PermissionsService {
     }
   }
 
-  async getDetails (): Promise<IPermission[]> {
+  async getDetails(): Promise<IPermission[]> {
     return await this.permissionRepository.findAllForDetails();
   }
 

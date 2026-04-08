@@ -38,7 +38,8 @@ export class RolesRepository {
   }
 
   async findAllForDetails(): Promise<IRole[]> {
-    return await this.ormRepository.createQueryBuilder('role')
+    return await this.ormRepository
+      .createQueryBuilder('role')
       .select('role.id', 'id')
       .addSelect('role.name', 'name')
       .orderBy('role.name', 'ASC')

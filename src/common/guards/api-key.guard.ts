@@ -28,7 +28,6 @@ export class ApiKeyGuard implements CanActivate {
       throw new AuthException('Invalid API key', AuthErrorCodes.API_KEY_INVALID, HttpStatus.UNAUTHORIZED);
     }
 
-
     const endpointKey = this.reflector.getAllAndOverride<string>(EndpointKey, [context.getHandler(), context.getClass()]);
 
     if (endpointKey) {

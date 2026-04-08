@@ -110,9 +110,9 @@ describe('UsersService', () => {
     it('throws ForbiddenException when permission missing', async () => {
       redisService.raw.get.mockResolvedValue(JSON.stringify({ active: true, permissions: [] }));
 
-      await expect(
-        service.canDo({ session_id: 'abc', id: '1', email: '', person_id: '' }, 'DELETE_USER'),
-      ).resolves.toBe(false);
+      await expect(service.canDo({ session_id: 'abc', id: '1', email: '', person_id: '' }, 'DELETE_USER')).resolves.toBe(
+        false,
+      );
     });
   });
 

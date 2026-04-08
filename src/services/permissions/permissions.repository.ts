@@ -33,12 +33,13 @@ export class PermissionsRepository {
     return await this.ormRepository.findAndCount({
       skip: (page - 1) * limit,
       take: limit,
-      order: {code: 'ASC'}
+      order: { code: 'ASC' },
     });
   }
 
   async findAllForDetails(): Promise<IPermission[]> {
-    return await this.ormRepository.createQueryBuilder('permission')
+    return await this.ormRepository
+      .createQueryBuilder('permission')
       .select('permission.id', 'id')
       .addSelect('permission.code', 'code')
       .orderBy('permission.code', 'ASC')

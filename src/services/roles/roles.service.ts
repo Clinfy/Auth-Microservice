@@ -65,7 +65,7 @@ export class RolesService {
     }
   }
 
-  async getDetails (): Promise<IRole[]> {
+  async getDetails(): Promise<IRole[]> {
     return await this.roleRepository.findAllForDetails();
   }
 
