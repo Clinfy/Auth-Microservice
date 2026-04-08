@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsString } from 'class-validator';
+import { IsBoolean, IsNotEmpty, IsString } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { IsUniquePermissionCode } from 'src/common/validators/unique-permission-code.validator';
 import { IsUniqueRoleName } from 'src/common/validators/unique-role-name.validator';
@@ -17,4 +17,8 @@ export class CreateRoleDTO {
   @IsNotEmpty({ message: 'This field is required' })
   @IsUniqueRoleName()
   name: string;
+
+  @IsBoolean({ message: 'is_restricted must be a boolean' })
+  @IsNotEmpty({ message: 'is_restricted field is required' })
+  is_restricted: boolean;
 }
