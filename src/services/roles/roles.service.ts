@@ -65,8 +65,8 @@ export class RolesService {
     }
   }
 
-  async getDetails(): Promise<IRole[]> {
-    return await this.roleRepository.findAllForDetails();
+  async getUnrestrictedDetails(): Promise<IRole[]> {
+    return await this.roleRepository.findAllUnrestrictedForDetails();
   }
 
   async findOne(id: string): Promise<RoleEntity> {

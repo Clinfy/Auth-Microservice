@@ -90,7 +90,7 @@ export class RolesController {
   @ApiForbiddenResponse({ description: 'Insufficient permissions' })
   @Get('details')
   getDetails(): Promise<IRole[]> {
-    return this.rolesService.getDetails();
+    return this.rolesService.getUnrestrictedDetails();
   }
 
   @UseGuards(AuthGuard)

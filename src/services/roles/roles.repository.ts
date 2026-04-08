@@ -37,11 +37,12 @@ export class RolesRepository {
     });
   }
 
-  async findAllForDetails(): Promise<IRole[]> {
+  async findAllUnrestrictedForDetails(): Promise<IRole[]> {
     return await this.ormRepository
       .createQueryBuilder('role')
       .select('role.id', 'id')
       .addSelect('role.name', 'name')
+      .where('role.is_restricted = :isRestricted', { isRestricted: false })
       .orderBy('role.name', 'ASC')
       .getRawMany<IRole>();
   }
