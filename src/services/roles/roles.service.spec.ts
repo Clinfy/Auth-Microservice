@@ -119,14 +119,14 @@ describe('RolesService', () => {
     expect(result.totalPages).toBe(1);
   });
 
-  it('getDetails returns id and name for each role', async () => {
+  it('getAllDetails returns id and name for each role', async () => {
     const details: IRole[] = [
       { id: roleId, name: 'ADMIN' },
       { id: otherRoleId, name: 'VIEWER' },
     ];
     (roleRepository.findAllForDetails as jest.Mock).mockResolvedValue(details);
 
-    await expect(service.getDetails()).resolves.toEqual(details);
+    await expect(service.getAllDetails()).resolves.toEqual(details);
     expect(roleRepository.findAllForDetails).toHaveBeenCalledTimes(1);
   });
 

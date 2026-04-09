@@ -168,6 +168,7 @@ describe('UsersService (integration)', () => {
       {
         email: 'alice@example.com',
         person_id: randomUUID(),
+        rolesIds: [],
       },
       request,
     );
@@ -186,6 +187,7 @@ describe('UsersService (integration)', () => {
       {
         email: 'bob@example.com',
         person_id: randomUUID(),
+        rolesIds: [],
       },
       request,
     );
@@ -229,6 +231,7 @@ describe('UsersService (integration)', () => {
       {
         email: 'carol@example.com',
         person_id: randomUUID(),
+        rolesIds: [],
       },
       request,
     );
@@ -268,6 +271,7 @@ describe('UsersService (integration)', () => {
       {
         email: 'frank@example.com',
         person_id: randomUUID(),
+        rolesIds: [],
       },
       request,
     );
@@ -304,6 +308,7 @@ describe('UsersService (integration)', () => {
       {
         email: 'dave@example.com',
         person_id: randomUUID(),
+        rolesIds: [],
       },
       request,
     );
@@ -332,6 +337,7 @@ describe('UsersService (integration)', () => {
       {
         email: 'erin@example.com',
         person_id: randomUUID(),
+        rolesIds: [],
       },
       request,
     );
@@ -365,6 +371,7 @@ describe('UsersService (integration)', () => {
       {
         email: 'grace@example.com',
         person_id: randomUUID(),
+        rolesIds: [],
       },
       request,
     );
@@ -390,6 +397,7 @@ describe('UsersService (integration)', () => {
       {
         email: 'hank@example.com',
         person_id: randomUUID(),
+        rolesIds: [],
       },
       request,
     );
@@ -434,7 +442,7 @@ describe('UsersService (integration)', () => {
   });
 
   it('findAll returns a paginated response containing registered users', async () => {
-    await usersService.register({ email: 'julia@example.com', person_id: randomUUID() }, request);
+    await usersService.register({ email: 'julia@example.com', person_id: randomUUID(), rolesIds: [] }, request);
 
     const result = await usersService.findAll({ page: 1, limit: 20 });
 
