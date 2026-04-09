@@ -27,7 +27,7 @@ import { SeedService } from './seed.service';
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({
         type: 'postgres',
-        url: configService.get('DATABASE_HOST_TEST'),
+        url: configService.get('DATABASE_HOST'),
         entities: [PermissionEntity, EndpointPermissionRulesEntity, RoleEntity, UserEntity, ApiKeyEntity, OutboxEntity],
         synchronize: true, // Create tables if they don't exist
       }),
