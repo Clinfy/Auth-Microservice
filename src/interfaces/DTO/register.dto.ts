@@ -11,7 +11,7 @@ export class RegisterUserDTO {
   email: string;
 
   @ApiProperty({ description: 'Associated person ID', example: '550e8400-e29b-41d4-a716-446655440000' })
-  @IsUUID('4', { message: 'person_id must be a valid UUID' })
+  @IsUUID('7', { message: 'person_id must be a valid UUID' })
   @IsNotEmpty({ message: 'This field is required' })
   @IsUniquePerson()
   person_id: string;
