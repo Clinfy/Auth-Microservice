@@ -25,7 +25,8 @@ describe('RolesController', () => {
       delete: jest.fn(),
       findOne: jest.fn(),
       findAll: jest.fn(),
-      getDetails: jest.fn(),
+      getAllDetails: jest.fn(),
+      getUnrestrictedDetails: jest.fn(),
       assignPermissions: jest.fn(),
     } as unknown as jest.Mocked<RolesService>;
 
@@ -86,10 +87,10 @@ describe('RolesController', () => {
       { id: roleId, name: 'admin' },
       { id: anotherRoleId, name: 'viewer' },
     ];
-    service.getDetails.mockResolvedValue(details);
+    service.getAllDetails.mockResolvedValue(details);
 
-    await expect(controller.getDetails()).resolves.toEqual(details);
-    expect(service.getDetails).toHaveBeenCalledTimes(1);
+    await expect(controller.getAllDetails()).resolves.toEqual(details);
+    expect(service.getAllDetails).toHaveBeenCalledTimes(1);
   });
 
   it('should list all roles as a paginated response', async () => {
