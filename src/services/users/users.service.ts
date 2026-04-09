@@ -86,8 +86,10 @@ export class UsersService {
     try {
       return await this.dataSource.transaction(async (manager) => {
         const password = randomBytes(12).toString('hex');
+        const roles = await Promise.all(dto.rolesIds.map((roleId) => this.roleService.findOne(roleId)));
         const newUser = this.userRepository.create({
           ...dto,
+          roles,
           password,
           created_by: request.user,
         });

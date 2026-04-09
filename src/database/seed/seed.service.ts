@@ -105,7 +105,7 @@ export class SeedService {
 
     for (const seedRole of SEED_ROLES) {
       // Upsert the role
-      await manager.upsert(RoleEntity, { name: seedRole.name }, { conflictPaths: ['name'] });
+      await manager.upsert(RoleEntity, { name: seedRole.name, is_restricted: seedRole.is_restricted }, { conflictPaths: ['name'] });
 
       // Fetch the role with relations
       const role = await manager.findOne(RoleEntity, {

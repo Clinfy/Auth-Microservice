@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsString, IsUUID } from 'class-validator';
+import { IsArray, IsNotEmpty, IsString, IsUUID } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { IsUniqueEmail } from 'src/common/validators/unique-email.validator';
 import { IsUniquePerson } from 'src/common/validators/unique-person.validator';
@@ -15,4 +15,14 @@ export class RegisterUserDTO {
   @IsNotEmpty({ message: 'This field is required' })
   @IsUniquePerson()
   person_id: string;
+
+  @ApiProperty({
+    description: 'Array of role IDs to assign',
+    example: ['550e8400-e29b-41d4-a716-446655440000'],
+    type: [String],
+  })
+  @IsNotEmpty({ message: 'This field is required' })
+  @IsUUID('4', { each: true, message: 'Each roleId must be a valid UUID' })
+  @IsArray({ message: 'This field must be an array' })
+  rolesIds: string[];
 }

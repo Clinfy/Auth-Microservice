@@ -357,7 +357,7 @@ describe('UsersService', () => {
 
   describe('register', () => {
     it('creates a user inside a transaction and returns a success message', async () => {
-      const dto: RegisterUserDTO = { email: 'new@example.com', person_id: 'p-1' };
+      const dto: RegisterUserDTO = { email: 'new@example.com', person_id: 'p-1', rolesIds: [] };
       const request = { user: { id: 'admin-1' } } as any;
 
       (dataSource.transaction as jest.Mock).mockImplementation(async (cb) => {

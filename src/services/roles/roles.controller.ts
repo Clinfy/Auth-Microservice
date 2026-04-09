@@ -84,13 +84,24 @@ export class RolesController {
 
   @UseGuards(AuthGuard)
   @EndpointKey('roles.details')
-  @ApiOperation({ summary: 'Get id and name of each role registered in the system' })
+  @ApiOperation({ summary: 'Get id and name of each unrestricted role registered in the system' })
   @ApiOkResponse({ type: 'object' })
   @ApiUnauthorizedResponse({ description: 'Missing or invalid auth cookie' })
   @ApiForbiddenResponse({ description: 'Insufficient permissions' })
-  @Get('details')
-  getDetails(): Promise<IRole[]> {
-    return this.rolesService.getDetails();
+  @Get('details/unrestricted')
+  getUnrestrictedDetails(): Promise<IRole[]> {
+    return this.rolesService.getUnrestrictedDetails();
+  }
+
+  @UseGuards(AuthGuard)
+  @EndpointKey('roles.details.restricted')
+  @ApiOperation({ summary: 'Get id and name of each restricted or unrestricted role registered in the system' })
+  @ApiOkResponse({ type: 'object' })
+  @ApiUnauthorizedResponse({ description: 'Missing or invalid auth cookie' })
+  @ApiForbiddenResponse({ description: 'Insufficient permissions' })
+  @Get('details/restricted')
+  getAllDetails(): Promise<IRole[]> {
+    return this.rolesService.getAllDetails();
   }
 
   @UseGuards(AuthGuard)
