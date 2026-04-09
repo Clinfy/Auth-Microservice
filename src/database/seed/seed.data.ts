@@ -124,7 +124,7 @@ export const SEED_EPR: SeedEndpointPermissionRule[] = [
   { endpoint_key_name: 'roles.update', permission_code: 'ROLES_UPDATE', enabled: true },
   { endpoint_key_name: 'roles.delete', permission_code: 'ROLES_DELETE', enabled: true },
   { endpoint_key_name: 'roles.find', permission_code: 'ROLES_READ', enabled: true },
-  { endpoint_key_name: 'roles.details', permission_code: 'USER_CREATE', enabled: true },
+  { endpoint_key_name: 'roles.details', permission_code: 'USERS_CREATE', enabled: true },
   { endpoint_key_name: 'roles.details.restricted', permission_code: 'ROLES_READ', enabled: true },
   //Sessions
   { endpoint_key_name: 'sessions.find', permission_code: 'SESSIONS_READ', enabled: true },
