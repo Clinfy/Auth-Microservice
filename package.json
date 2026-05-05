@@ -1,6 +1,6 @@
 {
   "name": "clinfy-auth-microservice",
-  "version": "2.3.3",
+  "version": "2.4.0",
   "description": "Microservice for users, API, permissions, roles and authentication.",
   "author": "Agustín Liendo Ortiz",
   "private": true,
@@ -8,7 +8,7 @@
   "scripts": {
     "build": "nest build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
-    "start": "npm run start:prod",
+    "start": "nest start",
     "start:dev": "nest start --watch",
     "start:debug": "nest start --debug --watch",
     "start:prod": "node dist/src/main.js",
