@@ -76,14 +76,14 @@ export const SEED_PERMISSIONS: SeedPermission[] = [
   //Logger
   { code: 'LOGGER_READ' },
   //Genders
-  {code: 'GENDERS_CREATE'},
-  {code: 'GENDERS_READ'},
-  {code: 'GENDERS_UPDATE'},
-  {code: 'GENDERS_DELETE'},
+  { code: 'GENDERS_CREATE' },
+  { code: 'GENDERS_READ' },
+  { code: 'GENDERS_UPDATE' },
+  { code: 'GENDERS_DELETE' },
   //Persons
-  {code: 'PERSONS_CREATE'},
-  {code: 'PERSONS_READ'},
-  {code: 'PERSONS_UPDATE'},
+  { code: 'PERSONS_CREATE' },
+  { code: 'PERSONS_READ' },
+  { code: 'PERSONS_UPDATE' },
 ];
 
 /**

@@ -25,9 +25,12 @@ export class RoleEntity extends BaseEntity {
   @Column()
   name: string;
 
-  @ApiProperty({description: 'Determines if the role is restricted to certain endpoints due to security concerns', default: false})
-  @Column({default: false})
-  is_restricted: boolean
+  @ApiProperty({
+    description: 'Determines if the role is restricted to certain endpoints due to security concerns',
+    default: false,
+  })
+  @Column({ default: false })
+  is_restricted: boolean;
 
   @ApiProperty({ description: 'Creation timestamp' })
   @CreateDateColumn()

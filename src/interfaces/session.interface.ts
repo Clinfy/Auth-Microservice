@@ -3,6 +3,7 @@ export interface Session {
   person_id: string;
   email: string;
   permissions: string[];
+  endpoint_keys: string[];
   active: boolean;
   ip: string;
   userAgent: string;
@@ -13,4 +14,11 @@ export interface Session {
 
 export interface SessionWithSid extends Session {
   sid: string;
+}
+
+export interface SessionFrontContext {
+  user_id: string;
+  person_id: string;
+  email: string;
+  endpoint_keys: string[];
 }

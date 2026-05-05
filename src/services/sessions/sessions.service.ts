@@ -1,16 +1,13 @@
 import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
 import { RedisService } from 'src/common/redis/redis.service';
-import { UserEntity } from 'src/entities/user.entity';
 import { Session, SessionWithSid } from 'src/interfaces/session.interface';
+import { UsersRepository } from 'src/services/users/users.repository';
 
 @Injectable()
 export class SessionsService {
   constructor(
     private readonly redis: RedisService,
-    @InjectRepository(UserEntity)
-    private readonly userRepository: Repository<UserEntity>,
+    private readonly usersRepository: UsersRepository,
   ) {}
 
   async findUserSessions(userId: string): Promise<{ sessions: SessionWithSid[]; total: number }> {
@@ -62,11 +59,60 @@ export class SessionsService {
   }
 
   async refreshSessionPermissions(userId: string, permissions: string[]): Promise<void> {
+    await this.refreshUserSessions(userId, async () => {
+      const endpointKeys = await this.usersRepository.getAccesibleEndpointKeys(userId);
+
+      return (session) => ({ ...session, permissions, endpoint_keys: endpointKeys });
+    });
+  }
+
+  async refreshSessionEndpointKeys(userId: string): Promise<void> {
+    await this.refreshUserSessions(userId, async () => {
+      const endpointKeys = await this.usersRepository.getAccesibleEndpointKeys(userId);
+
+      return (session) => ({ ...session, endpoint_keys: endpointKeys });
+    });
+  }
+
+  async refreshAllSessionEndpointKeys(): Promise<void> {
+    const userSessionIndexPrefix = 'user_sessions:';
+    const userIds = new Set<string>();
+
+    for await (const keys of this.redis.raw.scanIterator({
+      MATCH: `${userSessionIndexPrefix}*`,
+      COUNT: 100,
+    })) {
+      for (const key of keys) {
+        const userId = key.slice(userSessionIndexPrefix.length);
+        if (userId) userIds.add(userId);
+      }
+    }
+
+    for (const userId of userIds) {
+      await this.refreshSessionEndpointKeys(userId);
+    }
+  }
+
+  async refreshSessionPermissionsByRole(roleId: string): Promise<void> {
+    const users = await this.usersRepository.findByRoleIdWithPermissions(roleId);
+
+    if (!users.length) return;
+
+    for (const user of users) {
+      await this.refreshSessionPermissions(user.id, user.permissionCodes);
+    }
+  }
+
+  private async refreshUserSessions(
+    userId: string,
+    createSessionUpdater: () => Promise<(session: Session) => Session>,
+  ): Promise<void> {
     const indexKey = `user_sessions:${userId}`;
 
     const sids = await this.redis.raw.sMembers(indexKey);
     if (!sids.length) return;
 
+    const updateSession = await createSessionUpdater();
     const sessionKeys = sids.map((sid) => `auth_session:${sid}`);
     const raws = await this.redis.raw.mGet(sessionKeys);
     const multi = this.redis.raw.multi();
@@ -82,7 +128,7 @@ export class SessionsService {
 
       try {
         const parsed = JSON.parse(raw) as Session;
-        const updatedSession: Session = { ...parsed, permissions };
+        const updatedSession = updateSession(parsed);
         multi.set(`auth_session:${sid}`, JSON.stringify(updatedSession), {
           KEEPTTL: true,
         });
@@ -91,18 +137,5 @@ export class SessionsService {
       }
     }
     await multi.exec();
-  }
-
-  async refreshSessionPermissionsByRole(roleId: string): Promise<void> {
-    const users = await this.userRepository.find({
-      where: { roles: { id: roleId } },
-      relations: ['roles', 'roles.permissions'],
-    });
-
-    if (!users.length) return;
-
-    for (const user of users) {
-      await this.refreshSessionPermissions(user.id, user.permissionCodes);
-    }
   }
 }

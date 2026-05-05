@@ -33,6 +33,7 @@ describe('UsersController', () => {
       activate: jest.fn(),
       deactivate: jest.fn(),
       findAll: jest.fn(),
+      getSessionFrontContext: jest.fn(),
     } as unknown as jest.Mocked<UsersService>;
 
     controller = new UsersController(service);
@@ -115,6 +116,27 @@ describe('UsersController', () => {
       person_id: '66666666-6666-6666-6666-666666666666',
       session_id: 'abcd',
     });
+  });
+
+
+  it('should return the current session context', async () => {
+    const user = {
+      id: userId,
+      email: 'user@example.com',
+      person_id: '66666666-6666-6666-6666-666666666666',
+      session_id: 'abcd',
+    };
+    const request = { user } as any;
+    const sessionContext = {
+      user_id: userId,
+      person_id: '66666666-6666-6666-6666-666666666666',
+      email: 'user@example.com',
+      endpoint_keys: ['users.find', 'roles.find'],
+    };
+    service.getSessionFrontContext.mockResolvedValue(sessionContext);
+
+    await expect(controller.getCurrentSessionContext(request)).resolves.toEqual(sessionContext);
+    expect(service.getSessionFrontContext).toHaveBeenCalledWith(user);
   });
 
   it('should return all users as a paginated response', async () => {

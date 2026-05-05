@@ -6,9 +6,10 @@ import { EndpointPermissionRulesEntity } from 'src/entities/endpoint-permission-
 import { PermissionsModule } from 'src/services/permissions/permissions.module';
 import { EndpointPermissionRulesRepository } from 'src/services/endpoint-permission-rules/endpoint-permission-rules.repository';
 import { JwtModule } from 'src/services/jwt/jwt.module';
+import { SessionsModule } from 'src/services/sessions/sessions.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([EndpointPermissionRulesEntity]), PermissionsModule, JwtModule],
+  imports: [TypeOrmModule.forFeature([EndpointPermissionRulesEntity]), PermissionsModule, JwtModule, SessionsModule],
   providers: [EndpointPermissionRulesService, EndpointPermissionRulesRepository],
   controllers: [EndpointPermissionRulesController],
   exports: [EndpointPermissionRulesService],

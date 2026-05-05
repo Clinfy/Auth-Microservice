@@ -1,12 +1,12 @@
 import { SessionsService } from './sessions.service';
 import { RedisService } from 'src/common/redis/redis.service';
-import { Repository } from 'typeorm';
 import { UserEntity } from 'src/entities/user.entity';
+import { UsersRepository } from 'src/services/users/users.repository';
 
 describe('SessionsService', () => {
   let service: SessionsService;
   let redisService: { raw: any };
-  let userRepository: jest.Mocked<Partial<Repository<UserEntity>>>;
+  let usersRepository: jest.Mocked<Partial<UsersRepository>>;
   let multiMock: { set: jest.Mock; sRem: jest.Mock; exec: jest.Mock };
 
   beforeEach(() => {
@@ -24,18 +24,17 @@ describe('SessionsService', () => {
         mGet: jest.fn(),
         sRem: jest.fn().mockResolvedValue(1),
         del: jest.fn().mockResolvedValue(1),
+        scanIterator: jest.fn(),
         multi: jest.fn().mockReturnValue(multiMock),
       },
     };
 
-    userRepository = {
-      find: jest.fn(),
+    usersRepository = {
+      getAccesibleEndpointKeys: jest.fn().mockResolvedValue(['endpoint-a', 'endpoint-b']),
+      findByRoleIdWithPermissions: jest.fn(),
     };
 
-    service = new SessionsService(
-      redisService as unknown as RedisService,
-      userRepository as unknown as Repository<UserEntity>,
-    );
+    service = new SessionsService(redisService as unknown as RedisService, usersRepository as unknown as UsersRepository);
   });
 
   describe('findUserSessions', () => {
@@ -55,6 +54,7 @@ describe('SessionsService', () => {
           person_id: 'p-1',
           email: 'a@b.com',
           permissions: [],
+          endpoint_keys: [],
           active: true,
           ip: '127.0.0.1',
           userAgent: 'test',
@@ -103,6 +103,7 @@ describe('SessionsService', () => {
           person_id: 'p-1',
           email: 'a@b.com',
           permissions: ['OLD_PERM'],
+          endpoint_keys: ['old-endpoint'],
           active: true,
           ip: '127.0.0.1',
           userAgent: 'test',
@@ -115,6 +116,7 @@ describe('SessionsService', () => {
           person_id: 'p-1',
           email: 'a@b.com',
           permissions: ['OLD_PERM'],
+          endpoint_keys: ['old-endpoint'],
           active: true,
           ip: '10.0.0.1',
           userAgent: 'test2',
@@ -127,16 +129,20 @@ describe('SessionsService', () => {
       await service.refreshSessionPermissions('user-1', ['NEW_PERM_A', 'NEW_PERM_B']);
 
       expect(multiMock.set).toHaveBeenCalledTimes(2);
+      expect(usersRepository.getAccesibleEndpointKeys).toHaveBeenCalledWith('user-1');
       expect(multiMock.set).toHaveBeenCalledWith(
         'auth_session:sid-1',
-        expect.stringContaining('"permissions":["NEW_PERM_A","NEW_PERM_B"]'),
+        expect.stringContaining('"endpoint_keys":["endpoint-a","endpoint-b"]'),
         { KEEPTTL: true },
       );
       expect(multiMock.set).toHaveBeenCalledWith(
         'auth_session:sid-2',
-        expect.stringContaining('"permissions":["NEW_PERM_A","NEW_PERM_B"]'),
+        expect.stringContaining('"endpoint_keys":["endpoint-a","endpoint-b"]'),
         { KEEPTTL: true },
       );
+      for (const [, payload] of multiMock.set.mock.calls) {
+        expect(payload).toContain('"permissions":["NEW_PERM_A","NEW_PERM_B"]');
+      }
     });
 
     it('returns early when user has no active sessions', async () => {
@@ -145,6 +151,7 @@ describe('SessionsService', () => {
       await service.refreshSessionPermissions('user-1', ['PERM']);
 
       expect(redisService.raw.mGet).not.toHaveBeenCalled();
+      expect(usersRepository.getAccesibleEndpointKeys).not.toHaveBeenCalled();
       expect(multiMock.set).not.toHaveBeenCalled();
     });
 
@@ -156,6 +163,7 @@ describe('SessionsService', () => {
           person_id: 'p-1',
           email: 'a@b.com',
           permissions: ['OLD'],
+          endpoint_keys: ['old-endpoint'],
           active: true,
           ip: '127.0.0.1',
           userAgent: 'test',
@@ -172,9 +180,10 @@ describe('SessionsService', () => {
       expect(multiMock.set).toHaveBeenCalledTimes(1);
       expect(multiMock.set).toHaveBeenCalledWith(
         'auth_session:sid-valid',
-        expect.stringContaining('"permissions":["NEW"]'),
+        expect.stringContaining('"endpoint_keys":["endpoint-a","endpoint-b"]'),
         { KEEPTTL: true },
       );
+      expect(multiMock.set.mock.calls[0][1]).toContain('"permissions":["NEW"]');
     });
 
     it('cleans entries with unparseable JSON', async () => {
@@ -204,30 +213,95 @@ describe('SessionsService', () => {
         }),
       ] as UserEntity[];
 
-      (userRepository.find as jest.Mock).mockResolvedValue(mockUsers);
+      (usersRepository.findByRoleIdWithPermissions as jest.Mock).mockResolvedValue(mockUsers);
       const refreshSpy = jest.spyOn(service, 'refreshSessionPermissions').mockResolvedValue(undefined);
 
       await service.refreshSessionPermissionsByRole('role-1');
 
-      expect(userRepository.find).toHaveBeenCalledWith({
-        where: { roles: { id: 'role-1' } },
-        relations: ['roles', 'roles.permissions'],
-      });
+      expect(usersRepository.findByRoleIdWithPermissions).toHaveBeenCalledWith('role-1');
       expect(refreshSpy).toHaveBeenCalledWith('user-1', ['PERM_A']);
       expect(refreshSpy).toHaveBeenCalledWith('user-2', ['PERM_A', 'PERM_B']);
     });
 
     it('handles no users with the given role', async () => {
-      (userRepository.find as jest.Mock).mockResolvedValue([]);
+      (usersRepository.findByRoleIdWithPermissions as jest.Mock).mockResolvedValue([]);
       const refreshSpy = jest.spyOn(service, 'refreshSessionPermissions').mockResolvedValue(undefined);
 
       await service.refreshSessionPermissionsByRole('role-nonexistent');
 
-      expect(userRepository.find).toHaveBeenCalledWith({
-        where: { roles: { id: 'role-nonexistent' } },
-        relations: ['roles', 'roles.permissions'],
-      });
+      expect(usersRepository.findByRoleIdWithPermissions).toHaveBeenCalledWith('role-nonexistent');
       expect(refreshSpy).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('refreshSessionEndpointKeys', () => {
+    it('updates endpoint keys in all cached sessions for the user', async () => {
+      redisService.raw.sMembers.mockResolvedValue(['sid-1']);
+      redisService.raw.mGet.mockResolvedValue([
+        JSON.stringify({
+          user_id: 'user-1',
+          person_id: 'p-1',
+          email: 'a@b.com',
+          permissions: ['PERM_A'],
+          endpoint_keys: ['old-endpoint'],
+          active: true,
+          ip: '127.0.0.1',
+          userAgent: 'test',
+          device: 'test',
+          created_at: '2025-01-01',
+          last_refresh_at: '2025-01-01',
+        }),
+      ]);
+
+      await service.refreshSessionEndpointKeys('user-1');
+
+      expect(usersRepository.getAccesibleEndpointKeys).toHaveBeenCalledWith('user-1');
+      expect(multiMock.set).toHaveBeenCalledWith(
+        'auth_session:sid-1',
+        expect.stringContaining('"endpoint_keys":["endpoint-a","endpoint-b"]'),
+        { KEEPTTL: true },
+      );
+      expect(multiMock.set.mock.calls[0][1]).toContain('"permissions":["PERM_A"]');
+    });
+
+    it('returns early when the user has no cached sessions', async () => {
+      redisService.raw.sMembers.mockResolvedValue([]);
+
+      await service.refreshSessionEndpointKeys('user-1');
+
+      expect(usersRepository.getAccesibleEndpointKeys).not.toHaveBeenCalled();
+      expect(redisService.raw.mGet).not.toHaveBeenCalled();
+      expect(multiMock.set).not.toHaveBeenCalled();
+    });
+
+    it('cleans stale and unparseable entries while refreshing endpoint keys', async () => {
+      redisService.raw.sMembers.mockResolvedValue(['sid-stale', 'sid-bad']);
+      redisService.raw.mGet.mockResolvedValue([null, 'not-valid-json']);
+
+      await service.refreshSessionEndpointKeys('user-1');
+
+      expect(multiMock.sRem).toHaveBeenCalledWith('user_sessions:user-1', 'sid-stale');
+      expect(multiMock.sRem).toHaveBeenCalledWith('user_sessions:user-1', 'sid-bad');
+      expect(multiMock.set).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('refreshAllSessionEndpointKeys', () => {
+    async function* scanIteratorMock() {
+      yield ['user_sessions:user-1', 'user_sessions:user-2'];
+      yield ['user_sessions:user-1'];
+    }
+
+    it('refreshes endpoint keys for every discovered user session index once', async () => {
+      redisService.raw.scanIterator.mockReturnValue(scanIteratorMock());
+      const refreshSpy = jest.spyOn(service, 'refreshSessionEndpointKeys').mockResolvedValue(undefined);
+
+      await service.refreshAllSessionEndpointKeys();
+
+      expect(redisService.raw.scanIterator).toHaveBeenCalledWith({ MATCH: 'user_sessions:*', COUNT: 100 });
+      expect(refreshSpy).toHaveBeenCalledTimes(2);
+      expect(refreshSpy).toHaveBeenCalledWith('user-1');
+      expect(refreshSpy).toHaveBeenCalledWith('user-2');
     });
   });
 });
