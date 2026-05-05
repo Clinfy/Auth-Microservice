@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { RedisService } from 'src/common/redis/redis.service';
 import { UserEntity } from 'src/entities/user.entity';
 import { Session, SessionWithSid } from 'src/interfaces/session.interface';
+import { UsersRepository } from 'src/services/users/users.repository';
 
 @Injectable()
 export class SessionsService {
@@ -11,6 +12,7 @@ export class SessionsService {
     private readonly redis: RedisService,
     @InjectRepository(UserEntity)
     private readonly userRepository: Repository<UserEntity>,
+    private readonly usersRepository: UsersRepository,
   ) {}
 
   async findUserSessions(userId: string): Promise<{ sessions: SessionWithSid[]; total: number }> {
@@ -67,6 +69,7 @@ export class SessionsService {
     const sids = await this.redis.raw.sMembers(indexKey);
     if (!sids.length) return;
 
+    const endpointKeys = await this.usersRepository.getAccesibleEndpointKeys(userId);
     const sessionKeys = sids.map((sid) => `auth_session:${sid}`);
     const raws = await this.redis.raw.mGet(sessionKeys);
     const multi = this.redis.raw.multi();
@@ -82,7 +85,7 @@ export class SessionsService {
 
       try {
         const parsed = JSON.parse(raw) as Session;
-        const updatedSession: Session = { ...parsed, permissions };
+        const updatedSession: Session = { ...parsed, permissions, endpoint_keys: endpointKeys };
         multi.set(`auth_session:${sid}`, JSON.stringify(updatedSession), {
           KEEPTTL: true,
         });
