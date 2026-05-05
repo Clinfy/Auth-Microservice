@@ -6,6 +6,7 @@ import { EndpointPermissionRulesEntity } from 'src/entities/endpoint-permission-
 import { EndpointPRException } from 'src/services/endpoint-permission-rules/endpoint-permission-rules.exception';
 import { Logger } from 'winston';
 import { PaginatedResponseDto, PaginationQueryDto } from 'src/interfaces/DTO/pagination.dto';
+import { SessionsService } from 'src/services/sessions/sessions.service';
 
 // ────────────────────────────────────────────────────────────────
 // Helpers
@@ -35,6 +36,7 @@ describe('EndpointPermissionRulesService', () => {
   let service: EndpointPermissionRulesService;
   let repository: Record<string, jest.Mock>;
   let permissionsService: Record<string, jest.Mock>;
+  let sessionsService: Record<string, jest.Mock>;
   let redisService: { raw: Record<string, jest.Mock> };
   let multiMock: { set: jest.Mock; del: jest.Mock; sAdd: jest.Mock; exec: jest.Mock };
   let loggerMock: Partial<Logger>;
@@ -62,6 +64,10 @@ describe('EndpointPermissionRulesService', () => {
       findOne: jest.fn(),
     };
 
+    sessionsService = {
+      refreshAllSessionEndpointKeys: jest.fn().mockResolvedValue(undefined),
+    };
+
     redisService = {
       raw: {
         get: jest.fn(),
@@ -83,6 +89,7 @@ describe('EndpointPermissionRulesService', () => {
       repository as unknown as EndpointPermissionRulesRepository,
       permissionsService as unknown as PermissionsService,
       redisService as unknown as RedisService,
+      sessionsService as unknown as SessionsService,
       loggerMock as Logger,
     );
   });
@@ -297,6 +304,7 @@ describe('EndpointPermissionRulesService', () => {
 
         expect(loadRuleToRedisSpy).toHaveBeenCalledWith('users.create');
         expect(invalidateRuleCacheSpy).not.toHaveBeenCalled();
+        expect(sessionsService.refreshAllSessionEndpointKeys).toHaveBeenCalledTimes(1);
       });
 
       it('calls invalidateRuleCache(old) + loadRuleToRedis(new) on key rename', async () => {
@@ -310,6 +318,7 @@ describe('EndpointPermissionRulesService', () => {
 
         expect(invalidateRuleCacheSpy).toHaveBeenCalledWith('old.key');
         expect(loadRuleToRedisSpy).toHaveBeenCalledWith('new.key');
+        expect(sessionsService.refreshAllSessionEndpointKeys).toHaveBeenCalledTimes(1);
       });
     });
 
@@ -322,6 +331,7 @@ describe('EndpointPermissionRulesService', () => {
         await service.delete('rule-1');
 
         expect(invalidateRuleCacheSpy).toHaveBeenCalledWith('users.delete');
+        expect(sessionsService.refreshAllSessionEndpointKeys).toHaveBeenCalledTimes(1);
       });
     });
 
@@ -336,6 +346,7 @@ describe('EndpointPermissionRulesService', () => {
         await service.assignPermissions('rule-1', { permissionsIds: ['perm-1'] });
 
         expect(loadRuleToRedisSpy).toHaveBeenCalledWith('users.assign');
+        expect(sessionsService.refreshAllSessionEndpointKeys).toHaveBeenCalledTimes(1);
       });
     });
 
@@ -348,6 +359,7 @@ describe('EndpointPermissionRulesService', () => {
         await service.enableRule('rule-1');
 
         expect(loadRuleToRedisSpy).toHaveBeenCalledWith('users.enable');
+        expect(sessionsService.refreshAllSessionEndpointKeys).toHaveBeenCalledTimes(1);
       });
     });
 
@@ -360,6 +372,31 @@ describe('EndpointPermissionRulesService', () => {
         await service.disableRule('rule-1');
 
         expect(invalidateRuleCacheSpy).toHaveBeenCalledWith('users.disable');
+        expect(sessionsService.refreshAllSessionEndpointKeys).toHaveBeenCalledTimes(1);
+      });
+    });
+
+    describe('session endpoint keys cache refresh failure', () => {
+      it('does not fail update when session endpoint keys refresh fails', async () => {
+        const existing = makeRule({ endpoint_key_name: 'users.create' });
+        repository.findOneById.mockResolvedValue(existing);
+        repository.merge.mockResolvedValue({ ...existing, enabled: false });
+        repository.save.mockResolvedValue({ ...existing, enabled: false });
+        sessionsService.refreshAllSessionEndpointKeys.mockRejectedValue(new Error('Redis scan failed'));
+
+        await expect(service.update('rule-1', { enabled: false } as any)).resolves.toEqual({
+          ...existing,
+          enabled: false,
+        });
+
+        expect(loggerMock.warn).toHaveBeenCalledWith(
+          'Failed to refresh session endpoint keys cache',
+          expect.objectContaining({
+            context: 'EndpointPermissionRulesService',
+            operation: 'update',
+            endpointKeyName: 'users.create',
+          }),
+        );
       });
     });
 

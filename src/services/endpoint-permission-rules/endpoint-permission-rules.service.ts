@@ -17,6 +17,7 @@ import { RedisService } from 'src/common/redis/redis.service';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { Logger } from 'winston';
 import { serializeError } from 'src/common/utils/logger-format.util';
+import { SessionsService } from 'src/services/sessions/sessions.service';
 
 @Injectable()
 export class EndpointPermissionRulesService implements OnModuleInit {
@@ -24,6 +25,7 @@ export class EndpointPermissionRulesService implements OnModuleInit {
     private readonly endpointPermissionRulesRepository: EndpointPermissionRulesRepository,
     private readonly permissionsService: PermissionsService,
     private readonly redis: RedisService,
+    private readonly sessionsService: SessionsService,
     @Inject(WINSTON_MODULE_PROVIDER)
     private readonly logger: Logger,
   ) {}
@@ -93,6 +95,19 @@ export class EndpointPermissionRulesService implements OnModuleInit {
         operation: 'invalidateRuleCache',
         endpointKeyName,
         error: error instanceof Error ? error.message : String(error),
+      });
+    }
+  }
+
+  private async refreshSessionEndpointKeysCache(operation: string, endpointKeyName?: string): Promise<void> {
+    try {
+      await this.sessionsService.refreshAllSessionEndpointKeys();
+    } catch (error) {
+      this.logger.warn('Failed to refresh session endpoint keys cache', {
+        context: 'EndpointPermissionRulesService',
+        operation,
+        endpointKeyName,
+        error: serializeError(error),
       });
     }
   }
@@ -182,6 +197,7 @@ export class EndpointPermissionRulesService implements OnModuleInit {
         await this.loadRuleToRedis(saved.endpoint_key_name);
       }
 
+      await this.refreshSessionEndpointKeysCache('update', saved.endpoint_key_name);
       return saved;
     } catch (error) {
       throw new EndpointPRException(
@@ -198,6 +214,7 @@ export class EndpointPermissionRulesService implements OnModuleInit {
       const endpointPermissionRule = await this.findOne(id);
       await this.endpointPermissionRulesRepository.remove(endpointPermissionRule);
       await this.invalidateRuleCache(endpointPermissionRule.endpoint_key_name);
+      await this.refreshSessionEndpointKeysCache('delete', endpointPermissionRule.endpoint_key_name);
       return { message: `Endpoint Permission Rule ${endpointPermissionRule.endpoint_key_name} deleted` };
     } catch (error) {
       throw new EndpointPRException(
@@ -245,6 +262,7 @@ export class EndpointPermissionRulesService implements OnModuleInit {
       );
       const saved = await this.endpointPermissionRulesRepository.save(endpointPermissionRule);
       await this.loadRuleToRedis(saved.endpoint_key_name);
+      await this.refreshSessionEndpointKeysCache('assignPermissions', saved.endpoint_key_name);
       return saved;
     } catch (error) {
       throw new EndpointPRException(
@@ -269,6 +287,7 @@ export class EndpointPermissionRulesService implements OnModuleInit {
     endpointPermissionRule.enabled = true;
     await this.endpointPermissionRulesRepository.save(endpointPermissionRule);
     await this.loadRuleToRedis(endpointPermissionRule.endpoint_key_name);
+    await this.refreshSessionEndpointKeysCache('enableRule', endpointPermissionRule.endpoint_key_name);
     return { message: `Endpoint Permission Rule ${endpointPermissionRule.endpoint_key_name} enabled` };
   }
 
@@ -285,6 +304,7 @@ export class EndpointPermissionRulesService implements OnModuleInit {
     endpointPermissionRule.enabled = false;
     await this.endpointPermissionRulesRepository.save(endpointPermissionRule);
     await this.invalidateRuleCache(endpointPermissionRule.endpoint_key_name);
+    await this.refreshSessionEndpointKeysCache('disableRule', endpointPermissionRule.endpoint_key_name);
     return { message: `Endpoint Permission Rule ${endpointPermissionRule.endpoint_key_name} disabled` };
   }
 }

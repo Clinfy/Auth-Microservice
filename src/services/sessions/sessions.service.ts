@@ -91,6 +91,58 @@ export class SessionsService {
     await multi.exec();
   }
 
+  async refreshSessionEndpointKeys(userId: string): Promise<void> {
+    const indexKey = `user_sessions:${userId}`;
+
+    const sids = await this.redis.raw.sMembers(indexKey);
+    if (!sids.length) return;
+
+    const endpointKeys = await this.usersRepository.getAccesibleEndpointKeys(userId);
+    const sessionKeys = sids.map((sid) => `auth_session:${sid}`);
+    const raws = await this.redis.raw.mGet(sessionKeys);
+    const multi = this.redis.raw.multi();
+
+    for (let i = 0; i < sids.length; i++) {
+      const raw = raws[i];
+      const sid = sids[i];
+
+      if (!raw) {
+        multi.sRem(indexKey, sid);
+        continue;
+      }
+
+      try {
+        const parsed = JSON.parse(raw) as Session;
+        const updatedSession: Session = { ...parsed, endpoint_keys: endpointKeys };
+        multi.set(`auth_session:${sid}`, JSON.stringify(updatedSession), {
+          KEEPTTL: true,
+        });
+      } catch {
+        multi.sRem(indexKey, sid);
+      }
+    }
+    await multi.exec();
+  }
+
+  async refreshAllSessionEndpointKeys(): Promise<void> {
+    const userSessionIndexPrefix = 'user_sessions:';
+    const userIds = new Set<string>();
+
+    for await (const keys of this.redis.raw.scanIterator({
+      MATCH: `${userSessionIndexPrefix}*`,
+      COUNT: 100,
+    })) {
+      for (const key of keys) {
+        const userId = key.slice(userSessionIndexPrefix.length);
+        if (userId) userIds.add(userId);
+      }
+    }
+
+    for (const userId of userIds) {
+      await this.refreshSessionEndpointKeys(userId);
+    }
+  }
+
   async refreshSessionPermissionsByRole(roleId: string): Promise<void> {
     const users = await this.usersRepository.findByRoleIdWithPermissions(roleId);
 
