@@ -37,6 +37,13 @@ export class UsersRepository {
     });
   }
 
+  async findByRoleIdWithPermissions(roleId: string): Promise<UserEntity[]> {
+    return await this.ormRepository.find({
+      where: { roles: { id: roleId } },
+      relations: ['roles', 'roles.permissions'],
+    });
+  }
+
   async getAccesibleEndpointKeys(userId: string): Promise<string[]> {
     const rows = await this.ormRepository
       .createQueryBuilder('u')

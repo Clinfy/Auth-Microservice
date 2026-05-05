@@ -1,8 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
 import { RedisService } from 'src/common/redis/redis.service';
-import { UserEntity } from 'src/entities/user.entity';
 import { Session, SessionWithSid } from 'src/interfaces/session.interface';
 import { UsersRepository } from 'src/services/users/users.repository';
 
@@ -10,8 +7,6 @@ import { UsersRepository } from 'src/services/users/users.repository';
 export class SessionsService {
   constructor(
     private readonly redis: RedisService,
-    @InjectRepository(UserEntity)
-    private readonly userRepository: Repository<UserEntity>,
     private readonly usersRepository: UsersRepository,
   ) {}
 
@@ -97,10 +92,7 @@ export class SessionsService {
   }
 
   async refreshSessionPermissionsByRole(roleId: string): Promise<void> {
-    const users = await this.userRepository.find({
-      where: { roles: { id: roleId } },
-      relations: ['roles', 'roles.permissions'],
-    });
+    const users = await this.usersRepository.findByRoleIdWithPermissions(roleId);
 
     if (!users.length) return;
 
