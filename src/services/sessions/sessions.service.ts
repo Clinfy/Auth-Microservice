@@ -59,69 +59,19 @@ export class SessionsService {
   }
 
   async refreshSessionPermissions(userId: string, permissions: string[]): Promise<void> {
-    const indexKey = `user_sessions:${userId}`;
+    await this.refreshUserSessions(userId, async () => {
+      const endpointKeys = await this.usersRepository.getAccesibleEndpointKeys(userId);
 
-    const sids = await this.redis.raw.sMembers(indexKey);
-    if (!sids.length) return;
-
-    const endpointKeys = await this.usersRepository.getAccesibleEndpointKeys(userId);
-    const sessionKeys = sids.map((sid) => `auth_session:${sid}`);
-    const raws = await this.redis.raw.mGet(sessionKeys);
-    const multi = this.redis.raw.multi();
-
-    for (let i = 0; i < sids.length; i++) {
-      const raw = raws[i];
-      const sid = sids[i];
-
-      if (!raw) {
-        multi.sRem(indexKey, sid);
-        continue;
-      }
-
-      try {
-        const parsed = JSON.parse(raw) as Session;
-        const updatedSession: Session = { ...parsed, permissions, endpoint_keys: endpointKeys };
-        multi.set(`auth_session:${sid}`, JSON.stringify(updatedSession), {
-          KEEPTTL: true,
-        });
-      } catch {
-        multi.sRem(indexKey, sid);
-      }
-    }
-    await multi.exec();
+      return (session) => ({ ...session, permissions, endpoint_keys: endpointKeys });
+    });
   }
 
   async refreshSessionEndpointKeys(userId: string): Promise<void> {
-    const indexKey = `user_sessions:${userId}`;
+    await this.refreshUserSessions(userId, async () => {
+      const endpointKeys = await this.usersRepository.getAccesibleEndpointKeys(userId);
 
-    const sids = await this.redis.raw.sMembers(indexKey);
-    if (!sids.length) return;
-
-    const endpointKeys = await this.usersRepository.getAccesibleEndpointKeys(userId);
-    const sessionKeys = sids.map((sid) => `auth_session:${sid}`);
-    const raws = await this.redis.raw.mGet(sessionKeys);
-    const multi = this.redis.raw.multi();
-
-    for (let i = 0; i < sids.length; i++) {
-      const raw = raws[i];
-      const sid = sids[i];
-
-      if (!raw) {
-        multi.sRem(indexKey, sid);
-        continue;
-      }
-
-      try {
-        const parsed = JSON.parse(raw) as Session;
-        const updatedSession: Session = { ...parsed, endpoint_keys: endpointKeys };
-        multi.set(`auth_session:${sid}`, JSON.stringify(updatedSession), {
-          KEEPTTL: true,
-        });
-      } catch {
-        multi.sRem(indexKey, sid);
-      }
-    }
-    await multi.exec();
+      return (session) => ({ ...session, endpoint_keys: endpointKeys });
+    });
   }
 
   async refreshAllSessionEndpointKeys(): Promise<void> {
@@ -151,5 +101,41 @@ export class SessionsService {
     for (const user of users) {
       await this.refreshSessionPermissions(user.id, user.permissionCodes);
     }
+  }
+
+  private async refreshUserSessions(
+    userId: string,
+    createSessionUpdater: () => Promise<(session: Session) => Session>,
+  ): Promise<void> {
+    const indexKey = `user_sessions:${userId}`;
+
+    const sids = await this.redis.raw.sMembers(indexKey);
+    if (!sids.length) return;
+
+    const updateSession = await createSessionUpdater();
+    const sessionKeys = sids.map((sid) => `auth_session:${sid}`);
+    const raws = await this.redis.raw.mGet(sessionKeys);
+    const multi = this.redis.raw.multi();
+
+    for (let i = 0; i < sids.length; i++) {
+      const raw = raws[i];
+      const sid = sids[i];
+
+      if (!raw) {
+        multi.sRem(indexKey, sid);
+        continue;
+      }
+
+      try {
+        const parsed = JSON.parse(raw) as Session;
+        const updatedSession = updateSession(parsed);
+        multi.set(`auth_session:${sid}`, JSON.stringify(updatedSession), {
+          KEEPTTL: true,
+        });
+      } catch {
+        multi.sRem(indexKey, sid);
+      }
+    }
+    await multi.exec();
   }
 }
