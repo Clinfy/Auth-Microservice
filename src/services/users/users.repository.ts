@@ -1,8 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { UserEntity } from 'src/entities/user.entity';
-import { EntityManager, Repository } from 'typeorm';
+import { Brackets, EntityManager, Repository } from 'typeorm';
 import { PaginationQueryDto } from 'src/interfaces/DTO/pagination.dto';
+import { EndpointPermissionRulesEntity } from 'src/entities/endpoint-permission-rules.entity';
 
 @Injectable()
 export class UsersRepository {
@@ -45,14 +46,19 @@ export class UsersRepository {
   }
 
   async getAccesibleEndpointKeys(userId: string): Promise<string[]> {
-    const rows = await this.ormRepository
-      .createQueryBuilder('u')
-      .innerJoin('u.roles', 'r')
-      .innerJoin('r.permissions', 'p')
-      .innerJoin('p.endpoint_permission_rules', 'epr')
+    const rows = await this.ormRepository.manager
+      .getRepository(EndpointPermissionRulesEntity)
+      .createQueryBuilder('epr')
+      .leftJoin('epr.permissions', 'p')
+      .leftJoin('p.roles', 'r')
+      .leftJoin('r.users', 'u', 'u.id = :userId', { userId })
       .select('DISTINCT epr.endpoint_key_name', 'endpointKey')
-      .where('u.id = :userId', { userId })
-      .andWhere('epr.enabled = :enabled', { enabled: true })
+      .where('epr.enabled = :enabled', { enabled: true })
+      .andWhere(
+        new Brackets((qb) => {
+          qb.where('p.id IS NULL').orWhere('u.id IS NOT NULL');
+        }),
+      )
       .getRawMany<{ endpointKey: string }>();
 
     return rows.map((row) => row.endpointKey);
