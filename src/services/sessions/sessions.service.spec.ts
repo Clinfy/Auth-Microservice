@@ -1,13 +1,11 @@
 import { SessionsService } from './sessions.service';
 import { RedisService } from 'src/common/redis/redis.service';
-import { Repository } from 'typeorm';
 import { UserEntity } from 'src/entities/user.entity';
 import { UsersRepository } from 'src/services/users/users.repository';
 
 describe('SessionsService', () => {
   let service: SessionsService;
   let redisService: { raw: any };
-  let userRepository: jest.Mocked<Partial<Repository<UserEntity>>>;
   let usersRepository: jest.Mocked<Partial<UsersRepository>>;
   let multiMock: { set: jest.Mock; sRem: jest.Mock; exec: jest.Mock };
 
@@ -30,18 +28,12 @@ describe('SessionsService', () => {
       },
     };
 
-    userRepository = {
-      find: jest.fn(),
-    };
     usersRepository = {
       getAccesibleEndpointKeys: jest.fn().mockResolvedValue(['endpoint-a', 'endpoint-b']),
+      findByRoleIdWithPermissions: jest.fn(),
     };
 
-    service = new SessionsService(
-      redisService as unknown as RedisService,
-      userRepository as unknown as Repository<UserEntity>,
-      usersRepository as unknown as UsersRepository,
-    );
+    service = new SessionsService(redisService as unknown as RedisService, usersRepository as unknown as UsersRepository);
   });
 
   describe('findUserSessions', () => {
@@ -220,29 +212,23 @@ describe('SessionsService', () => {
         }),
       ] as UserEntity[];
 
-      (userRepository.find as jest.Mock).mockResolvedValue(mockUsers);
+      (usersRepository.findByRoleIdWithPermissions as jest.Mock).mockResolvedValue(mockUsers);
       const refreshSpy = jest.spyOn(service, 'refreshSessionPermissions').mockResolvedValue(undefined);
 
       await service.refreshSessionPermissionsByRole('role-1');
 
-      expect(userRepository.find).toHaveBeenCalledWith({
-        where: { roles: { id: 'role-1' } },
-        relations: ['roles', 'roles.permissions'],
-      });
+      expect(usersRepository.findByRoleIdWithPermissions).toHaveBeenCalledWith('role-1');
       expect(refreshSpy).toHaveBeenCalledWith('user-1', ['PERM_A']);
       expect(refreshSpy).toHaveBeenCalledWith('user-2', ['PERM_A', 'PERM_B']);
     });
 
     it('handles no users with the given role', async () => {
-      (userRepository.find as jest.Mock).mockResolvedValue([]);
+      (usersRepository.findByRoleIdWithPermissions as jest.Mock).mockResolvedValue([]);
       const refreshSpy = jest.spyOn(service, 'refreshSessionPermissions').mockResolvedValue(undefined);
 
       await service.refreshSessionPermissionsByRole('role-nonexistent');
 
-      expect(userRepository.find).toHaveBeenCalledWith({
-        where: { roles: { id: 'role-nonexistent' } },
-        relations: ['roles', 'roles.permissions'],
-      });
+      expect(usersRepository.findByRoleIdWithPermissions).toHaveBeenCalledWith('role-nonexistent');
       expect(refreshSpy).not.toHaveBeenCalled();
     });
   });
