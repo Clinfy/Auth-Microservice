@@ -144,6 +144,7 @@ export class UsersService {
         person_id: user.person_id,
         email: user.email,
         permissions: user.permissionCodes,
+        endpoint_keys: await this.userRepository.getAccesibleEndpointKeys(user.id),
         active: true,
         ip: requestData.ip,
         userAgent: requestData.userAgent,
