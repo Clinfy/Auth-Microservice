@@ -37,6 +37,20 @@ export class UsersRepository {
     });
   }
 
+  async getAccesibleEndpointKeys(userId: string): Promise<string[]> {
+    const rows = await this.ormRepository
+      .createQueryBuilder('u')
+      .innerJoin('u.roles', 'r')
+      .innerJoin('r.permissions', 'p')
+      .innerJoin('p.endpoint_permission_rules', 'epr')
+      .select('DISTINCT epr.endpoint_key_name', 'endpointKey')
+      .where('u.id = :userId', { userId })
+      .andWhere('epr.enabled = :enabled', { enabled: true })
+      .getRawMany<{ endpointKey: string }>();
+
+    return rows.map((row) => row.endpointKey);
+  }
+
   private getManager(manager?: EntityManager): Repository<UserEntity> {
     return manager ? manager.getRepository(UserEntity) : this.ormRepository;
   }
