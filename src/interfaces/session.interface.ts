@@ -3,6 +3,7 @@ export interface Session {
   person_id: string;
   email: string;
   permissions: string[];
+  endpoint_keys: string[];
   active: boolean;
   ip: string;
   userAgent: string;
