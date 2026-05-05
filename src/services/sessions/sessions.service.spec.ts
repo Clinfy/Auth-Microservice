@@ -1,12 +1,12 @@
 import { SessionsService } from './sessions.service';
 import { RedisService } from 'src/common/redis/redis.service';
-import { Repository } from 'typeorm';
 import { UserEntity } from 'src/entities/user.entity';
+import { UsersRepository } from 'src/services/users/users.repository';
 
 describe('SessionsService', () => {
   let service: SessionsService;
   let redisService: { raw: any };
-  let userRepository: jest.Mocked<Partial<Repository<UserEntity>>>;
+  let usersRepository: jest.Mocked<Partial<UsersRepository>>;
   let multiMock: { set: jest.Mock; sRem: jest.Mock; exec: jest.Mock };
 
   beforeEach(() => {
@@ -28,14 +28,12 @@ describe('SessionsService', () => {
       },
     };
 
-    userRepository = {
-      find: jest.fn(),
+    usersRepository = {
+      getAccesibleEndpointKeys: jest.fn().mockResolvedValue(['endpoint-a', 'endpoint-b']),
+      findByRoleIdWithPermissions: jest.fn(),
     };
 
-    service = new SessionsService(
-      redisService as unknown as RedisService,
-      userRepository as unknown as Repository<UserEntity>,
-    );
+    service = new SessionsService(redisService as unknown as RedisService, usersRepository as unknown as UsersRepository);
   });
 
   describe('findUserSessions', () => {
@@ -55,6 +53,7 @@ describe('SessionsService', () => {
           person_id: 'p-1',
           email: 'a@b.com',
           permissions: [],
+          endpoint_keys: [],
           active: true,
           ip: '127.0.0.1',
           userAgent: 'test',
@@ -103,6 +102,7 @@ describe('SessionsService', () => {
           person_id: 'p-1',
           email: 'a@b.com',
           permissions: ['OLD_PERM'],
+          endpoint_keys: ['old-endpoint'],
           active: true,
           ip: '127.0.0.1',
           userAgent: 'test',
@@ -115,6 +115,7 @@ describe('SessionsService', () => {
           person_id: 'p-1',
           email: 'a@b.com',
           permissions: ['OLD_PERM'],
+          endpoint_keys: ['old-endpoint'],
           active: true,
           ip: '10.0.0.1',
           userAgent: 'test2',
@@ -127,16 +128,20 @@ describe('SessionsService', () => {
       await service.refreshSessionPermissions('user-1', ['NEW_PERM_A', 'NEW_PERM_B']);
 
       expect(multiMock.set).toHaveBeenCalledTimes(2);
+      expect(usersRepository.getAccesibleEndpointKeys).toHaveBeenCalledWith('user-1');
       expect(multiMock.set).toHaveBeenCalledWith(
         'auth_session:sid-1',
-        expect.stringContaining('"permissions":["NEW_PERM_A","NEW_PERM_B"]'),
+        expect.stringContaining('"endpoint_keys":["endpoint-a","endpoint-b"]'),
         { KEEPTTL: true },
       );
       expect(multiMock.set).toHaveBeenCalledWith(
         'auth_session:sid-2',
-        expect.stringContaining('"permissions":["NEW_PERM_A","NEW_PERM_B"]'),
+        expect.stringContaining('"endpoint_keys":["endpoint-a","endpoint-b"]'),
         { KEEPTTL: true },
       );
+      for (const [, payload] of multiMock.set.mock.calls) {
+        expect(payload).toContain('"permissions":["NEW_PERM_A","NEW_PERM_B"]');
+      }
     });
 
     it('returns early when user has no active sessions', async () => {
@@ -145,6 +150,7 @@ describe('SessionsService', () => {
       await service.refreshSessionPermissions('user-1', ['PERM']);
 
       expect(redisService.raw.mGet).not.toHaveBeenCalled();
+      expect(usersRepository.getAccesibleEndpointKeys).not.toHaveBeenCalled();
       expect(multiMock.set).not.toHaveBeenCalled();
     });
 
@@ -156,6 +162,7 @@ describe('SessionsService', () => {
           person_id: 'p-1',
           email: 'a@b.com',
           permissions: ['OLD'],
+          endpoint_keys: ['old-endpoint'],
           active: true,
           ip: '127.0.0.1',
           userAgent: 'test',
@@ -172,9 +179,10 @@ describe('SessionsService', () => {
       expect(multiMock.set).toHaveBeenCalledTimes(1);
       expect(multiMock.set).toHaveBeenCalledWith(
         'auth_session:sid-valid',
-        expect.stringContaining('"permissions":["NEW"]'),
+        expect.stringContaining('"endpoint_keys":["endpoint-a","endpoint-b"]'),
         { KEEPTTL: true },
       );
+      expect(multiMock.set.mock.calls[0][1]).toContain('"permissions":["NEW"]');
     });
 
     it('cleans entries with unparseable JSON', async () => {
@@ -204,29 +212,23 @@ describe('SessionsService', () => {
         }),
       ] as UserEntity[];
 
-      (userRepository.find as jest.Mock).mockResolvedValue(mockUsers);
+      (usersRepository.findByRoleIdWithPermissions as jest.Mock).mockResolvedValue(mockUsers);
       const refreshSpy = jest.spyOn(service, 'refreshSessionPermissions').mockResolvedValue(undefined);
 
       await service.refreshSessionPermissionsByRole('role-1');
 
-      expect(userRepository.find).toHaveBeenCalledWith({
-        where: { roles: { id: 'role-1' } },
-        relations: ['roles', 'roles.permissions'],
-      });
+      expect(usersRepository.findByRoleIdWithPermissions).toHaveBeenCalledWith('role-1');
       expect(refreshSpy).toHaveBeenCalledWith('user-1', ['PERM_A']);
       expect(refreshSpy).toHaveBeenCalledWith('user-2', ['PERM_A', 'PERM_B']);
     });
 
     it('handles no users with the given role', async () => {
-      (userRepository.find as jest.Mock).mockResolvedValue([]);
+      (usersRepository.findByRoleIdWithPermissions as jest.Mock).mockResolvedValue([]);
       const refreshSpy = jest.spyOn(service, 'refreshSessionPermissions').mockResolvedValue(undefined);
 
       await service.refreshSessionPermissionsByRole('role-nonexistent');
 
-      expect(userRepository.find).toHaveBeenCalledWith({
-        where: { roles: { id: 'role-nonexistent' } },
-        relations: ['roles', 'roles.permissions'],
-      });
+      expect(usersRepository.findByRoleIdWithPermissions).toHaveBeenCalledWith('role-nonexistent');
       expect(refreshSpy).not.toHaveBeenCalled();
     });
   });

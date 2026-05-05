@@ -34,6 +34,7 @@ describe('UsersService', () => {
       findAll: jest.fn(),
       save: jest.fn(),
       create: jest.fn((dto) => ({ id: 'mock-id', ...dto }) as UserEntity),
+      getAccesibleEndpointKeys: jest.fn().mockResolvedValue(['endpoint-a', 'endpoint-b']),
     };
 
     dataSource = {
@@ -158,6 +159,7 @@ describe('UsersService', () => {
         userAgent: request.headers['user-agent'],
         device: expect.any(String),
         permissions: [],
+        endpoint_keys: ['endpoint-a', 'endpoint-b'],
         active: true,
       });
       expect(redisService.raw.sAdd).toHaveBeenCalledWith(`user_sessions:${activeUser.id}`, sessionId);
