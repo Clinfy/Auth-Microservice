@@ -45,6 +45,7 @@ import { ActivateUserDTO } from 'src/interfaces/DTO/activate.dto';
 import { getAuthCookieOptions, getRefreshCookieOptions } from 'src/common/utils/cookie-options.util';
 import { UsersErrorCodes, UsersException } from 'src/services/users/users.exception';
 import { EndpointKey } from 'src/common/decorators/endpoint-key.decorator';
+import { SessionFrontContext } from 'src/interfaces/session.interface';
 
 @ApiTags('Users')
 @Controller('users')
@@ -229,6 +230,30 @@ export class UsersController {
       person_id: request.user.person_id,
       session_id: request.user.session_id,
     };
+  }
+
+  @UseGuards(AuthGuard)
+  @ApiCookieAuth('auth_token')
+  @ApiOperation({
+    summary: 'Return the authenticated user session context',
+    description: 'Returns the current session context used by frontend clients for the authenticated user.',
+  })
+  @ApiOkResponse({
+    schema: {
+      type: 'object',
+      properties: {
+        user_id: { type: 'string' },
+        person_id: { type: 'string' },
+        email: { type: 'string' },
+        endpoint_keys: { type: 'array', items: { type: 'string' } },
+      },
+    },
+  })
+  @ApiUnauthorizedResponse({ description: 'Missing or invalid auth cookie' })
+  @ApiNotFoundResponse({ description: 'Session not found' })
+  @Get('me/session-context')
+  getCurrentSessionContext(@Req() request: requestUser.RequestWithUser): Promise<SessionFrontContext> {
+    return this.userService.getSessionFrontContext(request.user);
   }
 
   @UseGuards(AuthGuard)

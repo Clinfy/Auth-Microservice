@@ -12,7 +12,7 @@ import { ForgotPasswordDTO, ResetPasswordDTO } from 'src/interfaces/DTO/reset-pa
 import { EmailService } from 'src/clients/email/email.service';
 import { RequestWithUser } from 'src/interfaces/request-user';
 import { getTtlFromEnv } from 'src/common/utils/get-ttl.util';
-import { Session } from 'src/interfaces/session.interface';
+import { Session, SessionFrontContext } from 'src/interfaces/session.interface';
 import { randomBytes, randomUUID } from 'crypto';
 import { AuthUser } from 'src/interfaces/auth-user.interface';
 import { RedisService } from 'src/common/redis/redis.service';
@@ -60,6 +60,7 @@ export class UsersService {
     const newSession: Session = {
       ...session,
       permissions: user.permissionCodes,
+      endpoint_keys: await this.userRepository.getAccesibleEndpointKeys(session.user_id),
       last_refresh_at: new Date().toISOString(),
     };
 
@@ -305,6 +306,20 @@ export class UsersService {
     user.status = UserStatus.INACTIVE;
     await this.userRepository.save(user);
     return { message: 'User deactivated successfully' };
+  }
+
+  async getSessionFrontContext(user: AuthUser): Promise<SessionFrontContext> {
+    const cacheKey = `auth_session:${user.session_id}`;
+    const raw = await this.redis.raw.get(cacheKey);
+    if (!raw) throw new UsersException('Session not found', UsersErrorCodes.SESSION_INVALID, HttpStatus.NOT_FOUND);
+    const session = JSON.parse(raw) as Session;
+
+    return {
+      user_id: session.user_id,
+      person_id: session.person_id,
+      email: session.email,
+      endpoint_keys: session.endpoint_keys,
+    };
   }
 
   async findAll(query: PaginationQueryDto = new PaginationQueryDto()): Promise<PaginatedResponseDto<UserEntity>> {

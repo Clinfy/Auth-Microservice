@@ -15,3 +15,10 @@ export interface Session {
 export interface SessionWithSid extends Session {
   sid: string;
 }
+
+export interface SessionFrontContext {
+  user_id: string;
+  person_id: string;
+  email: string;
+  endpoint_keys: string[];
+}
