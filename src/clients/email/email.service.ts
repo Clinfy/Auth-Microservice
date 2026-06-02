@@ -38,8 +38,7 @@ export class EmailService {
   async sendResetPasswordMail(email: string, token: string) {
     const data = {
       APP_NAME: this.configService.get('APP_NAME'),
-      APP_URL: this.configService.get('FRONTEND_URL'),
-      RESET_URL: `${this.configService.get('FRONTEND_URL')}/reset-password?token=${token}`,
+      RESET_TOKEN: this.formatResetToken(token),
       EXPIRES_MINUTES: this.configService.get('RESET_PASSWORD_EXPIRES_IN') ?? 5,
       YEAR: String(new Date().getFullYear()),
       USER_NAME_PREFIX: email.split('@')[0],
@@ -48,7 +47,7 @@ export class EmailService {
     const recipient = [email];
 
     const subject = `Reset Password of your ${data.APP_NAME} Account`;
-    const text = `Click the link below to reset your ${data.APP_NAME} password: \n ${data.RESET_URL} \n this link will expire in 5 minutes`;
+    const text = `Use the next code to reset your ${data.APP_NAME} password: \n ${data.RESET_TOKEN} \n this token will expire in ${data.EXPIRES_MINUTES} minutes`;
 
     const template = await this.templateService.loadTemplate('send-reset.template.html');
     const html = this.templateService.render(template, data);
@@ -76,5 +75,15 @@ export class EmailService {
 
   private async sendMail(body: EmailBody) {
     await lastValueFrom(this.emailClient.emit('email_queue', body));
+  }
+
+  private formatResetToken(token: string): string {
+    return (
+      token
+        .replace(/[^A-Z0-9]/gi, '')
+        .toUpperCase()
+        .match(/.{1,3}/g)
+        ?.join('-') ?? ''
+    );
   }
 }
