@@ -239,7 +239,7 @@ export class UsersService {
       );
     }
 
-    const isTokenValid = await compare(dto.token, redisPayload.hashToken);
+    const isTokenValid = await compare(this.normalizeResetToken(dto.token), redisPayload.hashToken);
     if(!isTokenValid) {
       throw new UsersException(
         'Invalid or expired reset password token',
@@ -368,5 +368,12 @@ export class UsersService {
       token += resetCodeAlphabet[randomInt(0, resetCodeAlphabet.length)];
     }
     return token;
+  }
+
+  private normalizeResetToken(input:string): string {
+    return input
+      .trim()
+      .replace(/[\s-]+/g, '')
+      .toUpperCase();
   }
 }
