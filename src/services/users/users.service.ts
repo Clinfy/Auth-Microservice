@@ -215,7 +215,7 @@ export class UsersService {
       const rawToken = this.generateResetToken();
       const hashToken = hashSync(rawToken, 10);
       const redisIndex = `reset_password_user:${user.email}`;
-      const redisPayload: ResetPasswordRedisPayload = { id: user.id, hashToken };
+      const redisPayload: ResetPasswordRedisPayload = { id: user.id, hashToken, attempts: 0 };
       await this.redis.raw.set(redisIndex, JSON.stringify(redisPayload), {
         PX: getTtlFromEnv('RESET_PASSWORD_EXPIRES_IN'),
       });
@@ -239,8 +239,19 @@ export class UsersService {
       );
     }
 
+    if (redisPayload.attempts >= 3) {
+      await this.redis.raw.del(redisIndex);
+      throw new UsersException(
+        'Too many invalid attempts, reset password token has been invalidated. Please request a new one.',
+        UsersErrorCodes.RESET_PASSWORD_TOO_MANY_ATTEMPTS,
+        HttpStatus.UNAUTHORIZED,
+      );
+    }
+
     const isTokenValid = await compare(this.normalizeResetToken(dto.token), redisPayload.hashToken);
-    if(!isTokenValid) {
+    if (!isTokenValid) {
+      redisPayload.attempts += 1;
+      await this.redis.raw.set(redisIndex, JSON.stringify(redisPayload), { KEEPTTL: true });
       throw new UsersException(
         'Invalid or expired reset password token',
         UsersErrorCodes.RESET_PASSWORD_INVALID,
