@@ -47,6 +47,7 @@ describe('UsersController', () => {
     const dto: RegisterUserDTO = {
       email: 'user@example.com',
       person_id: '55555555-5555-5555-5555-555555555555',
+      rolesIds: [],
     };
     const response = { message: 'User user@example.com created' };
     service.register.mockResolvedValue(response);

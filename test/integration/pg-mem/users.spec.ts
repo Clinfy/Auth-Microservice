@@ -241,7 +241,7 @@ describe('UsersService (integration)', () => {
     expect(user).toBeDefined();
 
     const permission = await permissionsService.create({ code: 'USERS_ASSIGN' }, request);
-    const role = await rolesService.create({ name: 'manager' }, request);
+    const role = await rolesService.create({ name: 'manager', is_restricted: false }, request);
     await rolesService.assignPermissions(role.id, {
       permissionsIds: [permission.id],
     } as any);

@@ -93,7 +93,7 @@ describe('RolesService (integration)', () => {
   });
 
   it('creates a role with the given name', async () => {
-    const role = await service.create({ name: 'admin' }, request);
+    const role = await service.create({ name: 'admin', is_restricted: false }, request);
 
     expect(role).toMatchObject({
       id: expect.any(String),
@@ -108,7 +108,7 @@ describe('RolesService (integration)', () => {
   it('assigns permissions to a role', async () => {
     const read = await permissionsService.create({ code: 'PERMISSIONS_READ' }, request);
     const write = await permissionsService.create({ code: 'PERMISSIONS_WRITE' }, request);
-    const role = await service.create({ name: 'editor' }, request);
+    const role = await service.create({ name: 'editor', is_restricted: false }, request);
 
     const updated = await service.assignPermissions(role.id, {
       permissionsIds: [read.id, write.id],
@@ -127,7 +127,7 @@ describe('RolesService (integration)', () => {
   });
 
   it('deletes a role and confirms removal', async () => {
-    const role = await service.create({ name: 'temp-role' }, request);
+    const role = await service.create({ name: 'temp-role', is_restricted: false }, request);
 
     const response = await service.delete(role.id);
     expect(response).toEqual({ message: `Role ${role.name} deleted` });
@@ -137,7 +137,7 @@ describe('RolesService (integration)', () => {
   });
 
   it('findAll returns a paginated response of roles', async () => {
-    await service.create({ name: 'paginated-role' }, request);
+    await service.create({ name: 'paginated-role', is_restricted: false }, request);
 
     const result = await service.findAll({ page: 1, limit: 20 });
 
@@ -152,8 +152,8 @@ describe('RolesService (integration)', () => {
 
   it('findAll returns roles sorted by name ASC', async () => {
     // Create roles with intentionally out-of-order names
-    await service.create({ name: 'z-role' }, request);
-    await service.create({ name: 'a-role' }, request);
+    await service.create({ name: 'z-role', is_restricted: false }, request);
+    await service.create({ name: 'a-role', is_restricted: false }, request);
 
     const result = await service.findAll({ page: 1, limit: 20 });
 
