@@ -18,7 +18,6 @@ export class EmailService {
   async sendRegistrationMail(email: string, password: string) {
     const data = {
       APP_NAME: this.configService.get('APP_NAME'),
-      APP_URL: this.configService.get('FRONTEND_URL'),
       YEAR: String(new Date().getFullYear()),
       USER_NAME_PREFIX: email.split('@')[0],
       EMAIL: email,
