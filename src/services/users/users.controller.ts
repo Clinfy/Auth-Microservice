@@ -291,8 +291,8 @@ export class UsersController {
   @ApiUnauthorizedResponse({ description: 'Invalid or expired token' })
   @ApiForbiddenResponse({ description: 'Password already changed' })
   @Post('reset-password')
-  resetPassword(@Query('token') token: string, @Body() dto: ResetPasswordDTO): Promise<{ message: string }> {
-    return this.userService.resetPassword(token, dto);
+  resetPassword(@Body() dto: ResetPasswordDTO): Promise<{ message: string }> {
+    return this.userService.resetPassword(dto);
   }
 
   @UseGuards(AuthGuard)

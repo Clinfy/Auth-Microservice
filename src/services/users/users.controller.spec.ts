@@ -181,12 +181,16 @@ describe('UsersController', () => {
   });
 
   it('should reset the user password', async () => {
-    const dto: ResetPasswordDTO = { password: 'newPassword' };
+    const dto: ResetPasswordDTO = {
+      email: 'user@example.com',
+      token: 'token-123',
+      password: 'N3wP@ssw0rd!',
+    };
     const response = { message: 'Password reset successfully' };
     service.resetPassword.mockResolvedValue(response);
 
-    await expect(controller.resetPassword('token-123', dto)).resolves.toEqual(response);
-    expect(service.resetPassword).toHaveBeenCalledWith('token-123', dto);
+    await expect(controller.resetPassword(dto)).resolves.toEqual(response);
+    expect(service.resetPassword).toHaveBeenCalledWith(dto);
   });
 
   it('should log out a user and clear cookies', async () => {
