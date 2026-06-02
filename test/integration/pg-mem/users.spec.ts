@@ -356,10 +356,6 @@ describe('UsersService (integration)', () => {
       (call) => call[0] === 'reset_password_user:erin@example.com',
     )!;
 
-    const stored = await userRepository.findOneBy({
-      email: 'erin@example.com',
-    });
-
     redisServiceMock.raw.get.mockResolvedValue(rawPayload);
     emailServiceMock.confirmPasswordChange.mockResolvedValue(undefined);
 
