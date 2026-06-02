@@ -360,7 +360,7 @@ describe('UsersService (integration)', () => {
       email: 'erin@example.com',
     });
 
-    redisServiceMock.raw.getDel.mockResolvedValue(rawPayload);
+    redisServiceMock.raw.get.mockResolvedValue(rawPayload);
     emailServiceMock.confirmPasswordChange.mockResolvedValue(undefined);
 
     const response = await usersService.resetPassword({
@@ -369,7 +369,8 @@ describe('UsersService (integration)', () => {
       password: 'N3wP@ssw0rd!',
     });
     expect(response).toEqual({ message: 'Password reset successfully' });
-    expect(redisServiceMock.raw.getDel).toHaveBeenCalledWith('reset_password_user:erin@example.com');
+    expect(redisServiceMock.raw.get).toHaveBeenCalledWith('reset_password_user:erin@example.com');
+    expect(redisServiceMock.raw.del).toHaveBeenCalledWith('reset_password_user:erin@example.com');
     expect(emailServiceMock.confirmPasswordChange).toHaveBeenCalledWith('erin@example.com');
 
     const updated = await userRepository.findOneBy({

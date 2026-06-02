@@ -266,7 +266,7 @@ describe('UsersService', () => {
 
   describe('resetPassword', () => {
     it('updates password and clears token when payload valid', async () => {
-      redisService.raw.getDel.mockResolvedValue(JSON.stringify({ id: 'user-1', hashToken: 'hashed-token' }));
+      redisService.raw.get.mockResolvedValue(JSON.stringify({ id: 'user-1', hashToken: 'hashed-token' }));
       (compare as jest.Mock).mockResolvedValue(true);
       const storedUser: any = {
         id: 'user-1',
@@ -278,7 +278,7 @@ describe('UsersService', () => {
       await expect(
         service.resetPassword({
           email: 'user@example.com',
-          token: 'token-123',
+          token: ' token-123 ',
           password: 'new-password',
         }),
       ).resolves.toEqual({
@@ -291,13 +291,14 @@ describe('UsersService', () => {
           password: 'new-password',
         }),
       );
-      expect(redisService.raw.getDel).toHaveBeenCalledWith('reset_password_user:user@example.com');
-      expect(compare).toHaveBeenCalledWith('token-123', 'hashed-token');
+      expect(redisService.raw.get).toHaveBeenCalledWith('reset_password_user:user@example.com');
+      expect(compare).toHaveBeenCalledWith('TOKEN123', 'hashed-token');
+      expect(redisService.raw.del).toHaveBeenCalledWith('reset_password_user:user@example.com');
       expect(emailService.confirmPasswordChange).toHaveBeenCalledWith('user@example.com');
     });
 
     it('throws UsersException when token invalid or expired', async () => {
-      redisService.raw.getDel.mockResolvedValue(null);
+      redisService.raw.get.mockResolvedValue(null);
 
       await expect(
         service.resetPassword({
@@ -306,10 +307,11 @@ describe('UsersService', () => {
           password: 'new-password',
         }),
       ).rejects.toBeInstanceOf(UsersException);
+      expect(redisService.raw.del).not.toHaveBeenCalled();
     });
 
     it('throws UsersException when user missing', async () => {
-      redisService.raw.getDel.mockResolvedValue(JSON.stringify({ id: 'missing-id', hashToken: 'hashed-token' }));
+      redisService.raw.get.mockResolvedValue(JSON.stringify({ id: 'missing-id', hashToken: 'hashed-token' }));
       (compare as jest.Mock).mockResolvedValue(true);
       (userRepository.findOneById as jest.Mock).mockResolvedValue(null);
 
@@ -320,6 +322,7 @@ describe('UsersService', () => {
           password: 'new-password',
         }),
       ).rejects.toBeInstanceOf(UsersException);
+      expect(redisService.raw.del).toHaveBeenCalledWith('reset_password_user:user@example.com');
     });
   });
 
