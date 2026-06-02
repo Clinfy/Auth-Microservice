@@ -229,7 +229,7 @@ export class UsersService {
 
   async resetPassword(dto: ResetPasswordDTO): Promise<{ message: string }> {
     const redisIndex = `reset_password_user:${dto.email}`;
-    const raw = await this.redis.raw.getDel(redisIndex);
+    const raw = await this.redis.raw.get(redisIndex);
     const redisPayload = raw ? (JSON.parse(raw) as ResetPasswordRedisPayload) : null;
     if (!redisPayload) {
       throw new UsersException(
@@ -248,6 +248,7 @@ export class UsersService {
       );
     }
 
+    await this.redis.raw.del(redisIndex);
     let user: UserEntity;
     try {
       user = await this.findOne(redisPayload.id);
