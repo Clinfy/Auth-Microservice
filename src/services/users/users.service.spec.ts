@@ -13,9 +13,10 @@ import { PaginatedResponseDto, PaginationQueryDto } from 'src/interfaces/DTO/pag
 
 jest.mock('bcrypt', () => ({
   compare: jest.fn(),
+  hashSync: jest.fn(),
 }));
 
-import { compare } from 'bcrypt';
+import { compare, hashSync } from 'bcrypt';
 
 describe('UsersService', () => {
   let service: UsersService;
@@ -236,16 +237,18 @@ describe('UsersService', () => {
     it('stores reset token and sends email when user exists', async () => {
       const storedUser: any = { id: 'user-1', email: 'user@example.com' };
       (userRepository.findOneByEmail as jest.Mock).mockResolvedValue(storedUser);
+      (hashSync as jest.Mock).mockReturnValue('hashed-token');
 
       await expect(service.forgotPassword({ email: 'user@example.com' })).resolves.toEqual({
         message: expect.any(String),
       });
 
       expect(redisService.raw.set).toHaveBeenCalledWith(
-        expect.stringMatching(/^reset_password:/),
-        JSON.stringify({ id: 'user-1' }),
+        'reset_password_user:user@example.com',
+        JSON.stringify({ id: 'user-1', hashToken: 'hashed-token' }),
         { PX: expect.any(Number) },
       );
+      expect(hashSync).toHaveBeenCalledWith(expect.any(String), 10);
       expect(emailService.sendResetPasswordMail).toHaveBeenCalledWith('user@example.com', expect.any(String));
     });
 
@@ -263,7 +266,8 @@ describe('UsersService', () => {
 
   describe('resetPassword', () => {
     it('updates password and clears token when payload valid', async () => {
-      redisService.raw.getDel.mockResolvedValue(JSON.stringify({ id: 'user-1' }));
+      redisService.raw.getDel.mockResolvedValue(JSON.stringify({ id: 'user-1', hashToken: 'hashed-token' }));
+      (compare as jest.Mock).mockResolvedValue(true);
       const storedUser: any = {
         id: 'user-1',
         email: 'user@example.com',
@@ -271,7 +275,13 @@ describe('UsersService', () => {
       };
       (userRepository.findOneById as jest.Mock).mockResolvedValue(storedUser);
 
-      await expect(service.resetPassword('token-123', { password: 'new-password' })).resolves.toEqual({
+      await expect(
+        service.resetPassword({
+          email: 'user@example.com',
+          token: 'token-123',
+          password: 'new-password',
+        }),
+      ).resolves.toEqual({
         message: 'Password reset successfully',
       });
 
@@ -281,20 +291,35 @@ describe('UsersService', () => {
           password: 'new-password',
         }),
       );
+      expect(redisService.raw.getDel).toHaveBeenCalledWith('reset_password_user:user@example.com');
+      expect(compare).toHaveBeenCalledWith('token-123', 'hashed-token');
       expect(emailService.confirmPasswordChange).toHaveBeenCalledWith('user@example.com');
     });
 
     it('throws UsersException when token invalid or expired', async () => {
-      redisService.raw.get.mockResolvedValue(null);
+      redisService.raw.getDel.mockResolvedValue(null);
 
-      await expect(service.resetPassword('token', { password: 'new' })).rejects.toBeInstanceOf(UsersException);
+      await expect(
+        service.resetPassword({
+          email: 'user@example.com',
+          token: 'token',
+          password: 'new-password',
+        }),
+      ).rejects.toBeInstanceOf(UsersException);
     });
 
     it('throws UsersException when user missing', async () => {
-      redisService.raw.get.mockResolvedValue(JSON.stringify({ id: 'missing-id' }));
+      redisService.raw.getDel.mockResolvedValue(JSON.stringify({ id: 'missing-id', hashToken: 'hashed-token' }));
+      (compare as jest.Mock).mockResolvedValue(true);
       (userRepository.findOneById as jest.Mock).mockResolvedValue(null);
 
-      await expect(service.resetPassword('token', { password: 'new' })).rejects.toBeInstanceOf(UsersException);
+      await expect(
+        service.resetPassword({
+          email: 'user@example.com',
+          token: 'token',
+          password: 'new-password',
+        }),
+      ).rejects.toBeInstanceOf(UsersException);
     });
   });
 
