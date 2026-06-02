@@ -227,7 +227,7 @@ describe('UsersService (integration)', () => {
     expect(user).toBeDefined();
 
     const permission = await permissionsService.create({ code: 'USERS_ASSIGN' }, request);
-    const role = await rolesService.create({ name: 'manager' }, request);
+    const role = await rolesService.create({ name: 'manager', is_restricted: false }, request);
     await rolesService.assignPermissions(role.id, {
       permissionsIds: [permission.id],
     } as any);
@@ -311,10 +311,18 @@ describe('UsersService (integration)', () => {
     });
 
     expect(redisServiceMock.raw.set).toHaveBeenCalledWith(
-      expect.stringMatching(/^reset_password:/),
-      JSON.stringify({ id: stored!.id }),
+      'reset_password_user:dave@example.com',
+      expect.any(String),
       { PX: expect.any(Number) },
     );
+    const [, rawPayload] = redisServiceMock.raw.set.mock.calls.find(
+      (call) => call[0] === 'reset_password_user:dave@example.com',
+    )!;
+    expect(JSON.parse(rawPayload)).toEqual({
+      id: stored!.id,
+      hashToken: expect.any(String),
+      attempts: 0,
+    });
     expect(emailServiceMock.sendResetPasswordMail).toHaveBeenCalledWith('dave@example.com', expect.any(String));
   });
 
@@ -330,20 +338,22 @@ describe('UsersService (integration)', () => {
     emailServiceMock.sendResetPasswordMail.mockResolvedValue(undefined);
     await usersService.forgotPassword({ email: 'erin@example.com' });
 
-    const [[redisKey]] = redisServiceMock.raw.set.mock.calls.filter((call) => call[0].startsWith('reset_password:'));
-    const token = redisKey.replace('reset_password:', '');
+    const token = emailServiceMock.sendResetPasswordMail.mock.calls[0][1];
+    const [, rawPayload] = redisServiceMock.raw.set.mock.calls.find(
+      (call) => call[0] === 'reset_password_user:erin@example.com',
+    )!;
 
-    const stored = await userRepository.findOneBy({
-      email: 'erin@example.com',
-    });
-
-    redisServiceMock.raw.getDel.mockResolvedValue(JSON.stringify({ id: stored!.id }));
+    redisServiceMock.raw.get.mockResolvedValue(rawPayload);
     emailServiceMock.confirmPasswordChange.mockResolvedValue(undefined);
 
-    const response = await usersService.resetPassword(token, {
-      password: 'NewPassword1',
+    const response = await usersService.resetPassword({
+      email: 'erin@example.com',
+      token,
+      password: 'N3wP@ssw0rd!',
     });
     expect(response).toEqual({ message: 'Password reset successfully' });
+    expect(redisServiceMock.raw.get).toHaveBeenCalledWith('reset_password_user:erin@example.com');
+    expect(redisServiceMock.raw.del).toHaveBeenCalledWith('reset_password_user:erin@example.com');
     expect(emailServiceMock.confirmPasswordChange).toHaveBeenCalledWith('erin@example.com');
 
     const updated = await userRepository.findOneBy({

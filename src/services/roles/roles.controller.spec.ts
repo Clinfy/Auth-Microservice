@@ -38,7 +38,7 @@ describe('RolesController', () => {
   });
 
   it('should create a role', async () => {
-    const dto: CreateRoleDTO = { name: 'admin' };
+    const dto: CreateRoleDTO = { name: 'admin', is_restricted: false };
     const role = { id: roleId, name: 'admin' } as RoleEntity;
     service.create.mockResolvedValue(role);
 
@@ -47,7 +47,7 @@ describe('RolesController', () => {
   });
 
   it('should update a role', async () => {
-    const dto: PatchRoleDTO = { name: 'updated' };
+    const dto: PatchRoleDTO = { name: 'updated', is_restricted: false };
     const role = { id: roleId, name: 'updated' } as RoleEntity;
     service.update.mockResolvedValue(role);
 

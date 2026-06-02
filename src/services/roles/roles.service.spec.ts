@@ -55,12 +55,13 @@ describe('RolesService', () => {
       name: 'ADMIN',
     });
 
-    await expect(service.create({ name: 'ADMIN' }, request)).resolves.toEqual({
+    await expect(service.create({ name: 'ADMIN', is_restricted: false }, request)).resolves.toEqual({
       id: roleId,
       name: 'ADMIN',
     });
     expect(roleRepository.create).toHaveBeenCalledWith({
       name: 'ADMIN',
+      is_restricted: false,
       created_by: actingUser,
     });
   });
@@ -75,11 +76,11 @@ describe('RolesService', () => {
       name: 'NEW',
     });
 
-    await expect(service.update(roleId, { name: 'NEW' })).resolves.toEqual({
+    await expect(service.update(roleId, { name: 'NEW', is_restricted: false })).resolves.toEqual({
       id: roleId,
       name: 'NEW',
     });
-    expect(roleRepository.merge).toHaveBeenCalledWith({ id: roleId, name: 'OLD' }, { name: 'NEW' });
+    expect(roleRepository.merge).toHaveBeenCalledWith({ id: roleId, name: 'OLD' }, { name: 'NEW', is_restricted: false });
   });
 
   it('deletes a role and returns message', async () => {
