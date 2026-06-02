@@ -3,7 +3,7 @@ import { UserEntity, UserStatus } from 'src/entities/user.entity';
 import { DataSource } from 'typeorm';
 import { JwtService } from 'src/services/jwt/jwt.service';
 import { RegisterUserDTO } from 'src/interfaces/DTO/register.dto';
-import { compare } from 'bcrypt';
+import { compare, hashSync } from 'bcrypt';
 import { LoginDTO } from 'src/interfaces/DTO/login.dto';
 import { AuthInterface } from 'src/interfaces/auth.interface';
 import { AssignRoleDTO } from 'src/interfaces/DTO/assign.dto';
@@ -13,7 +13,7 @@ import { EmailService } from 'src/clients/email/email.service';
 import { RequestWithUser } from 'src/interfaces/request-user';
 import { getTtlFromEnv } from 'src/common/utils/get-ttl.util';
 import { Session, SessionFrontContext } from 'src/interfaces/session.interface';
-import { randomBytes, randomUUID } from 'crypto';
+import { randomBytes, randomUUID, randomInt } from 'node:crypto';
 import { AuthUser } from 'src/interfaces/auth-user.interface';
 import { RedisService } from 'src/common/redis/redis.service';
 import type { Request } from 'express';
@@ -51,7 +51,7 @@ export class UsersService {
     const raw = await this.redis.raw.get(cacheKey);
     const session = raw ? (JSON.parse(raw) as Session) : null;
 
-    if (!session || !session.active) {
+    if (!session?.active) {
       throw new UsersException('Session expired or invalid', UsersErrorCodes.SESSION_INVALID, HttpStatus.UNAUTHORIZED);
     }
 
@@ -76,7 +76,7 @@ export class UsersService {
     const raw = await this.redis.raw.get(cacheKey);
     const session = raw ? (JSON.parse(raw) as Session) : null;
 
-    if (!session || !session.active) {
+    if (!session?.active) {
       throw new UsersException('Session expired or invalid', UsersErrorCodes.SESSION_INVALID, HttpStatus.UNAUTHORIZED);
     }
 
@@ -212,13 +212,14 @@ export class UsersService {
   async forgotPassword(dto: ForgotPasswordDTO): Promise<{ message: string }> {
     const user = await this.findByEmail(dto.email);
     if (user) {
-      const token = randomBytes(32).toString('hex');
-      const redisIndex = `reset_password:${token}`;
-      const redisPayload: ResetPasswordRedisPayload = { id: user.id };
+      const rawToken = this.generateResetToken();
+      const hashToken = hashSync(rawToken, 10);
+      const redisIndex = `reset_password_user:${user.email}`;
+      const redisPayload: ResetPasswordRedisPayload = { id: user.id, hashToken };
       await this.redis.raw.set(redisIndex, JSON.stringify(redisPayload), {
         PX: getTtlFromEnv('RESET_PASSWORD_EXPIRES_IN'),
       });
-      await this.emailService.sendResetPasswordMail(dto.email, token);
+      await this.emailService.sendResetPasswordMail(dto.email, rawToken);
     }
 
     return {
@@ -226,11 +227,20 @@ export class UsersService {
     };
   }
 
-  async resetPassword(token: string, dto: ResetPasswordDTO): Promise<{ message: string }> {
-    const redisIndex = `reset_password:${token}`;
+  async resetPassword(dto: ResetPasswordDTO): Promise<{ message: string }> {
+    const redisIndex = `reset_password_user:${dto.email}`;
     const raw = await this.redis.raw.getDel(redisIndex);
     const redisPayload = raw ? (JSON.parse(raw) as ResetPasswordRedisPayload) : null;
     if (!redisPayload) {
+      throw new UsersException(
+        'Invalid or expired reset password token',
+        UsersErrorCodes.RESET_PASSWORD_INVALID,
+        HttpStatus.UNAUTHORIZED,
+      );
+    }
+
+    const isTokenValid = await compare(dto.token, redisPayload.hashToken);
+    if(!isTokenValid) {
       throw new UsersException(
         'Invalid or expired reset password token',
         UsersErrorCodes.RESET_PASSWORD_INVALID,
@@ -347,5 +357,15 @@ export class UsersService {
     const ua = parser.getResult();
 
     return `${ua.os.name ?? 'Unknown OS'} - ${ua.browser.name ?? 'Unknown Browser'}`;
+  }
+
+  private generateResetToken(): string {
+    const resetCodeAlphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890';
+    let token = '';
+
+    for (let i = 0; i < 9; i++) {
+      token += resetCodeAlphabet[randomInt(0, resetCodeAlphabet.length)];
+    }
+    return token;
   }
 }

@@ -8,4 +8,5 @@ export interface Payload extends JwtPayload {
 
 export interface ResetPasswordRedisPayload {
   id: string;
+  hashToken: string;
 }
