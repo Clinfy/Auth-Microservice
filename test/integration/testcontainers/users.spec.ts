@@ -321,6 +321,7 @@ describe('UsersService (integration)', () => {
     expect(JSON.parse(rawPayload)).toEqual({
       id: stored!.id,
       hashToken: expect.any(String),
+      attempts: 0,
     });
     expect(emailServiceMock.sendResetPasswordMail).toHaveBeenCalledWith('dave@example.com', expect.any(String));
   });

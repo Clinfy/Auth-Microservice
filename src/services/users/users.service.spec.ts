@@ -245,7 +245,7 @@ describe('UsersService', () => {
 
       expect(redisService.raw.set).toHaveBeenCalledWith(
         'reset_password_user:user@example.com',
-        JSON.stringify({ id: 'user-1', hashToken: 'hashed-token' }),
+        JSON.stringify({ id: 'user-1', hashToken: 'hashed-token', attempts: 0 }),
         { PX: expect.any(Number) },
       );
       expect(hashSync).toHaveBeenCalledWith(expect.any(String), 10);
@@ -266,7 +266,7 @@ describe('UsersService', () => {
 
   describe('resetPassword', () => {
     it('updates password and clears token when payload valid', async () => {
-      redisService.raw.get.mockResolvedValue(JSON.stringify({ id: 'user-1', hashToken: 'hashed-token' }));
+      redisService.raw.get.mockResolvedValue(JSON.stringify({ id: 'user-1', hashToken: 'hashed-token', attempts: 0 }));
       (compare as jest.Mock).mockResolvedValue(true);
       const storedUser: any = {
         id: 'user-1',
@@ -310,8 +310,46 @@ describe('UsersService', () => {
       expect(redisService.raw.del).not.toHaveBeenCalled();
     });
 
+    it('increments attempts and keeps token TTL when token is invalid', async () => {
+      redisService.raw.get.mockResolvedValue(JSON.stringify({ id: 'user-1', hashToken: 'hashed-token', attempts: 1 }));
+      (compare as jest.Mock).mockResolvedValue(false);
+
+      await expect(
+        service.resetPassword({
+          email: 'user@example.com',
+          token: 'wrong-token',
+          password: 'new-password',
+        }),
+      ).rejects.toBeInstanceOf(UsersException);
+
+      expect(redisService.raw.set).toHaveBeenCalledWith(
+        'reset_password_user:user@example.com',
+        JSON.stringify({ id: 'user-1', hashToken: 'hashed-token', attempts: 2 }),
+        { KEEPTTL: true },
+      );
+      expect(redisService.raw.del).not.toHaveBeenCalled();
+      expect(userRepository.save).not.toHaveBeenCalled();
+    });
+
+    it('invalidates token when maximum invalid attempts is reached', async () => {
+      redisService.raw.get.mockResolvedValue(JSON.stringify({ id: 'user-1', hashToken: 'hashed-token', attempts: 3 }));
+      (compare as jest.Mock).mockClear();
+
+      await expect(
+        service.resetPassword({
+          email: 'user@example.com',
+          token: 'wrong-token',
+          password: 'new-password',
+        }),
+      ).rejects.toBeInstanceOf(UsersException);
+
+      expect(redisService.raw.del).toHaveBeenCalledWith('reset_password_user:user@example.com');
+      expect(compare).not.toHaveBeenCalled();
+      expect(userRepository.save).not.toHaveBeenCalled();
+    });
+
     it('throws UsersException when user missing', async () => {
-      redisService.raw.get.mockResolvedValue(JSON.stringify({ id: 'missing-id', hashToken: 'hashed-token' }));
+      redisService.raw.get.mockResolvedValue(JSON.stringify({ id: 'missing-id', hashToken: 'hashed-token', attempts: 0 }));
       (compare as jest.Mock).mockResolvedValue(true);
       (userRepository.findOneById as jest.Mock).mockResolvedValue(null);
 
